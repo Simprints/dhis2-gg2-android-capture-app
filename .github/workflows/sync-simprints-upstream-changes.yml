@@ -1,0 +1,38 @@
+name: Sync Simprints-related changes from EyeSeeTea upstream hourly
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+jobs:
+  sync-simprints-upstream-changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Sync develop-simprints branch
+        run: |
+          gh repo sync $CURRENT_FORK_REPOSITORY --source $UPSTREAM_REPOSITORY --branch develop-simprints
+      - name: Sync release-simprints branch and create PR if changed
+        run: |
+          upstream_sync_branch="release-simprints"
+          head_before_sync=$(gh api repos/$CURRENT_FORK_REPOSITORY/branches/$upstream_sync_branch --jq '.commit.sha')
+          gh repo sync $CURRENT_FORK_REPOSITORY --source $UPSTREAM_REPOSITORY --branch $upstream_sync_branch
+          head_after_sync=$(gh api repos/$CURRENT_FORK_REPOSITORY/branches/$upstream_sync_branch --jq '.commit.sha')
+          if [[ "$head_before_sync" != "$head_after_sync" ]]; then
+            echo "Upstream changes synced into $upstream_sync_branch. Creating PR..."
+            pr_title="[Automatic] Sync release update from upstream EyeSeeTea DHIS2"
+            pr_body="These changes, synced from upstream into \`release-simprints\`, are to be merged into \`main\` after a review.
+            
+            _For your reference, this Action's config can be viewed [here](https://github.com/Simprints/dhis2-gg2-android-capture-app/blob/main/.github/workflows/sync-simprints-upstream-changes.yml), and the run logs [here](https://github.com/Simprints/dhis2-gg2-android-capture-app/actions/workflows/sync-simprints-upstream-changes.yml)._
+            
+            Approve & Merge if these changes against \`main\` are OK. If modifications are needed, do and merge them into \`main\` first."
+            pr_labels="upstream-sync,automatic,github-action"
+            gh pr create --repo $CURRENT_FORK_REPOSITORY --base main --head $upstream_sync_branch --title "$pr_title" --body "$pr_body" --label "$pr_labels"
+          else
+            echo "No upstream changes in $upstream_sync_branch."
+          fi
+    env:
+      CURRENT_FORK_REPOSITORY: ${{ github.repository }}
+      UPSTREAM_REPOSITORY: EyeSeeTea/dhis2-android-capture-app
+      GH_TOKEN: ${{ github.token }}
