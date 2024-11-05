@@ -38,7 +38,7 @@ class BasicPreferenceProviderImpl(private val context: Context) : BasicPreferenc
                 }
             }
         } ?: run {
-            sharedPreferences.edit().clear().apply()
+            sharedPreferences.edit().remove(key).apply()
         }
     }
 

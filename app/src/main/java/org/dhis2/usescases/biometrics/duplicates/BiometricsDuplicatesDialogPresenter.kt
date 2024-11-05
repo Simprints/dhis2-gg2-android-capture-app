@@ -5,7 +5,9 @@ import io.reactivex.Flowable
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.coroutines.flow.map
 import org.dhis2.commons.filters.FilterManager
+import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.schedulers.SchedulerProvider
+import org.dhis2.data.biometrics.SimprintsItem
 import org.dhis2.data.search.SearchParametersModel
 import org.dhis2.usescases.searchTrackEntity.SearchRepository
 import org.dhis2.usescases.searchTrackEntity.SearchRepositoryKt
@@ -18,10 +20,11 @@ class BiometricsDuplicatesDialogPresenter(
     private val d2: D2,
     private val searchRepository: SearchRepository,
     private val searchRepositoryKt: SearchRepositoryKt,
-    private val schedulerProvider: SchedulerProvider
+    private val schedulerProvider: SchedulerProvider,
+    private val basicPreferenceProvider: BasicPreferenceProvider
 ) {
     lateinit var view: BiometricsDuplicatesDialogView
-    lateinit var biometricsGuids: List<String>
+    lateinit var possibleDuplicates: List<SimprintsItem>
     lateinit var biometricsSessionId: String
     lateinit var programUid: String
     lateinit var trackedEntityTypeUid: String
@@ -33,14 +36,14 @@ class BiometricsDuplicatesDialogPresenter(
 
     fun init(
         view: BiometricsDuplicatesDialogView,
-        biometricsGuids: List<String>,
+        possibleDuplicates: List<SimprintsItem>,
         biometricsSessionId: String,
         programUid: String,
         trackedEntityTypeUid: String,
         biometricsAttributeUid: String
     ) {
         this.view = view
-        this.biometricsGuids = biometricsGuids
+        this.possibleDuplicates = possibleDuplicates
         this.biometricsSessionId = biometricsSessionId
         this.programUid = programUid
         this.trackedEntityTypeUid = trackedEntityTypeUid
@@ -57,7 +60,9 @@ class BiometricsDuplicatesDialogPresenter(
                 searchRepositoryKt.searchTrackedEntities(
                     SearchParametersModel(
                         program,
-                        hashMapOf(biometricsAttributeUid to biometricsGuids.joinToString(separator = ";"))
+                        hashMapOf(biometricsAttributeUid to possibleDuplicates.joinToString(
+                            separator = ";"
+                        ) { it.guid })
                     ),
                     NetworkUtils.isOnline(view.getContext())
                 ).map { pagingData ->
@@ -158,5 +163,9 @@ class BiometricsDuplicatesDialogPresenter(
 
     fun enrollNewClick() {
         view.enrollNew(biometricsSessionId)
+    }
+
+    fun enrollWithoutBiometrics() {
+        view.enrollWithoutBiometrics()
     }
 }

@@ -113,6 +113,12 @@ class EnrollmentConfiguration(
             .blockingIsEmpty()
     }
 
+    fun isTeiInNoOtherProgram(teiUid: String?, programUid: String?): Boolean =
+        d2.enrollmentModule().enrollments()
+            .byTrackedEntityInstance().eq(teiUid)
+            .byProgram().neq(programUid)
+            .blockingCount() == 0
+
     fun setValue(attributeUid: String, value: String) {
         d2.trackedEntityModule().trackedEntityAttributeValues()
             .value(attributeUid, tei()?.uid()!!)

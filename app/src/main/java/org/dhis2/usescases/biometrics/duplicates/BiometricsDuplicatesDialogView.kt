@@ -14,6 +14,7 @@ interface BiometricsDuplicatesDialogView {
     fun downloadProgress(): Consumer<D2Progress>
     fun couldNotDownload(displayName: String)
     fun enrollNew(biometricsSessionId: String)
+    fun enrollWithoutBiometrics()
     fun sendBiometricsConfirmIdentity(
         sessionId: String, guid: String, teiUid: String, enrollmentUid: String, isOnline: Boolean
     )

@@ -1029,4 +1029,15 @@ public class SearchRepositoryImpl implements SearchRepository {
             return Unit.INSTANCE;
         });
     }
+
+    @Override
+    public List<String> getUserOrgUnits(String programUid) {
+        List<String> programs = new ArrayList<>();
+        if (programUid != null) {
+            programs.add(programUid);
+        }
+        return d2.organisationUnitModule().organisationUnits()
+                .byOrganisationUnitScope(OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
+                .byProgramUids(programs).blockingGetUids();
+    }
 }

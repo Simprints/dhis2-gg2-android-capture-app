@@ -92,6 +92,7 @@ public class Constants {
     public static final String ENROLLMENT_DATE_UID = "ENROLLMENT_DATE_UID";
     public static final String ENROLLMENT_DATE = "enrollmentDate";
     public static final String INCIDENT_DATE = "incidentDate";
+    public static final String LAST_BIOMETRICS_SESSION_ID = "LAST_BIOMETRICS_SESSION_ID";
 
     public static final String INITIAL_SYNC = "INITIAL_SYNC";
     public static final String META = "METADATA";

@@ -4,7 +4,7 @@ import org.dhis2.data.biometrics.SimprintsItem
 
 sealed class SequentialSearch(
     open val previousSearch: SequentialSearch?,
-    open val nextAction: SequentialSearchAction?
+    open val nextActions: List<SequentialSearchAction>
 ) {
     val sequentialSessionId: String?
         get() = when (this) {
@@ -19,16 +19,16 @@ sealed class SequentialSearch(
 
     data class BiometricsSearch(
         override val previousSearch: SequentialSearch?,
-        override val nextAction: SequentialSearchAction?,
+        override val nextActions: List<SequentialSearchAction>,
         val simprintsItems: List<SimprintsItem>,
-        val sessionId: String,
+        val sessionId: String?,
         val isAgeNotSupported: Boolean,
-    ) : SequentialSearch(previousSearch, nextAction)
+    ) : SequentialSearch(previousSearch, nextActions)
 
     data class AttributeSearch(
         override val previousSearch: SequentialSearch?,
-        override val nextAction: SequentialSearchAction?,
-    ) : SequentialSearch(previousSearch, nextAction)
+        override val nextActions: List<SequentialSearchAction>,
+    ) : SequentialSearch(previousSearch, nextActions)
 }
 
 sealed class SequentialSearchAction {

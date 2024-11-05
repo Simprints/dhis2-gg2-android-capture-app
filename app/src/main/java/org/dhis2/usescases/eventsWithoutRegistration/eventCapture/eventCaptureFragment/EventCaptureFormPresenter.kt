@@ -6,6 +6,7 @@ import org.dhis2.R
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.dhis2.data.biometrics.getBiometricsConfig
 import org.dhis2.data.dhislogic.AUTH_ALL
 import org.dhis2.data.dhislogic.AUTH_UNCOMPLETE_EVENT
 import org.dhis2.form.data.DataIntegrityCheckResult
@@ -19,6 +20,7 @@ import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.biometrics.BiometricsDataElementStatus
 import org.dhis2.form.model.biometrics.BiometricsDataElementUiModelImpl
 import org.dhis2.usescases.biometrics.BIOMETRICS_ENABLED
+import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.getOrgUnitAsModuleId
 import org.dhis2.usescases.biometrics.isLastVerificationValid
 import org.dhis2.usescases.eventsWithoutRegistration.EventIdlingResourceSingleton
@@ -136,7 +138,13 @@ class EventCaptureFormPresenter(
     }
 
     private fun updateBiometricsField(fields: List<FieldUiModel>?): MutableList<FieldUiModel> {
-        return fields?.map {
+        val biometricsMode = getBiometricsConfig(basicPreferenceProvider).biometricsMode
+
+        val finalFields = if (biometricsMode == BiometricsMode.full) fields else fields?.filter {
+            it !is BiometricsDataElementUiModelImpl
+        }?.toMutableList()
+
+        return finalFields?.map {
             if (it is BiometricsDataElementUiModelImpl) {
                 val biometricsUiModel = it as BiometricsDataElementUiModelImpl
                 val status = mapVerificationStatus(biometricsVerificationStatus)

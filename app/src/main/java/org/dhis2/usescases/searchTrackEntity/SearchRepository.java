@@ -88,4 +88,6 @@ public interface SearchRepository {
     String getBiometricAttributeUid();
 
     void updateAttributeValue(String teiUid, String biometricUid, String guid);
+
+    List<String> getUserOrgUnits(String programUid);
 }

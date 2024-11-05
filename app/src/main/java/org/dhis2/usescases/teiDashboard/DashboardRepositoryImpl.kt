@@ -7,14 +7,11 @@ import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.functions.Function
 import org.dhis2.bindings.profilePicturePath
-import org.dhis2.commons.biometrics.isBiometricText
 import org.dhis2.commons.data.tuples.Pair
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.prefs.Preference
 import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.resources.MetadataIconProvider
-import org.dhis2.data.biometrics.utils.addParentBiometricsAttributeValueIfRequired
-import org.dhis2.data.biometrics.utils.getParentBiometricsAttributeValueIfRequired
 import org.dhis2.ui.MetadataIconData
 import org.dhis2.utils.DateUtils
 import org.dhis2.utils.ValueUtils
@@ -122,60 +119,45 @@ class DashboardRepositoryImpl(
         teiUid: String,
     ): Observable<List<TrackedEntityAttributeValue>> {
         return if (programUid != null) {
-            val attributeValues =
-                teiAttributesProvider.getValuesFromProgramTrackedEntityAttributesByProgram(
-                    programUid,
-                    teiUid,
-                )
-                    .map<List<TrackedEntityAttributeValue>> { attributesValues: List<TrackedEntityAttributeValue> ->
-                        val formattedValues: MutableList<TrackedEntityAttributeValue> =
-                            java.util.ArrayList()
-                        for (attributeValue in attributesValues) {
-                            if (attributeValue.value() != null) {
-                                val attribute =
-                                    d2.trackedEntityModule().trackedEntityAttributes()
-                                        .uid(attributeValue.trackedEntityAttribute()).blockingGet()
-                                if (attribute!!.valueType() != ValueType.IMAGE) {
-                                    formattedValues.add(
-                                        ValueUtils.transform(
-                                            d2,
-                                            attributeValue,
-                                            attribute!!.valueType(),
-                                            if (attribute!!.optionSet() != null) {
-                                                attribute!!.optionSet()!!
-                                                    .uid()
-                                            } else {
-                                                null
-                                            },
-                                        ),
-                                    )
-                                }
-                            } else {
+            teiAttributesProvider.getValuesFromProgramTrackedEntityAttributesByProgram(
+                programUid,
+                teiUid,
+            )
+                .map<List<TrackedEntityAttributeValue>> { attributesValues: List<TrackedEntityAttributeValue> ->
+                    val formattedValues: MutableList<TrackedEntityAttributeValue> =
+                        java.util.ArrayList()
+                    for (attributeValue in attributesValues) {
+                        if (attributeValue.value() != null) {
+                            val attribute =
+                                d2.trackedEntityModule().trackedEntityAttributes()
+                                    .uid(attributeValue.trackedEntityAttribute()).blockingGet()
+                            if (attribute!!.valueType() != ValueType.IMAGE) {
                                 formattedValues.add(
-                                    TrackedEntityAttributeValue.builder()
-                                        .trackedEntityAttribute(attributeValue.trackedEntityAttribute())
-                                        .trackedEntityInstance(teiUid)
-                                        .value("")
-                                        .build(),
+                                    ValueUtils.transform(
+                                        d2,
+                                        attributeValue,
+                                        attribute!!.valueType(),
+                                        if (attribute!!.optionSet() != null) {
+                                            attribute!!.optionSet()!!
+                                                .uid()
+                                        } else {
+                                            null
+                                        },
+                                    ),
                                 )
                             }
+                        } else {
+                            formattedValues.add(
+                                TrackedEntityAttributeValue.builder()
+                                    .trackedEntityAttribute(attributeValue.trackedEntityAttribute())
+                                    .trackedEntityInstance(teiUid)
+                                    .value("")
+                                    .build(),
+                            )
                         }
-                        formattedValues
-                    }.blockingGet().toMutableList()
-
-            // EyeSeeTea Customization - Parent Biometrics
-
-            // EyeSeeTea Customization - Parent Biometrics
-            addParentBiometricsAttributeValueIfRequired(
-                d2,
-                teiAttributesProvider,
-                basicPreferenceProvider,
-                attributeValues,
-                programUid,
-                teiUid
-            )
-
-            Observable.just(attributeValues)
+                    }
+                    formattedValues
+                }.toObservable()
         } else {
             val teType =
                 d2.trackedEntityModule().trackedEntityInstances().uid(teiUid).blockingGet()!!
@@ -647,46 +629,6 @@ class DashboardRepositoryImpl(
                     formattedAttributeValue,
                 )
             }.toList()
-            .flatMap { addParentBiometricsAttributeValueToPairIfRequired(programUid, teiUid, it) }
             .toObservable()
     }
-
-    private fun addParentBiometricsAttributeValueToPairIfRequired(
-        programUid: String,
-        teiUid: String,
-        list: List<kotlin.Pair<TrackedEntityAttribute, TrackedEntityAttributeValue>>
-    ): Single<List<kotlin.Pair<TrackedEntityAttribute, TrackedEntityAttributeValue>>> {
-        // EyeSeeTea Customization - Parent Biometrics
-        val attributeValues: MutableList<TrackedEntityAttributeValue> = java.util.ArrayList()
-        for (pair in list) {
-            if (!pair.first.formName()!!.isBiometricText() || pair.first.formName()!!
-                    .isBiometricText() && pair.second.value() !== ""
-            ) {
-                attributeValues.add(pair.second)
-            }
-        }
-        val parentBiometricTEIValue = getParentBiometricsAttributeValueIfRequired(
-            d2,
-            teiAttributesProvider,
-            basicPreferenceProvider,
-            attributeValues,
-            programUid,
-            teiUid
-        )
-        val attributes: MutableList<kotlin.Pair<TrackedEntityAttribute, TrackedEntityAttributeValue>> =
-            java.util.ArrayList()
-        for (pair in list) {
-            val newPair: kotlin.Pair<TrackedEntityAttribute, TrackedEntityAttributeValue> =
-                if ((parentBiometricTEIValue != null) && (pair.first
-                        .uid() == parentBiometricTEIValue.trackedEntityAttribute())
-                ) {
-                    Pair(pair.first, parentBiometricTEIValue)
-                } else {
-                    Pair(pair.first, pair.second)
-                }
-            attributes.add(newPair)
-        }
-        return Single.just(attributes.toList())
-    }
-
 }

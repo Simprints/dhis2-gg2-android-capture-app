@@ -7,6 +7,7 @@ import org.dhis2.R
 import org.dhis2.bindings.display
 import org.dhis2.bindings.dp
 import org.dhis2.databinding.ActivitySearchBinding
+import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.searchTrackEntity.SearchAnalytics
 import org.dhis2.usescases.searchTrackEntity.SearchList
 import org.dhis2.usescases.searchTrackEntity.SearchTEScreenState
@@ -46,7 +47,7 @@ class SearchScreenConfigurator(
     private fun configureLandscapeListScreen(searchConfiguration: SearchList) {
         if (searchConfiguration.searchFilters.isOpened) {
             openFilters()
-        } else if (searchConfiguration.searchForm.isOpened) {
+        } else if (searchConfiguration.searchForm.isOpened || searchConfiguration.biometricsMode != BiometricsMode.full) {
             openSearch()
         } else {
             openSearchHelper()

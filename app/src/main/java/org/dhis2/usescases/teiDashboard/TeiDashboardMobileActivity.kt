@@ -91,6 +91,7 @@ class TeiDashboardMobileActivity :
     var teiUid: String? = null
     var programUid: String? = null
     var enrollmentUid: String? = null
+    var lastBiometricsSearchSessionId: String? = null
     lateinit var binding: ActivityDashboardMobileBinding
     var adapter: DashboardPagerAdapter? = null
     private lateinit var dashboardViewModel: DashboardViewModel
@@ -129,6 +130,7 @@ class TeiDashboardMobileActivity :
                             teiUid,
                             dataIntent.getStringExtra(CHANGE_PROGRAM),
                             dataIntent.getStringExtra(CHANGE_PROGRAM_ENROLLMENT),
+                            lastBiometricsSearchSessionId
                         ),
                     )
                     finish()
@@ -145,6 +147,7 @@ class TeiDashboardMobileActivity :
             teiUid = intent.getStringExtra(TEI_UID)
             programUid = intent.getStringExtra(Constants.PROGRAM_UID)
             enrollmentUid = intent.getStringExtra(Constants.ENROLLMENT_UID)
+            lastBiometricsSearchSessionId = intent.getStringExtra(Constants.LAST_BIOMETRICS_SESSION_ID)
         }
         (applicationContext as App).createDashboardComponent(
             TeiDashboardModule(
@@ -289,7 +292,7 @@ class TeiDashboardMobileActivity :
                                 android.R.anim.fade_out,
                             )
                             startActivity(
-                                intent(context, teiUid, programUid, enrollmentUid),
+                                intent(context, teiUid, programUid, enrollmentUid, lastBiometricsSearchSessionId),
                                 activityOptions.toBundle(),
                             )
                             finish()
@@ -316,6 +319,7 @@ class TeiDashboardMobileActivity :
                 enrollmentUid,
                 pageConfigurator.displayAnalytics(),
                 pageConfigurator.displayRelationships(),
+                lastBiometricsSearchSessionId
             )
         }
         when {
@@ -406,7 +410,7 @@ class TeiDashboardMobileActivity :
                 setViewpagerAdapter()
             }
             supportFragmentManager.beginTransaction()
-                .replace(R.id.tei_main_view, newInstance(programUid, teiUid, enrollmentUid))
+                .replace(R.id.tei_main_view, newInstance(programUid, teiUid, enrollmentUid, lastBiometricsSearchSessionId))
                 .commitAllowingStateLoss()
         } else {
             if (binding.teiPager?.adapter == null) {
@@ -434,7 +438,7 @@ class TeiDashboardMobileActivity :
 
     fun handleEnrollmentDeletion(hasMoreEnrollments: Boolean) {
         if (hasMoreEnrollments) {
-            startActivity(intent(this, teiUid, null, null))
+            startActivity(intent(this, teiUid, null, null, null))
             finish()
         } else {
             finish()
@@ -474,7 +478,7 @@ class TeiDashboardMobileActivity :
         binding.relationshipMapIcon.visibility = View.GONE
         if (this.isLandscape()) {
             supportFragmentManager.beginTransaction()
-                .replace(R.id.tei_main_view, newInstance(programUid, teiUid, enrollmentUid))
+                .replace(R.id.tei_main_view, newInstance(programUid, teiUid, enrollmentUid, lastBiometricsSearchSessionId))
                 .commitAllowingStateLoss()
         }
         showLoadingProgress(false)
@@ -732,11 +736,13 @@ class TeiDashboardMobileActivity :
             teiUid: String?,
             programUid: String?,
             enrollmentUid: String?,
+            lastBiometricsSessionId: String?
         ): Intent {
             val intent = Intent(context, TeiDashboardMobileActivity::class.java)
             intent.putExtra(TEI_UID, teiUid)
             intent.putExtra(Constants.PROGRAM_UID, programUid)
             intent.putExtra(Constants.ENROLLMENT_UID, enrollmentUid)
+            intent.putExtra(Constants.LAST_BIOMETRICS_SESSION_ID, lastBiometricsSessionId)
             return intent
         }
     }

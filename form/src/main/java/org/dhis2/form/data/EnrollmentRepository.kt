@@ -524,6 +524,10 @@ class EnrollmentRepository(
         )
     }
 
+    fun isTeiInNoOtherProgram(teiUid: String?, programUid: String?): Boolean {
+        return conf.isTeiInNoOtherProgram(teiUid, programUid)
+    }
+
     fun hasEventsGeneratedByEnrollmentDate(): Boolean {
         return conf.hasEventsGeneratedByEnrollmentDate()
     }

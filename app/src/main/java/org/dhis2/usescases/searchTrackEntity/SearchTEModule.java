@@ -24,8 +24,6 @@ import org.dhis2.commons.resources.MetadataIconProvider;
 import org.dhis2.commons.resources.DhisPeriodUtils;
 import org.dhis2.commons.resources.ResourceManager;
 import org.dhis2.commons.schedulers.SchedulerProvider;
-import org.dhis2.data.biometrics.BiometricsParentChildConfigApi;
-import org.dhis2.data.biometrics.BiometricsParentChildConfigRepositoryImpl;
 import org.dhis2.commons.viewmodel.DispatcherProvider;
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils;
 import org.dhis2.data.enrollment.EnrollmentUiDataHelper;
@@ -69,8 +67,6 @@ import org.dhis2.maps.usecases.MapStyleConfiguration;
 import org.dhis2.maps.utils.DhisMapUtils;
 import org.dhis2.ui.ThemeManager;
 import org.dhis2.usescases.searchTrackEntity.ui.mapper.TEICardMapper;
-import org.dhis2.usescases.biometrics.repositories.BiometricsParentChildConfigRepository;
-import org.dhis2.usescases.biometrics.usecases.GetRelatedTEIUIdsByUid;
 import org.dhis2.utils.DateUtils;
 import org.dhis2.utils.analytics.AnalyticsHelper;
 import org.hisp.dhis.android.core.D2;
@@ -108,23 +104,6 @@ public class SearchTEModule {
         return searchTEActivity;
     }
 
-    @Provides
-    @PerActivity
-    BiometricsParentChildConfigRepository biometricsParentChildConfigRepository(
-            D2 d2,
-            BasicPreferenceProvider basicPreferences
-    ) {
-        BiometricsParentChildConfigApi biometricsParentChildConfigApi = d2.retrofit().create(BiometricsParentChildConfigApi.class);
-
-        return new BiometricsParentChildConfigRepositoryImpl(basicPreferences, biometricsParentChildConfigApi);
-    }
-
-    @Provides
-    @PerActivity
-    GetRelatedTEIUIdsByUid provideGetRelatedTEIUIdsByUid(
-            BiometricsParentChildConfigRepository biometricsParentChildConfigRepository) {
-        return new GetRelatedTEIUIdsByUid(biometricsParentChildConfigRepository);
-    }
 
     @Provides
     @PerActivity
@@ -137,11 +116,13 @@ public class SearchTEModule {
                                                        MatomoAnalyticsController matomoAnalyticsController,
                                                        SyncStatusController syncStatusController,
                                                        ResourceManager resourceManager,
-                                                       ColorUtils colorUtils) {
+                                                       ColorUtils colorUtils,
+                                                       BasicPreferenceProvider basicPreferenceProvider) {
         return new SearchTEPresenter(view, d2, searchRepository, schedulerProvider,
                 analyticsHelper, initialProgram, teiType, preferenceProvider,
                 filterRepository, new DisableHomeFiltersFromSettingsApp(),
-                matomoAnalyticsController, syncStatusController, resourceManager, colorUtils);
+                matomoAnalyticsController, syncStatusController, resourceManager, colorUtils,
+                basicPreferenceProvider);
     }
 
     @Provides
@@ -326,7 +307,6 @@ public class SearchTEModule {
             ResourceManager resourceManager,
             DisplayNameProvider displayNameProvider,
             FilterRepository filterRepository,
-            GetRelatedTEIUIdsByUid getRelatedTEIUidsByUid,
             BasicPreferenceProvider basicPreferenceProvider) {
         return new SearchTeiViewModelFactory(
                 presenter,
@@ -341,7 +321,6 @@ public class SearchTEModule {
                 new MapStyleConfiguration(d2),
                 resourceManager,
                 displayNameProvider,
-                getRelatedTEIUidsByUid,
                 basicPreferenceProvider
         );
     }

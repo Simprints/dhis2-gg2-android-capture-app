@@ -60,7 +60,7 @@ class SearchNavigator(
         }
     }
 
-    fun openDashboard(teiUid: String?, programUid: String?, enrollmentUid: String?) {
+    fun openDashboard(teiUid: String?, programUid: String?, enrollmentUid: String?, sessionId: String?) {
         teiUid?.let { searchNavigationConfiguration.openingTEI(it) }
         FilterManager.getInstance().clearWorkingList(true)
         dashboardLauncher.launch(
@@ -69,6 +69,7 @@ class SearchNavigator(
                 teiUid,
                 if (enrollmentUid != null) programUid else null,
                 enrollmentUid,
+                sessionId
             ),
         )
     }

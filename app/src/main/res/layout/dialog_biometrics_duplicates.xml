@@ -53,6 +53,7 @@
                     android:gravity="center_horizontal"
                     android:textSize="18sp"
                     android:ellipsize="end"
+                    android:textColor="@color/dark_grey"
                     android:text="@string/biometrics_duplicates_empty_message" />
 
             </RelativeLayout>
@@ -72,14 +73,14 @@
                 app:layout_constraintTop_toBottomOf="@id/title" />
 
             <Button
-                android:id="@+id/cancel_button"
+                android:id="@+id/enroll_without_biometrics_button"
                 style="?borderlessButtonStyle"
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
                 android:layout_gravity="end"
                 android:layout_margin="16dp"
                 android:background="@android:color/transparent"
-                android:text="@string/cancel"
+                android:text="@string/biometrics_enroll_without_biometrics"
                 android:textColor="@color/colorGreyDefault"
                 app:layout_constraintBottom_toBottomOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"

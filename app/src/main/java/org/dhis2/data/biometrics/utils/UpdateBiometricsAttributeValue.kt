@@ -3,9 +3,8 @@ package org.dhis2.data.biometrics.utils
 import org.dhis2.commons.bindings.blockingSetCheck
 import org.hisp.dhis.android.core.D2
 
-fun updateBiometricsAttributeValue(d2: D2, teiUid:String, value: String, parentTeiUid:String?) {
-    val teiUidToUpdate = parentTeiUid?:teiUid
-    val tei = d2.trackedEntityModule().trackedEntityInstances().uid(teiUidToUpdate).blockingGet()
+fun updateBiometricsAttributeValue(d2: D2, teiUid:String, value: String) {
+    val tei = d2.trackedEntityModule().trackedEntityInstances().uid(teiUid).blockingGet()
         ?: return
 
     val attributeUid = getBiometricsTrackedEntityAttribute(d2)

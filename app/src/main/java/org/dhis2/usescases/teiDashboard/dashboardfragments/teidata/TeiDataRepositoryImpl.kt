@@ -154,7 +154,7 @@ class TeiDataRepositoryImpl(
     }
 
     override fun updateBiometricsAttributeValueInTei(value: String, parentTeiUid:String?) {
-        updateBiometricsAttributeValue(d2, teiUid,value, parentTeiUid)
+        updateBiometricsAttributeValue(d2, teiUid,value)
     }
 
     private fun getGroupedEvents(

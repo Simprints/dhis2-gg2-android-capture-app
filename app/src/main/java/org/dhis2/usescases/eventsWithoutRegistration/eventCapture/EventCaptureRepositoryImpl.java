@@ -8,7 +8,6 @@ import static org.dhis2.usescases.biometrics.AgeInMonthsKt.getAgeInMonthsByAttri
 import static org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureRepositoryFunctionsKt.getProgramStageName;
 
 import org.dhis2.commons.prefs.BasicPreferenceProvider;
-import org.dhis2.data.biometrics.utils.GetParentTeiKt;
 import org.dhis2.commons.bindings.SdkExtensionsKt;
 import org.dhis2.data.dhislogic.AuthoritiesKt;
 import org.hisp.dhis.android.core.D2;
@@ -235,14 +234,6 @@ public class EventCaptureRepositoryImpl implements EventCaptureContract.EventCap
 
         TrackedEntityInstance tei = getTeiByEvent(getCurrentEvent());
 
-        String parentTeiUid = GetParentTeiKt.getParentTeiUid(
-                d2, basicPreferenceProvider, tei.trackedEntityAttributeValues(),
-                getCurrentEvent().program(), tei.uid());
-
-        if (parentTeiUid != null) {
-            tei = getTeiByUid(d2, parentTeiUid);
-        }
-
         String attributeUid = getBiometricsTrackedEntityAttribute(d2);
 
         TrackedEntityAttributeValue attValue =
@@ -259,13 +250,7 @@ public class EventCaptureRepositoryImpl implements EventCaptureContract.EventCap
     public void updateBiometricsAttributeValueInTei(String biometricsGuid) {
         TrackedEntityInstance tei = getTeiByEvent(getCurrentEvent());
 
-        Event currentEvent = getCurrentEvent();
-
-        String parentTeiUid = GetParentTeiKt.getParentTeiUid(
-                d2, basicPreferenceProvider, tei.trackedEntityAttributeValues(),
-                currentEvent.program(), tei.uid());
-
-        updateBiometricsAttributeValue(d2, tei.uid(), biometricsGuid, parentTeiUid);
+        updateBiometricsAttributeValue(d2, tei.uid(), biometricsGuid);
     }
 
     private TrackedEntityInstance getTeiByEvent(Event currentEvent) {
@@ -285,7 +270,7 @@ public class EventCaptureRepositoryImpl implements EventCaptureContract.EventCap
     public Observable<Long> getAgeInMonths() {
         TrackedEntityInstance tei = getTeiByEvent(getCurrentEvent());
 
-        Long ageInMonths = getAgeInMonthsByAttributes(basicPreferenceProvider, tei.trackedEntityAttributeValues(), getCurrentEvent().program());
+        Long ageInMonths = getAgeInMonthsByAttributes(basicPreferenceProvider, tei.trackedEntityAttributeValues());
         return Observable.just(ageInMonths);
     }
 }

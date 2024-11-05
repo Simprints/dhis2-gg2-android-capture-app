@@ -70,9 +70,11 @@ class BiometricsConfigRepositoryImpl(
     }
 
     override fun saveSelectedConfig(config: BiometricsConfig) {
-        preferenceProvider.setValue(BiometricsPreference.PROJECT_ID, config.projectId)
+        preferenceProvider.setValue(BiometricsPreference.ORG_UNIT_GROUP, config.orgUnitGroup)
 
-        preferenceProvider.setValue(BiometricsPreference.USER_ID, config.userId)
+        preferenceProvider.setValue(BiometricsPreference.PROGRAM, config.program)
+
+        preferenceProvider.setValue(BiometricsPreference.PROJECT_ID, config.projectId)
 
         preferenceProvider.setValue(
             BiometricsPreference.CONFIDENCE_SCORE_FILTER,
@@ -101,17 +103,33 @@ class BiometricsConfigRepositoryImpl(
             orgUnitLevelAsModuleId
         )
 
+        preferenceProvider.setValue(
+            BiometricsPreference.AGE_THRESHOLD_MONTHS,
+            config.ageThresholdMonths
+        )
+
+        preferenceProvider.setValue(
+            BiometricsPreference.DATE_OF_BIRTH_ATTRIBUTE,
+            config.dateOfBirthAttribute
+        )
+
+        preferenceProvider.setValue(
+            BiometricsPreference.BIOMETRICS_MODE,
+            config.biometricsMode.name
+        )
+
         Timber.d("downloadBiometricsConfig!")
         Timber.d("orgUnitGroup: ${config.orgUnitGroup}")
         Timber.d("program: ${config.program}")
         Timber.d("projectId: ${config.projectId}")
-        Timber.d("userId: ${config.userId}")
         Timber.d("confidenceScoreFilter: ${config.confidenceScoreFilter}")
         Timber.d("icon: $icon")
         Timber.d("lastVerificationDuration: ${config.lastVerificationDuration}")
         Timber.d("lastDeclinedEnrolDuration: ${config.lastDeclinedEnrolDuration}")
         Timber.d("orgUnitLevelAsModuleId: $orgUnitLevelAsModuleId")
-
+        Timber.d("ageThresholdMonths: ${config.ageThresholdMonths}")
+        Timber.d("dateOfBirthAttribute: ${config.dateOfBirthAttribute}")
+        Timber.d("biometricsMode: ${config.biometricsMode.name}")
     }
 
     private fun getOrgUnitLevelAsModuleId(config: BiometricsConfig): Int {

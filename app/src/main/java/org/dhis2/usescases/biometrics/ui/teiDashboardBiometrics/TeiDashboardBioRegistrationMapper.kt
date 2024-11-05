@@ -20,7 +20,7 @@ class TeiDashboardBioRegistrationMapper(
         val statusModel = if (registerResult == RegisterResult.Failure) {
             BioStatus(
                 text = getText(registerResult),
-                backgroundColor = getBackgroundColor(registerResult)?: defaultButtonColor,
+                backgroundColor = getBackgroundColor(registerResult) ?: defaultButtonColor,
                 icon = getIcon(registerResult)
             )
         } else {
@@ -61,6 +61,7 @@ class TeiDashboardBioRegistrationMapper(
                     resourceManager.getString(R.string.biometrics_declined)
 
                 is RegisterResult.AgeGroupNotSupported -> resourceManager.getString(R.string.age_group_not_supported)
+                is RegisterResult.RegisterLastFailure -> resourceManager.getString(R.string.enroll_biometrics)
             }
         }
     }
@@ -76,6 +77,7 @@ class TeiDashboardBioRegistrationMapper(
                 is RegisterResult.Failure -> resourceManager.context.getBioIconFailed()
                 is RegisterResult.PossibleDuplicates -> resourceManager.context.getBioIconFailed()
                 is RegisterResult.AgeGroupNotSupported -> resourceManager.context.getBioIconFailed()
+                is RegisterResult.RegisterLastFailure -> R.drawable.ic_bio_fingerprint
             }
         }
     }
@@ -91,6 +93,7 @@ class TeiDashboardBioRegistrationMapper(
                 is RegisterResult.Failure -> declinedButtonColor
                 is RegisterResult.PossibleDuplicates -> failedButtonColor
                 is RegisterResult.AgeGroupNotSupported -> failedButtonColor
+                is RegisterResult.RegisterLastFailure -> null
             }
         }
     }

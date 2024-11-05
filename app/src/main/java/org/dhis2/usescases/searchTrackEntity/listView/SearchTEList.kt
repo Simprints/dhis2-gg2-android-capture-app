@@ -32,7 +32,7 @@ import org.dhis2.commons.filters.workingLists.WorkingListViewModel
 import org.dhis2.commons.filters.workingLists.WorkingListViewModelFactory
 import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.databinding.FragmentSearchListBinding
-import org.dhis2.usescases.biometrics.ui.SequentialNextSearchAction
+import org.dhis2.usescases.biometrics.ui.SequentialNextSearchActions
 import org.dhis2.usescases.biometrics.ui.SequentialSearch
 import org.dhis2.usescases.general.FragmentGlobalAbstract
 import org.dhis2.usescases.searchTrackEntity.SearchTEActivity
@@ -170,6 +170,13 @@ class SearchTEList : FragmentGlobalAbstract() {
                         viewModel.isScrollingDown.value = true
                     } else if (dy < 0) {
                         viewModel.isScrollingDown.value = false
+                    }
+                }
+            })
+            liveAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
+                override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
+                    if (positionStart == 0) {
+                        scrollToPosition(0)
                     }
                 }
             })
@@ -336,8 +343,6 @@ class SearchTEList : FragmentGlobalAbstract() {
                 it?.takeIf { view != null }?.collectLatest {
                     liveAdapter.addOnPagesUpdatedListener {
                         onInitDataLoaded()
-
-                        viewModel.evaluateIfNewRequestIdRequired(liveAdapter.snapshot().items)
                     }
 
                     val pagingData = it.map { searchResult ->
@@ -363,6 +368,7 @@ class SearchTEList : FragmentGlobalAbstract() {
             },
             onlineErrorCode = liveAdapter.snapshot().items.lastOrNull()?.onlineErrorCode,
         )
+        (context as SearchTEActivity).hideProgress()
     }
 
     private fun onGlobalDataLoaded() {
@@ -370,6 +376,7 @@ class SearchTEList : FragmentGlobalAbstract() {
             programResultCount = liveAdapter.itemCount,
             globalResultCount = globalAdapter.itemCount,
         )
+        (context as SearchTEActivity).hideProgress()
     }
 
     private fun initGlobalData() {
@@ -394,6 +401,7 @@ class SearchTEList : FragmentGlobalAbstract() {
                 listOf(SearchResult(SearchResult.SearchResultType.LOADING)),
             )
         }
+        (context as SearchTEActivity).showProgress()
     }
 
     private fun initLoading(result: List<SearchResult>?) {
@@ -426,10 +434,10 @@ class SearchTEList : FragmentGlobalAbstract() {
                     setMargins(0, 0, 0, bottomMargin)
                 }
 
-                if (sequentialSearch?.nextAction != null) {
-                    SequentialNextSearchAction(
-                        sequentialSearchAction = sequentialSearch?.nextAction!!,
-                        onClick = { viewModel.sequentialSearchNextAction() })
+                if (sequentialSearch?.nextActions?.isNotEmpty() == true) {
+                    SequentialNextSearchActions(
+                        sequentialSearchActions = sequentialSearch?.nextActions!!,
+                        onClick = { action ->  viewModel.sequentialSearchNextAction(action) })
                 }
             }
         }

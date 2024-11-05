@@ -23,6 +23,7 @@ import org.dhis2.commons.featureconfig.model.Feature
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.data.biometrics.BiometricsClientFactory
 import org.dhis2.data.biometrics.RegisterResult
+import org.dhis2.data.biometrics.SimprintsItem
 import org.dhis2.databinding.EnrollmentActivityBinding
 import org.dhis2.form.data.GeometryController
 import org.dhis2.form.data.GeometryParserImpl
@@ -35,6 +36,7 @@ import org.dhis2.ui.dialogs.bottomsheet.BottomSheetDialog
 import org.dhis2.ui.dialogs.bottomsheet.BottomSheetDialogUiModel
 import org.dhis2.ui.dialogs.bottomsheet.DialogButtonStyle
 import org.dhis2.usescases.biometrics.duplicates.BiometricsDuplicatesDialog
+import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.events.ScheduledEventActivity
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureActivity
 import org.dhis2.usescases.general.ActivityGlobalAbstract
@@ -117,7 +119,10 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
                     showProgress()
                 } else {
                     hideProgress()
-                    //presenter.showOrHideSaveButton()
+
+                    if (presenter.biometricsMode != BiometricsMode.full){
+                        presenter.showOrHideSaveButton()
+                    }
                 }
             }
             .onFinishDataEntry {
@@ -184,74 +189,81 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
     @Deprecated("Deprecated in Java")
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == Activity.RESULT_OK) {
-            when (requestCode) {
-                RQ_INCIDENT_GEOMETRY, RQ_ENROLLMENT_GEOMETRY -> {
-                    if (data?.hasExtra(MapSelectorActivity.DATA_EXTRA) == true) {
-                        handleGeometry(
-                            FeatureType.valueOfFeatureType(
-                                data.getStringExtra(MapSelectorActivity.LOCATION_TYPE_EXTRA),
-                            ),
-                            data.getStringExtra(MapSelectorActivity.DATA_EXTRA)!!,
-                            requestCode,
-                        )
-                    }
+
+        when (requestCode) {
+            RQ_INCIDENT_GEOMETRY, RQ_ENROLLMENT_GEOMETRY -> {
+                if (resultCode == Activity.RESULT_OK  && data?.hasExtra(MapSelectorActivity.DATA_EXTRA) == true) {
+                    handleGeometry(
+                        FeatureType.valueOfFeatureType(
+                            data.getStringExtra(MapSelectorActivity.LOCATION_TYPE_EXTRA),
+                        ),
+                        data.getStringExtra(MapSelectorActivity.DATA_EXTRA)!!,
+                        requestCode,
+                    )
                 }
-
-                BIOMETRICS_ENROLL_REQUEST -> {
-                    if (data != null) {
-                        when (val result = BiometricsClientFactory.get(this).handleRegisterResponse(
-                            resultCode, data
-                        )) {
-                            is RegisterResult.Completed -> {
-                                presenter.onBiometricsCompleted(result.guid)
-                            }
-
-                            is RegisterResult.Failure -> {
-                                presenter.onBiometricsFailure()
-                            }
-
-                            is RegisterResult.PossibleDuplicates -> {
-                                presenter.onBiometricsPossibleDuplicates(
-                                    result.guids,
-                                    result.sessionId
-                                )
-                            }
-
-                            is RegisterResult.AgeGroupNotSupported -> {
-                                Toast.makeText(
-                                    context, getString(R.string.age_group_not_supported),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }
-                    }
-                }
-
-                BIOMETRICS_ENROLL_LAST_REQUEST -> {
-                    if (data != null) {
-                        when (val result =
-                            BiometricsClientFactory.get(this)
-                                .handleRegisterResponse(resultCode, data)) {
-                            is RegisterResult.Completed -> {
-                                presenter.onBiometricsCompleted(result.guid)
-                            }
-                            is RegisterResult.AgeGroupNotSupported -> {
-                                Toast.makeText(
-                                    context, getString(R.string.age_group_not_supported),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                            else -> {
-                                presenter.onBiometricsFailure()
-                            }
-                        }
-                    }
-
-                }
-
-                RQ_EVENT -> openDashboard(presenter.getEnrollment()!!.uid()!!)
             }
+
+            BIOMETRICS_ENROLL_REQUEST -> {
+                if (data != null) {
+                    when (val result = BiometricsClientFactory.get(this).handleRegisterResponse(
+                        resultCode, data
+                    )) {
+                        is RegisterResult.Completed -> {
+                            presenter.onBiometricsCompleted(result.guid)
+                        }
+                        is RegisterResult.PossibleDuplicates -> {
+                            presenter.onBiometricsPossibleDuplicates(
+                                result.items,
+                                result.sessionId
+                            )
+                        }
+
+                        is RegisterResult.AgeGroupNotSupported -> {
+                            Toast.makeText(
+                                context, getString(R.string.age_group_not_supported),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                        else -> {
+                            presenter.onBiometricsFailure()
+                        }
+                    }
+                }
+            }
+
+            BIOMETRICS_ENROLL_LAST_REQUEST -> {
+                if (data != null) {
+                    when (val result =
+                        BiometricsClientFactory.get(this)
+                            .handleRegisterResponse(resultCode, data)) {
+                        is RegisterResult.Completed -> {
+                            presenter.onBiometricsCompleted(result.guid)
+                        }
+
+                        is RegisterResult.AgeGroupNotSupported -> {
+                            Toast.makeText(
+                                context, getString(R.string.age_group_not_supported),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        is RegisterResult.RegisterLastFailure -> {
+                            performSaveClick()
+                            Toast.makeText(
+                                context, getString(R.string.unable_save_biometrics),
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+
+                        else -> {
+                            presenter.onBiometricsFailure()
+                        }
+                    }
+                }
+
+            }
+
+            RQ_EVENT -> if (resultCode == Activity.RESULT_OK)  openDashboard(presenter.getEnrollment()!!.uid()!!)
         }
     }
 
@@ -447,14 +459,16 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
     }
 
     override fun showPossibleDuplicatesDialog(
-        guids: List<String>, sessionId: String, programUid: String,
+        possibleDuplicates: List<SimprintsItem>, sessionId: String, programUid: String,
         trackedEntityTypeUid: String,
-        biometricsAttributeUid: String
+        biometricsAttributeUid: String,
+        enrollNewVisible: Boolean
     ) {
         val dialog = BiometricsDuplicatesDialog.newInstance(
-            guids, sessionId, programUid,
+            possibleDuplicates, sessionId, programUid,
             trackedEntityTypeUid,
-            biometricsAttributeUid
+            biometricsAttributeUid,
+            enrollNewVisible
         )
 
         dialog.setOnOpenTeiDashboardListener { teiUid: String, programUid: String, enrollmentUid: String ->
@@ -465,13 +479,18 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
                     this,
                     teiUid,
                     programUid,
-                    enrollmentUid
+                    enrollmentUid,
+                    sessionId
                 )
             )
         }
 
         dialog.setOnEnrollNewListener { biometricsSessionId ->
             BiometricsClientFactory.get(this).registerLast(this, biometricsSessionId)
+        }
+
+        dialog.setOnEnrollWithoutBiometricsListener {
+            performSaveClick()
         }
 
         dialog.show(

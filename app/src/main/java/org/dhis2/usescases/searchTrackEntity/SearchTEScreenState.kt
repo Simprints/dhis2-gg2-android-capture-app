@@ -1,5 +1,7 @@
 package org.dhis2.usescases.searchTrackEntity
 
+import org.dhis2.usescases.biometrics.entities.BiometricsMode
+
 sealed class SearchTEScreenState(
     val screenState: SearchScreenState,
     open val previousSate: SearchScreenState,
@@ -14,6 +16,7 @@ data class SearchList(
     val searchForm: SearchForm,
     val searchFilters: SearchFilters,
     val searchHelper: SearchHelper,
+    val biometricsMode: BiometricsMode
 ) : SearchTEScreenState(listType, previousSate) {
 
     fun displayResetFiltersButton(): Boolean {

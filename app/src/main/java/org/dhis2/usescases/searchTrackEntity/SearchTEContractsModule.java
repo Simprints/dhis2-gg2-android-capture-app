@@ -51,7 +51,7 @@ public class SearchTEContractsModule {
 
         Consumer<D2Progress> downloadProgress();
 
-        void openDashboard(String teiUid, String programUid, String enrollmentUid);
+        void openDashboard(String teiUid, String programUid, String enrollmentUid, String sessionId);
 
         void showBreakTheGlass(String teiUid, String enrollmentUid);
 
@@ -72,7 +72,7 @@ public class SearchTEContractsModule {
 
         void showBiometricsSearchConfirmation(SearchTeiModel item);
         void sendBiometricsNoneSelected(String sessionId);
-        void biometricsEnrollmentLast(String sessionId);
+        void launchBiometricsIdentify(String moduleId);
     }
 
     public interface Presenter {
@@ -148,10 +148,14 @@ public class SearchTEContractsModule {
 
         void onBiometricsNoneOfTheAboveClick();
 
-        void onBiometricsEnrolmentLastClick();
-
         void setBiometricListener(SearchTEPresenter.BiometricsSearchListener biometricsSearchListener);
 
         void sendBiometricsConfirmIdentity(String teiUid, String enrollmentUid, boolean isOnline);
+
+        String getLastBiometricsSessionId();
+
+        void resetLastBiometricsSessionId();
+
+        void onBiometricsClick();
     }
 }

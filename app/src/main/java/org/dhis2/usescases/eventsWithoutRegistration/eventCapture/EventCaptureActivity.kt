@@ -123,7 +123,9 @@ class EventCaptureActivity :
                 } else {
                     binding.syncButton.visibility = View.GONE
                 }
-                if (position != 1) {
+                val isPageHandlingProgress =
+                    adapter?.isFormScreenShown(position) == true // form screen handles loading
+                if (position != 1 && !isPageHandlingProgress) {
                     hideProgress()
                 }
             }

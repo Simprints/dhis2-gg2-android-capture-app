@@ -233,7 +233,7 @@ public class EventCaptureFormFragment extends FragmentGlobalAbstract implements 
                             this.getContext()).handleRegisterResponse(requestCode, data);
                     if (result instanceof RegisterResult.Completed) {
                         presenter.refreshBiometricsStatus(1, true,((RegisterResult.Completed) result).getGuid());
-                    } else if (result instanceof RegisterResult.Failure) {
+                    } else if (result instanceof RegisterResult.Failure || result instanceof RegisterResult.RegisterLastFailure) {
                         presenter.refreshBiometricsStatus(0, true, null);
                     } else if (result instanceof RegisterResult.PossibleDuplicates) {
                    /*     presenter.onBiometricsPossibleDuplicates(

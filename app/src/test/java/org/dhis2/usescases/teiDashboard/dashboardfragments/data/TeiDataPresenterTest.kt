@@ -7,10 +7,13 @@ import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.MutableLiveData
 import io.reactivex.Observable
 import io.reactivex.Single
+import junit.framework.TestCase.assertNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.dhis2.commons.bindings.canCreateEventInEnrollment
 import org.dhis2.commons.bindings.enrollment
+import org.dhis2.commons.bindings.program
+import org.dhis2.commons.biometrics.BiometricsPreference
 import org.dhis2.commons.data.EventViewModel
 import org.dhis2.commons.data.EventViewModelType
 import org.dhis2.commons.prefs.BasicPreferenceProvider
@@ -23,7 +26,9 @@ import org.dhis2.form.data.OptionsRepository
 import org.dhis2.form.model.EventMode
 import org.dhis2.mobileProgramRules.RuleEngineHelper
 import org.dhis2.ui.MetadataIconData
+import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.programEventDetail.usecase.CreateEventUseCase
+import org.dhis2.usescases.teiDashboard.DashboardEnrollmentModel
 import org.dhis2.usescases.teiDashboard.DashboardRepository
 import org.dhis2.usescases.teiDashboard.dashboardfragments.teidata.EventCreationOptionsMapper
 import org.dhis2.usescases.teiDashboard.dashboardfragments.teidata.TEIDataContracts
@@ -39,6 +44,7 @@ import org.hisp.dhis.android.core.maintenance.D2Error
 import org.hisp.dhis.android.core.maintenance.D2ErrorCode
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.program.ProgramStage
+import org.hisp.dhis.android.core.trackedentity.TrackedEntityAttributeValue
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -331,6 +337,92 @@ class TeiDataPresenterTest {
 
         verify(view).displayMessage(errorMessage)
         verifyNoMoreInteractions(view)
+    }
+
+    //EyeSeeTea Customizations
+    //TODO - add success tests
+
+    @Test
+    fun `should_not_return_biometrics_model_if_biometrics_mode_is_zero`() {
+        val presenter = givenABiometricsMode(BiometricsMode.zero)
+
+        val dashboardModel = givenADashboardModel("123-123-123")
+
+        val model = presenter.getBiometricsModelByDashboardModel(dashboardModel)
+
+        assertNull(model)
+    }
+
+    @Test
+    fun `should_not_return_biometrics_model_if_biometrics_mode_is_limited_and_biometrics_is_empty`() {
+        val presenter =
+            givenABiometricsMode(BiometricsMode.limited)
+
+        val dashboardModel = givenADashboardModel(null)
+
+        val model = presenter.getBiometricsModelByDashboardModel(dashboardModel)
+
+        assertNull(model)
+    }
+
+    private fun givenABiometricsMode(
+        biometricsMode: BiometricsMode,
+    ): TEIDataPresenter {
+        whenever(
+            basicPreferenceProvider.getString(
+                BiometricsPreference.BIOMETRICS_MODE,
+                BiometricsMode.full.name
+            )
+        ).thenReturn(biometricsMode.name)
+
+        val teiDataPresenter = TEIDataPresenter(
+            view,
+            d2,
+            dashboardRepository,
+            teiDataRepository,
+            ruleEngineHelper,
+            programUid,
+            teiUid,
+            enrollmentUid,
+            schedulers,
+            analytics,
+            valueStore,
+            optionsRepository,
+            getNewEventCreationTypeOptions,
+            eventCreationOptionsMapper,
+            teiDataContractHandler,
+            dispatcherProvider,
+            createEventUseCase,
+            d2ErrorUtils,
+            basicPreferenceProvider,
+            resourceManager
+        )
+
+        return teiDataPresenter;
+    }
+
+    private fun givenADashboardModel(biometricsValue: String?): DashboardEnrollmentModel {
+        val dashboardModel = mock<DashboardEnrollmentModel>()
+
+        whenever(d2.program(programUid)).thenReturn(mock())
+
+        whenever(
+            dashboardModel.isBiometricsEnabled()
+        ).thenReturn(true)
+
+        whenever(
+            dashboardModel.trackedEntityAttributeValues
+        ).thenReturn(
+            listOf(
+                TrackedEntityAttributeValue.builder().trackedEntityAttribute("S4eTdBrXPpj")
+                    .value("2023-01-01").build()
+            )
+        )
+
+        whenever(
+            dashboardModel.getBiometricValue()
+        ).thenReturn(biometricsValue)
+        return dashboardModel
     }
 
     private fun fakeModel(

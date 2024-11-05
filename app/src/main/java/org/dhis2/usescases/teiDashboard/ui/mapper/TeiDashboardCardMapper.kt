@@ -29,6 +29,7 @@ import java.io.File
 import java.util.Date
 
 val firstNameAttrUid = "y1w2R6leVmh"
+val middleNameAttrUid = "Rslz2y06aBf"
 val lastNameAttrUid = "eo3A0YXVBqr"
 
 class TeiDashboardCardMapper(
@@ -99,11 +100,15 @@ class TeiDashboardCardMapper(
             val firsNameValue =
                 item.trackedEntityAttributeValues.firstOrNull { it.trackedEntityAttribute() == firstNameAttrUid }
                     ?.value()
+
+            val middleNameValue =
+                item.trackedEntityAttributeValues.firstOrNull { it.trackedEntityAttribute() == middleNameAttrUid }
+                    ?.value() ?: ""
             val lastNameValue =
                 item.trackedEntityAttributeValues.firstOrNull { it.trackedEntityAttribute() == lastNameAttrUid }
                     ?.value()
 
-            "$firsNameValue $lastNameValue"
+            "$firsNameValue $middleNameValue $lastNameValue"
         }
     }
 
@@ -272,5 +277,5 @@ class TeiDashboardCardMapper(
             .filter {
                 (it.first.displayFormName()?.isBiometricText() == false && it.second.value()
                     ?.isNotEmpty() == true) || (it.first.displayFormName() ?:"").isBiometricText()
-            }.filter { it.first.uid() != firstNameAttrUid && it.first.uid() != lastNameAttrUid }
+            }.filter { it.first.uid() != firstNameAttrUid && it.first.uid() != middleNameAttrUid  && it.first.uid() != lastNameAttrUid }
 }

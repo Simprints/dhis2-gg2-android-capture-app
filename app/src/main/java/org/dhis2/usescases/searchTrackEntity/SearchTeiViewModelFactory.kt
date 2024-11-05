@@ -8,7 +8,6 @@ import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.form.ui.provider.DisplayNameProvider
 import org.dhis2.maps.usecases.MapStyleConfiguration
-import org.dhis2.usescases.biometrics.usecases.GetRelatedTEIUIdsByUid
 
 @Suppress("UNCHECKED_CAST")
 class SearchTeiViewModelFactory(
@@ -24,7 +23,6 @@ class SearchTeiViewModelFactory(
     private val mapStyleConfig: MapStyleConfiguration,
     private val resourceManager: ResourceManager,
     private val displayNameProvider: DisplayNameProvider,
-    private val getRelatedTEIUidsByUid: GetRelatedTEIUIdsByUid,
     private val basicPreferenceProvider: BasicPreferenceProvider
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -41,7 +39,6 @@ class SearchTeiViewModelFactory(
             mapStyleConfig,
             resourceManager,
             displayNameProvider,
-            getRelatedTEIUidsByUid,
             basicPreferenceProvider
         ) as T
     }

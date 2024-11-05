@@ -39,6 +39,7 @@ class TEIDataModule(
     private val teiUid: String,
     private val enrollmentUid: String,
     private val registry: ActivityResultRegistry,
+    private val lastBiometricsSessionId: String?
 ) {
     @Provides
     @PerFragment
@@ -80,7 +81,8 @@ class TEIDataModule(
             createEventUseCase,
             d2ErrorUtils,
             basicPreferenceProvider,
-            resourceManager
+            resourceManager,
+            lastBiometricsSessionId
         )
     }
 

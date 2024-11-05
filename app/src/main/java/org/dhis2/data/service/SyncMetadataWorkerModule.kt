@@ -7,14 +7,11 @@ import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.data.biometrics.BiometricsConfigApi
 import org.dhis2.data.biometrics.BiometricsConfigRepositoryImpl
-import org.dhis2.data.biometrics.BiometricsParentChildConfigApi
-import org.dhis2.data.biometrics.BiometricsParentChildConfigRepositoryImpl
 import org.dhis2.data.notifications.NotificationD2Repository
 import org.dhis2.data.notifications.NotificationsApi
 import org.dhis2.data.notifications.UserGroupsApi
 import org.dhis2.data.service.workManager.WorkManagerController
 import org.dhis2.usescases.biometrics.repositories.BiometricsConfigRepository
-import org.dhis2.usescases.biometrics.repositories.BiometricsParentChildConfigRepository
 import org.dhis2.usescases.notifications.domain.NotificationRepository
 import org.dhis2.utils.analytics.AnalyticsHelper
 import org.hisp.dhis.android.core.D2
@@ -41,18 +38,6 @@ class SyncMetadataWorkerModule {
 
     @Provides
     @PerService
-    fun biometricsParentChildConfigRepository(
-        d2: D2,
-        basicPreferences: BasicPreferenceProvider
-    ): BiometricsParentChildConfigRepository {
-        val biometricsConfigApi = d2.retrofit().create(
-            BiometricsParentChildConfigApi::class.java
-        )
-        return BiometricsParentChildConfigRepositoryImpl(basicPreferences, biometricsConfigApi)
-    }
-
-    @Provides
-    @PerService
     fun notificationsRepository(
         d2: D2,
         preference: BasicPreferenceProvider
@@ -74,7 +59,6 @@ class SyncMetadataWorkerModule {
         syncStatusController: SyncStatusController,
         syncRepository: SyncRepository,
         biometricsConfigRepository: BiometricsConfigRepository,
-        biometricsParentChildConfigRepository: BiometricsParentChildConfigRepository,
         notificationsRepository: NotificationRepository
     ): SyncPresenter {
         return SyncPresenterImpl(
@@ -85,7 +69,6 @@ class SyncMetadataWorkerModule {
             syncStatusController,
             syncRepository,
             biometricsConfigRepository,
-            biometricsParentChildConfigRepository,
             notificationsRepository
         )
     }

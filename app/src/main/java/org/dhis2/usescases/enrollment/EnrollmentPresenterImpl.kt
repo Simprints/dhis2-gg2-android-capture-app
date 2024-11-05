@@ -19,8 +19,9 @@ import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.defaultSubscribe
+import org.dhis2.data.biometrics.SimprintsItem
+import org.dhis2.data.biometrics.getBiometricsConfig
 import org.dhis2.data.biometrics.utils.getBiometricsTrackedEntityAttribute
-import org.dhis2.data.biometrics.utils.getParentBiometricsAttributeValueIfRequired
 import org.dhis2.data.biometrics.utils.getTeiByUid
 import org.dhis2.data.biometrics.utils.getTrackedEntityAttributeValueByAttribute
 import org.dhis2.form.data.EnrollmentRepository
@@ -28,6 +29,8 @@ import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.RowAction
 import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
 import org.dhis2.usescases.biometrics.BIOMETRICS_ENABLED
+import org.dhis2.usescases.biometrics.duplicates.LastPossibleDuplicates
+import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.getAgeInMonthsByFieldUiModel
 import org.dhis2.usescases.biometrics.getOrgUnitAsModuleId
 import org.dhis2.usescases.biometrics.isUnderAgeThreshold
@@ -80,6 +83,9 @@ class EnrollmentPresenterImpl(
         BiometricsPreference.LAST_DECLINED_ENROL_DURATION, 0
     )
     private var resetBiometricsFailureAfterTimeDisposable: Disposable? = null
+    private var lastPossibleDuplicates: LastPossibleDuplicates? = null
+
+    val biometricsMode = getBiometricsConfig(basicPreferenceProvider).biometricsMode
 
     fun init() {
         view.setSaveButtonVisible(false)
@@ -242,7 +248,13 @@ class EnrollmentPresenterImpl(
     }
 
     fun deleteAllSavedData() {
-        if (teiRepository.blockingGet()?.syncState() == State.TO_POST) {
+        val isTeiInNoOtherProgram by lazy {
+            dataEntryRepository.isTeiInNoOtherProgram(
+                teiUid = teiRepository.blockingGet()?.uid(),
+                programUid = programRepository.blockingGet()?.uid(),
+            )
+        }
+        if (teiRepository.blockingGet()?.syncState() == State.TO_POST && isTeiInNoOtherProgram) {
             teiRepository.blockingDelete()
         } else {
             enrollmentObjectRepository.blockingDelete()
@@ -265,12 +277,15 @@ class EnrollmentPresenterImpl(
         }
     }
 
+    private fun isBiometricsAvailable(): Boolean =
+        BIOMETRICS_ENABLED && biometricsUiModel != null
+
     fun showOrHideSaveButton() {
         val teiUid = teiRepository.blockingGet()?.uid() ?: ""
         val programUid = getProgram()?.uid() ?: ""
         val hasEnrollmentAccess = d2.enrollmentModule().enrollmentService()
             .blockingGetEnrollmentAccess(teiUid, programUid)
-        if (hasEnrollmentAccess == EnrollmentAccess.WRITE_ACCESS) {
+        if (!isBiometricsAvailable() && hasEnrollmentAccess == EnrollmentAccess.WRITE_ACCESS) {
             view.setSaveButtonVisible(visible = true)
         } else {
             view.setSaveButtonVisible(visible = false)
@@ -285,12 +300,14 @@ class EnrollmentPresenterImpl(
     }
 
     fun onBiometricsCompleted(guid: String) {
+        lastPossibleDuplicates = null
         saveBiometricValue(guid)
     }
 
     fun onBiometricsFailure() {
-        val uuid: UUID = UUID.randomUUID()
         pendingSave = false
+
+        val uuid: UUID = UUID.randomUUID()
         saveBiometricValue("${BIOMETRICS_FAILURE_PATTERN}_${uuid}")
     }
 
@@ -321,7 +338,11 @@ class EnrollmentPresenterImpl(
         }
     }
 
-    fun onBiometricsPossibleDuplicates(guids: List<String>, sessionId: String) {
+    fun onBiometricsPossibleDuplicates(
+        possibleDuplicates: List<SimprintsItem>,
+        sessionId: String,
+        enrollNewVisible: Boolean = true
+    ) {
         val program = getProgram()!!.uid()
         val biometricsAttUid = biometricsUiModel!!.uid
         val teiUid = getEnrollment()!!.trackedEntityInstance()
@@ -329,21 +350,24 @@ class EnrollmentPresenterImpl(
         val teiTypeUid = d2.trackedEntityModule().trackedEntityInstances().uid(teiUid).blockingGet()
             ?.trackedEntityType()!!
 
-        if (guids.isEmpty()){
+        if (possibleDuplicates.isEmpty()) {
             view.registerLast(sessionId)
-        }
-        else if (guids.size == 1 && guids[0] == biometricsUiModel!!.value) {
+        } else if (possibleDuplicates.size == 1 && possibleDuplicates[0].guid == biometricsUiModel!!.value) {
             view.registerLast(sessionId)
         } else {
-            val finalGuids = guids.filter { it != biometricsUiModel!!.value }
+            val finalPossibleDuplicates =
+                possibleDuplicates.filter { it.guid != biometricsUiModel!!.value }
+
+            lastPossibleDuplicates = LastPossibleDuplicates(finalPossibleDuplicates, sessionId)
 
             view.hideProgress()
             view.showPossibleDuplicatesDialog(
-                finalGuids,
+                finalPossibleDuplicates,
                 sessionId,
                 program,
                 teiTypeUid,
-                biometricsAttUid
+                biometricsAttUid,
+                enrollNewVisible
             )
         }
     }
@@ -354,14 +378,16 @@ class EnrollmentPresenterImpl(
                 it is BiometricsAttributeUiModelImpl
             }?.let { it as BiometricsAttributeUiModelImpl }
 
+            biometricsUiModel?.let {
+                showOrHideSaveButton()
+            }
+
             biometricsUiModel?.setBiometricsRegisterListener {
                 val orgUnit = enrollmentObjectRepository.get().blockingGet()
                     ?.organisationUnit()!!
 
-                val program = programRepository.blockingGet()?.uid() ?: ""
-
                 val ageInMonths =
-                    getAgeInMonthsByFieldUiModel(basicPreferenceProvider, fields, program)
+                    getAgeInMonthsByFieldUiModel(basicPreferenceProvider, fields)
 
                 val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnit, d2, basicPreferenceProvider)
 
@@ -370,7 +396,7 @@ class EnrollmentPresenterImpl(
             }
 
             biometricsUiModel?.setSaveTEI { removeBiometrics ->
-                if (removeBiometrics){
+                if (removeBiometrics) {
                     saveBiometricValue(null)
                 }
 
@@ -382,7 +408,7 @@ class EnrollmentPresenterImpl(
                 view.registerLast(sessionId)
             }
 
-           if (biometricsUiModel?.value?.startsWith(BIOMETRICS_FAILURE_PATTERN) == true) {
+            if (biometricsUiModel?.value?.startsWith(BIOMETRICS_FAILURE_PATTERN) == true) {
                 resetBiometricsFailureAfterTime()
             }
         }
@@ -390,7 +416,8 @@ class EnrollmentPresenterImpl(
 
     private fun resetBiometricsFailureAfterTime() {
         if (resetBiometricsFailureAfterTimeDisposable != null &&
-            !resetBiometricsFailureAfterTimeDisposable!!.isDisposed) {
+            !resetBiometricsFailureAfterTimeDisposable!!.isDisposed
+        ) {
             resetBiometricsFailureAfterTimeDisposable!!.dispose()
         }
 
@@ -408,10 +435,15 @@ class EnrollmentPresenterImpl(
     }
 
     fun onFieldsLoading(fields: List<FieldUiModel>): List<FieldUiModel> {
-        val allMandatoryFieldsHasValue =
-            fields.count { it.mandatory && (it.value == null || it.value!!.isEmpty()) } == 0
 
-        return fields.map {
+        val finalFields = if (biometricsMode == BiometricsMode.full) fields else fields.filter {
+            it !is BiometricsAttributeUiModelImpl
+        }.toMutableList()
+
+        val allMandatoryFieldsHasValue =
+            finalFields.count { it.mandatory && (it.value == null || it.value!!.isEmpty()) } == 0
+
+        return finalFields.map {
             if (it is BiometricsAttributeUiModelImpl) {
                 val biometricsUiModel = it
 
@@ -420,22 +452,12 @@ class EnrollmentPresenterImpl(
                 val tei = getTeiByUid(d2, teiUid)
 
                 val teiAttrValues = tei?.trackedEntityAttributeValues() ?: listOf()
-                val program = programRepository.blockingGet()?.uid() ?: ""
-
-                val parentBiometricsValue = getParentBiometricsAttributeValueIfRequired(
-                    d2,
-                    teiAttributesProvider,
-                    basicPreferenceProvider,
-                    teiAttrValues,
-                    program,
-                    teiRepository.blockingGet()?.uid() ?: ""
-                )
 
                 val isUnderAgeThreshold =
-                    isUnderAgeThreshold(basicPreferenceProvider, teiAttrValues, program)
+                    isUnderAgeThreshold(basicPreferenceProvider, teiAttrValues)
 
                 biometricsUiModel
-                    .setValue(parentBiometricsValue?.value() ?: biometricsUiModel.value)
+                    .setValue(biometricsUiModel.value)
                     .setEditable(allMandatoryFieldsHasValue)
                     .setAgeUnderThreshold(isUnderAgeThreshold)
             } else {
@@ -456,13 +478,6 @@ class EnrollmentPresenterImpl(
             teiValues
         )
 
-        return attValue?.value() ?: getParentBiometricsAttributeValueIfRequired(
-            d2,
-            teiAttributesProvider,
-            basicPreferenceProvider,
-            teiValues,
-            programRepository.blockingGet()?.uid() ?: "",
-            teiRepository.blockingGet()?.uid() ?: ""
-        )?.value()
+        return attValue?.value()
     }
 }

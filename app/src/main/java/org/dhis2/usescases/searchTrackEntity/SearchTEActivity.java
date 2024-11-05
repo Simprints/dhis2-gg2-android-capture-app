@@ -9,6 +9,8 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
 import android.widget.Toast;
 
@@ -221,15 +223,15 @@ public class SearchTEActivity extends ActivityGlobalAbstract implements SearchTE
         viewModel.setOnSequentialSearchActionListener(action -> {
             if (action != null) {
                 if (action instanceof SequentialSearchAction.SearchWithBiometrics) {
-                    searchByBiometrics();
+                    presenter.onBiometricsClick();
                 } else if (action instanceof SequentialSearchAction.SearchWithAttributes) {
                     viewModel.openSearchForm();
                 } else {
-                    // register new
                     presenter.onEnrollClick(new HashMap<>(viewModel.getQueryData()),
                             viewModel.getSequentialSearch().getValue());
 
                     viewModel.resetSequentialSearch();
+                    viewModel.clearQueryData();
                 }
             }
 
@@ -429,10 +431,10 @@ public class SearchTEActivity extends ActivityGlobalAbstract implements SearchTE
         );
     }
 
-    private void searchByBiometrics() {
-        BiometricsClientFactory.INSTANCE.get(this).identify(this);
+    @Override
+    public void launchBiometricsIdentify(String moduleId) {
+        BiometricsClientFactory.INSTANCE.get(this).identify(this, moduleId);
     }
-
 
     @Override
     public void showBiometricsSearchConfirmation(SearchTeiModel item) {
@@ -461,7 +463,7 @@ public class SearchTEActivity extends ActivityGlobalAbstract implements SearchTE
     @Override
     public void sendBiometricsConfirmIdentity(String sessionId, String guid, String teiUid,
                                               String enrollmentUid, boolean isOnline) {
-        if (lastSelection != null){
+        if (lastSelection != null) {
             HashMap extras = new HashMap<>();
             extras.put(BiometricsClient.SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, lastSelection.getTei().uid());
 
@@ -477,44 +479,44 @@ public class SearchTEActivity extends ActivityGlobalAbstract implements SearchTE
     }
 
     @Override
-    public void biometricsEnrollmentLast(String sessionId) {
-        BiometricsClientFactory.INSTANCE.get(this).registerLast(this, sessionId);
-    }
-
-    @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         switch (requestCode) {
             case BIOMETRICS_IDENTIFY_REQUEST: {
+                IdentifyResult result = BiometricsClientFactory.INSTANCE.get(
+                        this).handleIdentifyResponse(resultCode, data);
 
+                if (result instanceof IdentifyResult.Completed) {
+                    IdentifyResult.Completed completedResult =
+                            (IdentifyResult.Completed) result;
 
-                    IdentifyResult result = BiometricsClientFactory.INSTANCE.get(
-                            this).handleIdentifyResponse(resultCode, data);
+                    presenter.searchOnBiometrics(completedResult.getItems(),
+                            completedResult.getSessionId(), false);
+                } else if (result instanceof IdentifyResult.BiometricsDeclined) {
+                    Toast.makeText(getContext(), R.string.biometrics_declined,
+                            Toast.LENGTH_SHORT).show();
+                    
+                    simulateNotFoundBiometricsSearch(null);
 
-                    if (result instanceof IdentifyResult.Completed) {
-                        IdentifyResult.Completed completedResult =
-                                (IdentifyResult.Completed) result;
+                    launchSearchFormIfRequired();
+                } else if (result instanceof IdentifyResult.UserNotFound) {
+                    Toast.makeText(getContext(), R.string.biometrics_user_not_found,
+                            Toast.LENGTH_SHORT).show();
 
-                        presenter.searchOnBiometrics(completedResult.getItems(),
-                                completedResult.getSessionId(), false);
-                    } else if (result instanceof IdentifyResult.BiometricsDeclined) {
-                        Toast.makeText(getContext(), R.string.biometrics_declined,
-                                Toast.LENGTH_SHORT).show();
-                    } else if (result instanceof IdentifyResult.UserNotFound) {
-                        Toast.makeText(getContext(), R.string.biometrics_user_not_found,
-                                Toast.LENGTH_SHORT).show();
-                        presenter.searchOnBiometrics(
-                                Collections.singletonList(new SimprintsItem(BIOMETRICS_USER_NOT_FOUND, 0)),
-                                ((IdentifyResult.UserNotFound) result).getSessionId(), false);
-                    } else if (result instanceof IdentifyResult.Failure) {
-                        Toast.makeText(getContext(), R.string.biometrics_failed,
-                                Toast.LENGTH_SHORT).show();
-                    }  else if (result instanceof IdentifyResult.AgeGroupNotSupported) {
-                        Toast.makeText(getContext(), R.string.age_group_not_supported,
-                                Toast.LENGTH_SHORT).show();
+                    simulateNotFoundBiometricsSearch(((IdentifyResult.UserNotFound) result).getSessionId());
+                } else if (result instanceof IdentifyResult.Failure) {
+                    Toast.makeText(getContext(), R.string.biometrics_failed,
+                            Toast.LENGTH_SHORT).show();
 
-                        presenter.searchOnBiometrics(
-                                Collections.singletonList(new SimprintsItem(BIOMETRICS_USER_NOT_FOUND, 0)), "NA", true);
-                    }
+                    simulateNotFoundBiometricsSearch(null);
+
+                    launchSearchFormIfRequired();
+                } else if (result instanceof IdentifyResult.AgeGroupNotSupported) {
+                    Toast.makeText(getContext(), R.string.age_group_not_supported,
+                            Toast.LENGTH_SHORT).show();
+
+                    presenter.searchOnBiometrics(
+                            Collections.singletonList(new SimprintsItem(BIOMETRICS_USER_NOT_FOUND, 0)), "NA", true);
+                }
                 break;
             }
             case BIOMETRICS_CONFIRM_IDENTITY_REQUEST: {
@@ -525,6 +527,19 @@ public class SearchTEActivity extends ActivityGlobalAbstract implements SearchTE
             }
         }
         super.onActivityResult(requestCode, resultCode, data);
+    }
+
+    private void simulateNotFoundBiometricsSearch(String sessionId) {
+        presenter.searchOnBiometrics(
+                Collections.singletonList(new SimprintsItem(BIOMETRICS_USER_NOT_FOUND, 0)),
+                sessionId, false);
+    }
+
+    private void launchSearchFormIfRequired() {
+        if (viewModel.getSequentialSearch().getValue() == null ||
+                viewModel.getSequentialSearch().getValue().getNextActions().isEmpty()) {
+            new Handler(Looper.getMainLooper()).postDelayed(() -> viewModel.openSearchForm(), 100);
+        }
     }
 
     private void configureBottomNavigation() {
@@ -633,7 +648,9 @@ public class SearchTEActivity extends ActivityGlobalAbstract implements SearchTE
                         (teiUid, programUid, enrollmentUid) -> {
                             openDashboard(teiUid,
                                     programUid,
-                                    enrollmentUid);
+                                    enrollmentUid,
+                                    presenter.getLastBiometricsSessionId()
+                                    );
                             return Unit.INSTANCE;
                         },
                         (teiUid, enrollmentUid) -> {
@@ -699,10 +716,18 @@ public class SearchTEActivity extends ActivityGlobalAbstract implements SearchTE
     private void observeMapLoading() {
         viewModel.getRefreshData().observe(this, refresh -> {
             if (currentContent == Content.MAP) {
-                binding.toolbarProgress.show();
+                showProgress();
             }
         });
-        viewModel.getMapResults().observe(this, result -> binding.toolbarProgress.hide());
+        viewModel.getMapResults().observe(this, result -> hideProgress());
+    }
+
+    public void showProgress() {
+        binding.toolbarProgress.show();
+    }
+
+    public void hideProgress() {
+        binding.toolbarProgress.hide();
     }
 
     @Override
@@ -836,8 +861,10 @@ public class SearchTEActivity extends ActivityGlobalAbstract implements SearchTE
     }
 
     @Override
-    public void openDashboard(String teiUid, String programUid, String enrollmentUid) {
-        searchNavigator.openDashboard(teiUid, programUid, enrollmentUid);
+    public void openDashboard(String teiUid, String programUid, String enrollmentUid, String sessionId) {
+        searchNavigator.openDashboard(teiUid, programUid, enrollmentUid, sessionId);
+        viewModel.resetSequentialSearch();
+        viewModel.clearQueryData();
     }
 
     public void refreshData() {

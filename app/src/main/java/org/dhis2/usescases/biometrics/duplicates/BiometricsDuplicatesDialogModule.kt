@@ -8,6 +8,7 @@ import org.dhis2.R
 import org.dhis2.commons.di.dagger.PerActivity
 import org.dhis2.commons.filters.data.FilterPresenter
 import org.dhis2.commons.network.NetworkUtils
+import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.prefs.PreferenceProviderImpl
 import org.dhis2.commons.reporting.CrashReportController
 import org.dhis2.commons.resources.ColorUtils
@@ -46,8 +47,10 @@ import org.dhis2.utils.DateUtils
 import org.hisp.dhis.android.core.D2
 
 @Module
-class BiometricsDuplicatesDialogModule(private val context: Context, private val teiType: String,
-    private val initialProgram: String) {
+class BiometricsDuplicatesDialogModule(
+    private val context: Context, private val teiType: String,
+    private val initialProgram: String
+) {
 
     @Provides
     fun enrollmentUiDataHelper(context: Context): EnrollmentUiDataHelper {
@@ -161,9 +164,16 @@ class BiometricsDuplicatesDialogModule(private val context: Context, private val
         d2: D2,
         searchRepository: SearchRepository,
         searchRepositoryKt: SearchRepositoryKt,
-        schedulerProvider: SchedulerProvider
+        schedulerProvider: SchedulerProvider,
+        basicPreferenceProvider: BasicPreferenceProvider
     ): BiometricsDuplicatesDialogPresenter {
-        return BiometricsDuplicatesDialogPresenter(d2, searchRepository, searchRepositoryKt, schedulerProvider)
+        return BiometricsDuplicatesDialogPresenter(
+            d2,
+            searchRepository,
+            searchRepositoryKt,
+            schedulerProvider,
+            basicPreferenceProvider
+        )
     }
 
     @Provides

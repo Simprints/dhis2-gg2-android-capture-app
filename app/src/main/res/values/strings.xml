@@ -993,9 +993,9 @@
     <string name="biometrics_verification_failed">Declined</string>
     <string name="biometrics_none_of_the_above">None of the above</string>
     <string name="biometrics_enroll_last_biometrics">Enroll last</string>
-    <string name="biometrics_enroll_new">Enroll new</string>
+    <string name="biometrics_enroll_new">Enroll new biometrics</string>
     <string name="biometrics_possible_duplicates">Possible duplicates</string>
-    <string name="biometrics_duplicates_empty_message">The search by possible duplicate guids returned by Simprints ID didn\'t return any result in Data Capture App.</string>
+    <string name="biometrics_duplicates_empty_message">Duplicate record not found.</string>
     <string name="biometrics_retake">Retake</string>
     <string name="confirm">Confirm</string>
     <string name="biometrics_confirm_patient_identity">Please confirm the patient\'s identity:</string>
@@ -1014,6 +1014,8 @@
     <string name="age_group_not_supported">Age group not supported</string>
     <string name="biometrics_not_applicable_for_this_age_group_search_with_personal_details">Biometrics not applicable for this age group, Search with personal details</string>
     <string name="biometrics_not_applicable_for_this_age_group_register_a_new_patient">Biometrics not applicable for this age group. Register a new patient</string>
+    <string name="biometrics_enroll_without_biometrics">Enrol without biometrics</string>
+    <string name="unable_save_biometrics">Unable to save biometrics, it saved without biometrics</string>
 
     <!--endregion-->
 </resources>

@@ -20,6 +20,7 @@ class DashboardPagerAdapter(
     private val enrollmentUid: String?,
     private val displayAnalyticScreen: Boolean = true,
     private val displayRelationshipScreen: Boolean,
+    private val lastBiometricsSearchSessionId: String?,
 ) : FragmentStateAdapter(fragmentActivity) {
 
     enum class DashboardPageType {
@@ -61,6 +62,7 @@ class DashboardPagerAdapter(
                 currentProgram,
                 teiUid,
                 enrollmentUid,
+                lastBiometricsSearchSessionId
             )
             DashboardPageType.ANALYTICS -> {
                 if (indicatorsFragment == null) {

@@ -35,6 +35,7 @@ import org.hisp.dhis.android.core.dataelement.DataElement
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.event.EventStatus
 import org.hisp.dhis.android.core.imports.ImportStatus
+import org.hisp.dhis.android.core.option.Option
 import org.hisp.dhis.android.core.period.PeriodType
 import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.android.core.program.ProgramStageDataElement
@@ -488,6 +489,19 @@ class EventRepository(
         }
     }
 
+    private fun blockingGetOptions(dataElementUids: List<String>): List<Option> {
+        val optionSetUids: List<String> =
+            dataElementUids.mapNotNull { dataElementUid ->
+                d2.dataElementModule().dataElements()
+                    .uid(dataElementUid)
+                    .blockingGet()
+                    ?.optionSetUid()
+            }
+        return d2.optionModule().options()
+            .byOptionSetUid().`in`(optionSetUids)
+            .blockingGet()
+    }
+
     private fun getFieldsForSingleSection(): Single<List<FieldUiModel>> {
         return Single.fromCallable {
             val stageDataElements =
@@ -495,9 +509,12 @@ class EventRepository(
                     .byProgramStage().eq(event?.programStage())
                     .orderBySortOrder(RepositoryScope.OrderByDirection.ASC)
                     .blockingGet()
+            val singleSectionOptions =
+                stageDataElements.mapNotNull { it.dataElement()?.uid() }
+                    .run(::blockingGetOptions)
 
             stageDataElements.map { programStageDataElement ->
-                transform(programStageDataElement, EVENT_DATA_SECTION_UID)
+                transform(programStageDataElement, EVENT_DATA_SECTION_UID, singleSectionOptions)
             }
         }
     }
@@ -505,6 +522,10 @@ class EventRepository(
     private fun getFieldsForMultipleSections(): Single<List<FieldUiModel>> {
         return Single.fromCallable {
             val fields = mutableListOf<FieldUiModel>()
+            val multipleSectionOptions =
+                sectionMap.values.flatMap { programStageSection ->
+                    programStageSection.dataElements()?.map { it.uid() } ?: emptyList()
+                }.run(::blockingGetOptions)
             sectionMap.values.forEach { programStageSection ->
                 fields.add(
                     transformSection(
@@ -519,7 +540,7 @@ class EventRepository(
                         .byDataElement().eq(dataElement.uid())
                         .one().blockingGet()?.let {
                             fields.add(
-                                transform(it, programStageSection.uid()),
+                                transform(it, programStageSection.uid(), multipleSectionOptions),
                             )
                         }
                 }
@@ -531,6 +552,7 @@ class EventRepository(
     private fun transform(
         programStageDataElement: ProgramStageDataElement,
         sectionUid: String,
+        allSectionOptions: List<Option>,
     ): FieldUiModel {
         val de = d2.dataElementModule().dataElements().uid(
             programStageDataElement.dataElement()!!.uid(),
@@ -558,23 +580,15 @@ class EventRepository(
         val description = de?.displayDescription()
         var optionSetConfig: OptionSetConfiguration? = null
         if (!TextUtils.isEmpty(optionSet)) {
-            if (!TextUtils.isEmpty(dataValue) && d2.optionModule().options()
-                    .byOptionSetUid()
-                    .eq(optionSet).byCode()
-                    .eq(dataValue)
-                    .one().blockingExists()
-            ) {
+            val optionSetOptions =
+                allSectionOptions.filter { it.optionSet()?.uid() == optionSet }
+            if (!TextUtils.isEmpty(dataValue) && optionSetOptions.any { it.code() == dataValue }) {
                 dataValue =
-                    d2.optionModule().options().byOptionSetUid().eq(optionSet)
-                        .byCode()
-                        .eq(dataValue).one().blockingGet()?.displayName()
+                    optionSetOptions.find { it.code() == dataValue }?.displayName()
             }
-            val optionCount =
-                d2.optionModule().options().byOptionSetUid().eq(optionSet)
-                    .blockingCount()
+            val optionCount = optionSetOptions.size
             optionSetConfig = OptionSetConfiguration.config(optionCount) {
-                val options = d2.optionModule().options().byOptionSetUid().eq(optionSet)
-                    .orderBySortOrder(RepositoryScope.OrderByDirection.ASC).blockingGet()
+                val options = optionSetOptions.sortedBy { it.sortOrder() }
 
                 val metadataIconMap =
                     options.associate {

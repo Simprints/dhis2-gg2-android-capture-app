@@ -1,6 +1,7 @@
 package org.dhis2.usescases.biometrics
 
 import org.dhis2.usescases.biometrics.entities.BiometricsConfig
+import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.repositories.BiometricsConfigRepository
 import org.dhis2.usescases.biometrics.usecases.SelectBiometricsConfig
 import org.junit.Test
@@ -20,7 +21,7 @@ class SelectBiometricsConfigTest {
 
     @Test
     fun `Should select default config if there are more than one config by user org unit group`() {
-        val selectBiometricsConfig = givenABiometricConfigs(listOf("iKcGSF3p97c","aAcGSF3p97c"))
+        val selectBiometricsConfig = givenABiometricConfigs(listOf("iKcGSF3p97c", "aAcGSF3p97c"))
 
         selectBiometricsConfig("dummyProgram")
 
@@ -29,7 +30,8 @@ class SelectBiometricsConfigTest {
 
     @Test
     fun `Should select default config if there are not config by user org unit group or program`() {
-        val selectBiometricsConfig = givenABiometricConfigs(listOf("non_in_config_1","non_in_config_2"))
+        val selectBiometricsConfig =
+            givenABiometricConfigs(listOf("non_in_config_1", "non_in_config_2"))
 
         selectBiometricsConfig("dummyProgram")
 
@@ -58,7 +60,7 @@ class SelectBiometricsConfigTest {
         verify(biometricsConfigRepository).saveSelectedConfig(expectedConfig)
     }
 
-    private fun givenABiometricConfigs(userOrgUnitGroups:List<String>): SelectBiometricsConfig {
+    private fun givenABiometricConfigs(userOrgUnitGroups: List<String>): SelectBiometricsConfig {
         whenever(
             biometricsConfigRepository.getBiometricsConfigs()
         ).thenReturn(configs)
@@ -80,7 +82,10 @@ val defaultConfig = BiometricsConfig(
     program = null,
     userId = "Admin",
     lastDeclinedEnrolDuration = null,
-    orgUnitLevelAsModuleId = 0
+    orgUnitLevelAsModuleId = 0,
+    dateOfBirthAttribute = "S4eTdBrXPpj",
+    ageThresholdMonths = 6,
+    biometricsMode = BiometricsMode.full
 )
 
 val configs = listOf(
@@ -94,7 +99,10 @@ val configs = listOf(
         program = null,
         userId = "Admin",
         lastDeclinedEnrolDuration = null,
-        orgUnitLevelAsModuleId = 0
+        orgUnitLevelAsModuleId = 0,
+        dateOfBirthAttribute = "S4eTdBrXPpj",
+        ageThresholdMonths = 6,
+        biometricsMode = BiometricsMode.full
     ),
     BiometricsConfig(
         orgUnitGroup = null,
@@ -105,7 +113,10 @@ val configs = listOf(
         program = "DM9n1bUw8W8",
         userId = "Admin",
         lastDeclinedEnrolDuration = null,
-        orgUnitLevelAsModuleId = 0
+        orgUnitLevelAsModuleId = 0,
+        dateOfBirthAttribute = "S4eTdBrXPpj",
+        ageThresholdMonths = 6,
+        biometricsMode = BiometricsMode.full
     ),
     BiometricsConfig(
         orgUnitGroup = "aAcGSF3p97c",
@@ -116,6 +127,9 @@ val configs = listOf(
         program = null,
         userId = "Admin",
         lastDeclinedEnrolDuration = null,
-        orgUnitLevelAsModuleId = 0
+        orgUnitLevelAsModuleId = 0,
+        dateOfBirthAttribute = "S4eTdBrXPpj",
+        ageThresholdMonths = 6,
+        biometricsMode = BiometricsMode.full
     )
 )

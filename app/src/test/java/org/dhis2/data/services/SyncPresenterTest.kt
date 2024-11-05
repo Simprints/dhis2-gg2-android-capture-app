@@ -9,7 +9,6 @@ import org.dhis2.data.service.SyncResult
 import org.dhis2.data.service.SyncStatusController
 import org.dhis2.data.service.workManager.WorkManagerController
 import org.dhis2.usescases.biometrics.repositories.BiometricsConfigRepository
-import org.dhis2.usescases.biometrics.repositories.BiometricsParentChildConfigRepository
 import org.dhis2.usescases.notifications.domain.NotificationRepository
 import org.dhis2.utils.analytics.AnalyticsHelper
 import org.hisp.dhis.android.core.D2
@@ -46,7 +45,6 @@ class SyncPresenterTest {
     private val syncRepository: SyncRepository = mock()
     private val biometricsConfigRepository: BiometricsConfigRepository = mock()
     private val notificationRepository: NotificationRepository = mock()
-    private val biometricsParentChildConfigRepository: BiometricsParentChildConfigRepository = mock()
 
     @Before
     fun setUp() {
@@ -58,7 +56,6 @@ class SyncPresenterTest {
             syncStatusController,
             syncRepository,
             biometricsConfigRepository,
-            biometricsParentChildConfigRepository,
             notificationRepository
         )
     }

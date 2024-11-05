@@ -9,6 +9,7 @@ import io.reactivex.functions.Consumer
 import org.dhis2.commons.data.EventCreationType
 import org.dhis2.commons.data.EventViewModel
 import org.dhis2.commons.data.StageSection
+import org.dhis2.data.biometrics.SimprintsItem
 import org.dhis2.form.model.EventMode
 import org.dhis2.usescases.general.AbstractActivityContracts
 import org.hisp.dhis.android.core.program.Program
@@ -55,8 +56,10 @@ class TEIDataContracts {
         fun registerBiometrics(orgUnit: String, trackedEntityInstance: String, ageInMonths: Long)
         fun showBiometricsAgeGroupNotSupported()
         fun registerLast(sessionId: String)
-        fun showPossibleDuplicatesDialog( guids: List<String>, sessionId: String, programUid: String,
-                                          trackedEntityTypeUid: String,
-                                          biometricsAttributeUid: String)
+        fun showPossibleDuplicatesDialog( possibleDuplicates: List<SimprintsItem>, sessionId: String, programUid: String,
+                                          trackedEntityTypeUid: String, biometricsAttributeUid: String,
+                                          enrollNewVisible:Boolean)
+
+        fun showUnableSaveBiometricsMessage()
     }
 }

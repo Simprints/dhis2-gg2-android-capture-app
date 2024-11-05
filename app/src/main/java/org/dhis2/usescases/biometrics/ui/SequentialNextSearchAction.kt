@@ -3,6 +3,7 @@ package org.dhis2.usescases.biometrics.ui
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -26,9 +27,25 @@ import org.dhis2.R
 import org.dhis2.commons.biometrics.gradientButtonColor
 
 @Composable
+internal fun SequentialNextSearchActions(
+    sequentialSearchActions: List<SequentialSearchAction>,
+    onClick: ((action:SequentialSearchAction) -> Unit),
+) {
+   Column {
+        sequentialSearchActions.forEach { action ->
+            SequentialNextSearchAction(
+                sequentialSearchAction = action,
+                onClick = onClick,
+            )
+            Spacer(modifier = Modifier.size(8.dp))
+        }
+    }
+}
+
+@Composable
 internal fun SequentialNextSearchAction(
     sequentialSearchAction: SequentialSearchAction,
-    onClick: (() -> Unit),
+    onClick: ((action:SequentialSearchAction) -> Unit),
 ) {
     when (sequentialSearchAction) {
         is SequentialSearchAction.SearchWithBiometrics -> {
@@ -38,7 +55,7 @@ internal fun SequentialNextSearchAction(
                     width = 1.dp,
                     color = Color(0xFF0281cb)
                 ),
-                onClick = onClick
+                onClick = { onClick(sequentialSearchAction) }
             ) {
                 Text(stringResource(R.string.biometrics_search), color = Color(0xFF0281cb))
             }
@@ -51,7 +68,7 @@ internal fun SequentialNextSearchAction(
                     width = 1.dp,
                     color = Color(0xFF0281cb)
                 ),
-                onClick = onClick
+                onClick = { onClick(sequentialSearchAction) }
             ) {
                 Text(stringResource(R.string.search_with_attributes), color = Color(0xFF0281cb))
             }
@@ -59,13 +76,13 @@ internal fun SequentialNextSearchAction(
 
         is SequentialSearchAction.RegisterNew -> {
             val modifier = Modifier
-                .defaultMinSize(minHeight = 50.dp, minWidth = 230.dp)
+                .defaultMinSize(minHeight = 50.dp, minWidth = 270.dp)
 
             Button(
                 modifier = modifier,
                 colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent),
                 contentPadding = PaddingValues(),
-                onClick = onClick,
+                onClick = { onClick(sequentialSearchAction) },
             ) {
                 Box(
                     modifier = Modifier
