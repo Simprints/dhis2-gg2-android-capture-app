@@ -77,7 +77,9 @@ class BiometricsClient(
         val metadata = com.simprints.libsimprints.Metadata()
             .put("subjectAge", ageInMonths)
 
-        val intent = simHelper.register(moduleId, metadata)
+        val intent = simHelper.register(moduleId, metadata).apply {
+            action = "com.simprints.simqrcodeadapter.REGISTER"
+        }
 
         launchSimprintsAppFromActivity(activity, intent, BIOMETRICS_ENROLL_REQUEST)
     }
@@ -95,6 +97,8 @@ class BiometricsClient(
             simHelper.register(moduleId, metadata)
         } else {
             simHelper.register(moduleId)
+        }.apply {
+            action = "com.simprints.simqrcodeadapter.REGISTER"
         }
 
         extras.forEach { intent.putExtra(it.key, it.value) }
@@ -110,7 +114,9 @@ class BiometricsClient(
         Timber.d("Biometrics identify!")
         Timber.d("moduleId: $finalModuleId")
 
-        val intent = simHelper.identify(finalModuleId)
+        val intent = simHelper.identify(finalModuleId).apply {
+            action = "com.simprints.simqrcodeadapter.VERIFY"
+        }
 
         launchSimprintsAppFromActivity(activity, intent, BIOMETRICS_IDENTIFY_REQUEST)
     }
