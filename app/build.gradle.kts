@@ -200,7 +200,7 @@ android {
         }
 
         create("simprints") {
-            applicationId = "org.simprints.dhis2"
+            applicationId = "org.simprints.qr.dhis2"
             dimension = "default"
             versionCode = libs.versions.vCode.get().toInt()
             versionName = libs.versions.vName.get()
