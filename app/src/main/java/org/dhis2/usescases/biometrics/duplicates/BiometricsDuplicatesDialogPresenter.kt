@@ -93,6 +93,7 @@ class BiometricsDuplicatesDialogPresenter(
     fun onTEIClick(teiUid: String, enrollmentUid: String, isOnline: Boolean) {
         if (!identityConfirmed) {
             identityConfirmed = true
+
             sendBiometricsConfirmIdentity(teiUid, enrollmentUid, isOnline)
         } else {
             if (!isOnline) {
@@ -112,6 +113,9 @@ class BiometricsDuplicatesDialogPresenter(
             .withTrackedEntityAttributeValues().uid(teiUid).blockingGet()?:return
 
         val guid: String = getBiometricsValueFromTEI(tei) ?: ""
+
+        searchRepository.updateAttributeValue(teiUid, biometricsAttributeUid, guid)
+
         view.sendBiometricsConfirmIdentity(
             biometricsSessionId,
             guid,

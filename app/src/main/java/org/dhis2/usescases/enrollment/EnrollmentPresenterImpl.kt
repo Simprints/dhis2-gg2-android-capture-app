@@ -20,7 +20,7 @@ import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.defaultSubscribe
 import org.dhis2.data.biometrics.SimprintsItem
-import org.dhis2.data.biometrics.getBiometricsConfig
+import org.dhis2.data.biometrics.getBiometricsConfigByProgram
 import org.dhis2.data.biometrics.utils.getBiometricsTrackedEntityAttribute
 import org.dhis2.data.biometrics.utils.getTeiByUid
 import org.dhis2.data.biometrics.utils.getTrackedEntityAttributeValueByAttribute
@@ -85,7 +85,9 @@ class EnrollmentPresenterImpl(
     private var resetBiometricsFailureAfterTimeDisposable: Disposable? = null
     private var lastPossibleDuplicates: LastPossibleDuplicates? = null
 
-    val biometricsMode = getBiometricsConfig(basicPreferenceProvider).biometricsMode
+    val biometricsMode = programRepository.blockingGet()
+        ?.let { getBiometricsConfigByProgram(basicPreferenceProvider, it.uid())?.biometricsMode }
+        ?: BiometricsMode.full
 
     fun init() {
         view.setSaveButtonVisible(false)
@@ -479,5 +481,11 @@ class EnrollmentPresenterImpl(
         )
 
         return attValue?.value()
+    }
+
+    fun registerLastFailure() {
+        pendingSave = true
+
+        saveBiometricValue(null)
     }
 }

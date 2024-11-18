@@ -248,7 +248,8 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
                         }
 
                         is RegisterResult.RegisterLastFailure -> {
-                            performSaveClick()
+                            presenter.registerLastFailure()
+
                             Toast.makeText(
                                 context, getString(R.string.unable_save_biometrics),
                                 Toast.LENGTH_SHORT
