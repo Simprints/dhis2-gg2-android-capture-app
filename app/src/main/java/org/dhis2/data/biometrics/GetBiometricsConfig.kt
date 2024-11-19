@@ -1,5 +1,6 @@
 package org.dhis2.data.biometrics
 
+import com.google.gson.reflect.TypeToken
 import org.dhis2.commons.biometrics.BiometricsPreference
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.usescases.biometrics.entities.BiometricsConfig
@@ -40,4 +41,16 @@ fun getBiometricsConfig(preferenceProvider: BasicPreferenceProvider): Biometrics
         dateOfBirthAttribute,
         BiometricsMode.valueOf(biometricsMode)
     )
+}
+
+fun getBiometricsConfigByProgram(preferenceProvider: BasicPreferenceProvider, programUid:String): BiometricsConfig? {
+    val biometricsConfigType = object : TypeToken<List<BiometricsConfig>>() {}
+
+    val configs =  preferenceProvider.getObjectFromJson(
+        BiometricsPreference.CONFIGURATIONS,
+        biometricsConfigType,
+        listOf()
+    )
+
+    return configs.find { it.program == programUid }
 }

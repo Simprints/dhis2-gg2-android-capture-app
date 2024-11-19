@@ -993,7 +993,7 @@
     <string name="biometrics_verification_failed">Declined</string>
     <string name="biometrics_none_of_the_above">None of the above</string>
     <string name="biometrics_enroll_last_biometrics">Enroll last</string>
-    <string name="biometrics_enroll_new">Enroll new biometrics</string>
+    <string name="biometrics_enroll_new">Enrol new biometrics</string>
     <string name="biometrics_possible_duplicates">Possible duplicates</string>
     <string name="biometrics_duplicates_empty_message">Duplicate record not found.</string>
     <string name="biometrics_retake">Retake</string>

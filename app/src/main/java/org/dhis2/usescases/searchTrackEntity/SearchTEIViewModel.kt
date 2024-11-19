@@ -115,6 +115,9 @@ class SearchTEIViewModel(
 
     private val biometricsMode = getBiometricsConfig(basicPreferenceProvider).biometricsMode
 
+    private val _isDataLoaded = MutableLiveData<Boolean?> (false)
+    val isDataLoaded: MutableLiveData<Boolean?> = _isDataLoaded
+
     init {
         viewModelScope.launch(dispatchers.io()) {
             createButtonScrollVisibility.postValue(
@@ -363,6 +366,8 @@ class SearchTEIViewModel(
     }
 
     fun fetchListResults(onPagedListReady: (Flow<PagingData<SearchTeiModel>>?) -> Unit) {
+        _isDataLoaded.postValue(false)
+
         viewModelScope.launch(dispatchers.io()) {
             val resultPagedList = async {
                 when {
@@ -686,6 +691,8 @@ class SearchTEIViewModel(
         }
 
         SearchIdlingResourceSingleton.decrement()
+
+        _isDataLoaded.postValue(true)
     }
 
     private fun handleDisplayInListResult(hasProgramResults: Boolean) {
@@ -1208,5 +1215,6 @@ class SearchTEIViewModel(
             ),
         )
     }
+
 }
 

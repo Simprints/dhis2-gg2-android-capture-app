@@ -194,10 +194,11 @@ class SearchTEList : FragmentGlobalAbstract() {
             setContent {
                 val teTypeName by viewModel.teTypeName.observeAsState()
                 val sequentialSearch by viewModel.sequentialSearch.observeAsState(false)
+                val isLoaded by viewModel.isDataLoaded.observeAsState(false)
 
                 val seqSearch = (sequentialSearch as SequentialSearch?)
 
-                if (seqSearch == null && !teTypeName.isNullOrBlank()) {
+                if (seqSearch == null && !teTypeName.isNullOrBlank() && isLoaded == true) {
                     val isFilterOpened by viewModel.filtersOpened.observeAsState(false)
                     val createButtonVisibility by viewModel
                         .createButtonScrollVisibility.observeAsState(true)
@@ -368,7 +369,7 @@ class SearchTEList : FragmentGlobalAbstract() {
             },
             onlineErrorCode = liveAdapter.snapshot().items.lastOrNull()?.onlineErrorCode,
         )
-        (context as SearchTEActivity).hideProgress()
+        hideToolBarProgress()
     }
 
     private fun onGlobalDataLoaded() {
@@ -376,7 +377,7 @@ class SearchTEList : FragmentGlobalAbstract() {
             programResultCount = liveAdapter.itemCount,
             globalResultCount = globalAdapter.itemCount,
         )
-        (context as SearchTEActivity).hideProgress()
+        hideToolBarProgress()
     }
 
     private fun initGlobalData() {
@@ -401,8 +402,17 @@ class SearchTEList : FragmentGlobalAbstract() {
                 listOf(SearchResult(SearchResult.SearchResultType.LOADING)),
             )
         }
+        showToolbarProgress()
+    }
+
+    private fun showToolbarProgress() {
         (context as SearchTEActivity).showProgress()
     }
+
+    private fun hideToolBarProgress() {
+        (context as SearchTEActivity).hideProgress()
+    }
+
 
     private fun initLoading(result: List<SearchResult>?) {
         recycler.post {
