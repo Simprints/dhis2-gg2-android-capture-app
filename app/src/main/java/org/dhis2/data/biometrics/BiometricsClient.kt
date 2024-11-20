@@ -24,7 +24,9 @@ import timber.log.Timber
 
 sealed class RegisterResult {
     data class Completed(val guid: String) : RegisterResult()
-    data class PossibleDuplicates(val items: List<SimprintsItem>, val sessionId: String) : RegisterResult()
+    data class PossibleDuplicates(val items: List<SimprintsItem>, val sessionId: String) :
+        RegisterResult()
+
     data object Failure : RegisterResult()
     data object RegisterLastFailure : RegisterResult()
     data object AgeGroupNotSupported : RegisterResult()
@@ -32,8 +34,7 @@ sealed class RegisterResult {
 }
 
 data class SimprintsItem(
-    val guid: String,
-    val confidence: Float
+    val guid: String, val confidence: Float
 )
 
 sealed class IdentifyResult {
@@ -54,9 +55,7 @@ sealed class VerifyResult {
 
 
 class BiometricsClient(
-    projectId: String,
-    userId: String,
-    private val confidenceScoreFilter: Int
+    projectId: String, userId: String, private val confidenceScoreFilter: Int
 ) {
 
     init {
@@ -74,8 +73,7 @@ class BiometricsClient(
         Timber.d("moduleId: $moduleId")
         Timber.d("subjectAge: $ageInMonths")
 
-        val metadata = com.simprints.libsimprints.Metadata()
-            .put("subjectAge", ageInMonths)
+        val metadata = com.simprints.libsimprints.Metadata().put("subjectAge", ageInMonths)
 
         val intent = simHelper.register(moduleId, metadata).apply {
             action = "com.simprints.simqrcodeadapter.REGISTER"
@@ -84,15 +82,16 @@ class BiometricsClient(
         launchSimprintsAppFromActivity(activity, intent, BIOMETRICS_ENROLL_REQUEST)
     }
 
-    fun registerFromFragment(fragment: Fragment, moduleId: String,  extras: Map<String, String>, ageInMonths: Long?) {
+    fun registerFromFragment(
+        fragment: Fragment, moduleId: String, extras: Map<String, String>, ageInMonths: Long?
+    ) {
         Timber.d("Biometrics register!")
         Timber.d("moduleId: $moduleId")
         Timber.d("subjectAge: $ageInMonths")
         printExtras(extras)
 
-        val intent = if (ageInMonths != null){
-            val metadata =  com.simprints.libsimprints.Metadata()
-                .put("subjectAge", ageInMonths)
+        val intent = if (ageInMonths != null) {
+            val metadata = com.simprints.libsimprints.Metadata().put("subjectAge", ageInMonths)
 
             simHelper.register(moduleId, metadata)
         } else {
@@ -121,10 +120,13 @@ class BiometricsClient(
         launchSimprintsAppFromActivity(activity, intent, BIOMETRICS_IDENTIFY_REQUEST)
     }
 
-    fun verify(fragment: Fragment,
-               guid: String,
-               moduleId: String, extras: Map<String, String>,
-               ageInMonths: Long? = null) {
+    fun verify(
+        fragment: Fragment,
+        guid: String,
+        moduleId: String,
+        extras: Map<String, String>,
+        ageInMonths: Long? = null
+    ) {
 
         if (guid == null) {
             Timber.i("Simprints Verification - Guid is Null - Please check again!")
@@ -137,13 +139,16 @@ class BiometricsClient(
 
         printExtras(extras)
 
-        val intent = if (ageInMonths != null){
-            val metadata =  com.simprints.libsimprints.Metadata()
-                .put("subjectAge", ageInMonths)
+        val intent = if (ageInMonths != null) {
+            val metadata = com.simprints.libsimprints.Metadata().put("subjectAge", ageInMonths)
 
-           simHelper.verify(moduleId, guid, metadata)
+            simHelper.verify(moduleId, guid, metadata).apply {
+                action = "com.simprints.simqrcodeadapter.VERIFY"
+            }
         } else {
-            simHelper.verify(moduleId, guid)
+            simHelper.verify(moduleId, guid).apply {
+                action = "com.simprints.simqrcodeadapter.VERIFY"
+            }
         }
 
         extras.forEach { intent.putExtra(it.key, it.value) }
@@ -183,8 +188,7 @@ class BiometricsClient(
                 is IdentifyResult.Completed -> {
                     Timber.d("Possible duplicates: ${identifyResponse.items}")
                     RegisterResult.PossibleDuplicates(
-                        identifyResponse.items,
-                        identifyResponse.sessionId
+                        identifyResponse.items, identifyResponse.sessionId
                     )
                 }
 
@@ -197,8 +201,7 @@ class BiometricsClient(
 
                     Timber.d("Possible duplicates but IdentifyResult is UserNotFound")
                     RegisterResult.PossibleDuplicates(
-                        items,
-                        identifyResponse.sessionId
+                        items, identifyResponse.sessionId
                     )
                 }
 
@@ -206,7 +209,7 @@ class BiometricsClient(
                     RegisterResult.Failure
                 }
 
-                is IdentifyResult.AgeGroupNotSupported ->  RegisterResult.AgeGroupNotSupported
+                is IdentifyResult.AgeGroupNotSupported -> RegisterResult.AgeGroupNotSupported
             }
         }
 
@@ -233,8 +236,7 @@ class BiometricsClient(
         Timber.d("Result code: $resultCode")
 
         if (resultCode != Activity.RESULT_OK || data == null) {
-            return if (resultCode == Constants.SIMPRINTS_AGE_GROUP_NOT_SUPPORTED)
-                IdentifyResult.AgeGroupNotSupported
+            return if (resultCode == Constants.SIMPRINTS_AGE_GROUP_NOT_SUPPORTED) IdentifyResult.AgeGroupNotSupported
             else IdentifyResult.Failure
         }
 
@@ -262,7 +264,11 @@ class BiometricsClient(
                     Timber.w("Identify returns data but no match with confidence score filter")
                     IdentifyResult.UserNotFound(sessionId)
                 } else {
-                    IdentifyResult.Completed(finalIdentifications.map { SimprintsItem(it.guid, it.confidence) }, sessionId)
+                    IdentifyResult.Completed(finalIdentifications.map {
+                        SimprintsItem(
+                            it.guid, it.confidence
+                        )
+                    }, sessionId)
                 }
             }
         } else {
@@ -274,15 +280,14 @@ class BiometricsClient(
         Timber.d("Result code: $resultCode")
 
         if (resultCode != Activity.RESULT_OK) {
-            return if (resultCode == Constants.SIMPRINTS_AGE_GROUP_NOT_SUPPORTED)
-                VerifyResult.AgeGroupNotSupported
+            return if (resultCode == Constants.SIMPRINTS_AGE_GROUP_NOT_SUPPORTED) VerifyResult.AgeGroupNotSupported
             else VerifyResult.NoMatch
         }
 
         val biometricsCompleted = checkBiometricsCompleted(data)
 
         return if (biometricsCompleted) {
-             getVerificationJudgementBySimprints(data) ?:getVerificationJudgementByDhis2(data)
+            getVerificationJudgementBySimprints(data) ?: getVerificationJudgementByDhis2(data)
 
         } else {
             VerifyResult.Failure
@@ -290,10 +295,7 @@ class BiometricsClient(
     }
 
     fun confirmIdentify(
-        activity: Activity,
-        sessionId: String,
-        guid: String,
-        extras: Map<String, String>
+        activity: Activity, sessionId: String, guid: String, extras: Map<String, String>
     ) {
         Timber.d("Biometrics confirmIdentify!")
         Timber.d("sessionId: $sessionId")
@@ -310,10 +312,7 @@ class BiometricsClient(
     }
 
     fun confirmIdentify(
-        fragment: Fragment,
-        sessionId: String,
-        guid: String,
-        extras: Map<String, String>
+        fragment: Fragment, sessionId: String, guid: String, extras: Map<String, String>
     ) {
         Timber.d("Biometrics confirmIdentify!")
         Timber.d("sessionId: $sessionId")
@@ -369,10 +368,12 @@ class BiometricsClient(
         data.getBooleanExtra(Constants.SIMPRINTS_BIOMETRICS_COMPLETE_CHECK, false)
 
     private fun getVerificationJudgementBySimprints(data: Intent): VerifyResult? {
-        val existVerificationJudgement = data.extras?.containsKey(Constants.SIMPRINTS_VERIFICATION_SUCCESS)
+        val existVerificationJudgement =
+            data.extras?.containsKey(Constants.SIMPRINTS_VERIFICATION_SUCCESS)
 
         if (existVerificationJudgement == true) {
-            val verificationSuccess = data.getBooleanExtra(Constants.SIMPRINTS_VERIFICATION_SUCCESS, false)
+            val verificationSuccess =
+                data.getBooleanExtra(Constants.SIMPRINTS_VERIFICATION_SUCCESS, false)
 
             if (verificationSuccess) {
                 return VerifyResult.Match
@@ -385,8 +386,7 @@ class BiometricsClient(
     }
 
     private fun getVerificationJudgementByDhis2(data: Intent): VerifyResult {
-        val verification: Verification? =
-            data.getParcelableExtra(Constants.SIMPRINTS_VERIFICATION)
+        val verification: Verification? = data.getParcelableExtra(Constants.SIMPRINTS_VERIFICATION)
 
         return if (verification != null) {
             when (verification.tier) {
@@ -407,9 +407,7 @@ class BiometricsClient(
     }
 
     private fun launchSimprintsAppFromActivity(
-        activity: Activity,
-        intent: Intent,
-        requestCode: Int
+        activity: Activity, intent: Intent, requestCode: Int
     ) {
         try {
             activity.startActivityForResult(intent, requestCode)
@@ -419,18 +417,14 @@ class BiometricsClient(
     }
 
     private fun launchSimprintsAppFromFragment(
-        fragment: Fragment,
-        intent: Intent,
-        requestCode: Int
+        fragment: Fragment, intent: Intent, requestCode: Int
     ) {
         try {
             fragment.startActivityForResult(intent, requestCode)
         } catch (ex: ActivityNotFoundException) {
             fragment.context?.let {
                 Toast.makeText(
-                    it,
-                    R.string.biometrics_download_app,
-                    Toast.LENGTH_SHORT
+                    it, R.string.biometrics_download_app, Toast.LENGTH_SHORT
                 ).show()
             }
         }
@@ -440,11 +434,7 @@ class BiometricsClient(
         Timber.d(
             "extras: ${
                 extras.entries.joinToString(
-                    prefix = "[",
-                    separator = ", ",
-                    postfix = "]",
-                    limit = 2,
-                    truncated = "..."
+                    prefix = "[", separator = ", ", postfix = "]", limit = 2, truncated = "..."
                 )
             }"
         )
@@ -458,20 +448,20 @@ class BiometricsClient(
 inline fun <reified T : Parcelable> Intent.extractParcelableArrayListExtra(
     key: String,
 ): List<T>? = when {
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
-        getParcelableArrayListExtra(key, T::class.java)
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> getParcelableArrayListExtra(
+        key, T::class.java
+    )
 
-    else ->
-        @Suppress("DEPRECATION") getParcelableArrayListExtra(key)
+    else -> @Suppress("DEPRECATION") getParcelableArrayListExtra(key)
 }
 
 inline fun <reified T : Parcelable> Intent.extractParcelableArrayExtra(
     key: String,
 ): List<out T>? = when {
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
-        getParcelableArrayExtra(key, T::class.java)?.asList()
+    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> getParcelableArrayExtra(
+        key, T::class.java
+    )?.asList()
 
-    else ->
-        @Suppress("DEPRECATION") getParcelableArrayExtra(key)?.mapNotNull { it as? T }
-            ?.toTypedArray()?.asList()
+    else -> @Suppress("DEPRECATION") getParcelableArrayExtra(key)?.mapNotNull { it as? T }
+        ?.toTypedArray()?.asList()
 }
