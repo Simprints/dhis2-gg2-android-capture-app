@@ -142,13 +142,9 @@ class BiometricsClient(
         val intent = if (ageInMonths != null) {
             val metadata = com.simprints.libsimprints.Metadata().put("subjectAge", ageInMonths)
 
-            simHelper.verify(moduleId, guid, metadata).apply {
-                action = "com.simprints.simqrcodeadapter.VERIFY"
-            }
+            simHelper.verify(moduleId, guid, metadata)
         } else {
-            simHelper.verify(moduleId, guid).apply {
-                action = "com.simprints.simqrcodeadapter.VERIFY"
-            }
+            simHelper.verify(moduleId, guid)
         }
 
         extras.forEach { intent.putExtra(it.key, it.value) }
