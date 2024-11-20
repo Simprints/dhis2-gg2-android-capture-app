@@ -346,7 +346,9 @@ class BiometricsClient(
         Timber.d("moduleId: $defaultModuleId")
         Timber.d("sessionId: $sessionId")
 
-        val intent = simHelper.registerLastBiometrics(defaultModuleId, sessionId)
+        val intent = simHelper.registerLastBiometrics(defaultModuleId, sessionId).apply {
+            action = "com.simprints.simqrcodeadapter.REGISTER_LAST_BIOMETRICS"
+        }
 
         launchSimprintsAppFromActivity(activity, intent, BIOMETRICS_ENROLL_LAST_REQUEST)
     }
@@ -356,7 +358,9 @@ class BiometricsClient(
         Timber.d("moduleId: $defaultModuleId")
         Timber.d("sessionId: $sessionId")
 
-        val intent = simHelper.registerLastBiometrics(defaultModuleId, sessionId)
+        val intent = simHelper.registerLastBiometrics(defaultModuleId, sessionId).apply {
+            action = "com.simprints.simqrcodeadapter.REGISTER_LAST_BIOMETRICS"
+        }
 
         launchSimprintsAppFromFragment(fragment, intent, BIOMETRICS_ENROLL_LAST_REQUEST)
     }
