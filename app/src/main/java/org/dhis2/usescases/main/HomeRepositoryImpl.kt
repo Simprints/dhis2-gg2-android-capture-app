@@ -37,7 +37,8 @@ class HomeRepositoryImpl(
 
         val corruptedBiometricsValues = teiAttributeValues.filter {
             it.value()?.startsWith(BIOMETRICS_SEARCH_PATTERN) == true ||
-                    it.value()?.startsWith(BIOMETRICS_FAILURE_PATTERN) == true
+                    it.value()?.startsWith(BIOMETRICS_FAILURE_PATTERN) == true ||
+                    it.value().isNullOrEmpty()
         }
 
         corruptedBiometricsValues.forEach {
@@ -126,7 +127,7 @@ class HomeRepositoryImpl(
         }
     }
 
-    fun deleteBiometricsAttributeValue(teiUid: String, biometricUid: String) {
+    private fun deleteBiometricsAttributeValue(teiUid: String, biometricUid: String) {
         val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
             .value(biometricUid, teiUid)
 
