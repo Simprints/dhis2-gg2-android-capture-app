@@ -112,7 +112,8 @@ class TeiDataPresenterTest {
             createEventUseCase,
             d2ErrorUtils,
             basicPreferenceProvider,
-            resourceManager
+            resourceManager,
+            null
         )
     }
 
@@ -395,7 +396,8 @@ class TeiDataPresenterTest {
             createEventUseCase,
             d2ErrorUtils,
             basicPreferenceProvider,
-            resourceManager
+            resourceManager,
+            null
         )
 
         return teiDataPresenter;

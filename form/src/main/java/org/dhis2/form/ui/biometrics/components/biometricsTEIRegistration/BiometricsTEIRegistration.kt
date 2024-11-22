@@ -62,10 +62,6 @@ fun BiometricsTEIRegistration(
         }
     }
 
-    val isBiometricsAvailable = remember(value) {
-        !value.isNullOrEmpty()
-    }
-
     Column {
         if (biometricsSearchSessionId != null && !ageUnderThreshold) {
             LinkLastBiometricsCheckBox(
@@ -92,7 +88,7 @@ fun BiometricsTEIRegistration(
                 )
             }
 
-            if (!isBiometricsAvailable || biometricsState == BiometricsTEIState.SUCCESS) {
+            if (biometricsState == BiometricsTEIState.SUCCESS) {
                 SaveButton(
                     text = stringResource(R.string.biometrics_update_and_save),
                     enabled = enabled,

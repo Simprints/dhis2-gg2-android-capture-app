@@ -99,14 +99,14 @@ class TeiDashboardCardMapper(
         } else {
             val firsNameValue =
                 item.trackedEntityAttributeValues.firstOrNull { it.trackedEntityAttribute() == firstNameAttrUid }
-                    ?.value()
+                    ?.value() ?: ""
 
             val middleNameValue =
                 item.trackedEntityAttributeValues.firstOrNull { it.trackedEntityAttribute() == middleNameAttrUid }
                     ?.value() ?: ""
             val lastNameValue =
                 item.trackedEntityAttributeValues.firstOrNull { it.trackedEntityAttribute() == lastNameAttrUid }
-                    ?.value()
+                    ?.value() ?: ""
 
             "$firsNameValue $middleNameValue $lastNameValue"
         }

@@ -290,17 +290,23 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
 
     @Override
     public void onEnrollClick(HashMap<String, String> queryData, SequentialSearch sequentialSearch) {
-        if (sequentialSearch != null && sequentialSearch.getSequentialSessionId() != null) {
-            queryData.put(biometricUid, BIOMETRICS_SEARCH_PATTERN + sequentialSearch.getSequentialSessionId() + "_" + queryData.get(biometricUid));
-        }
+        HashMap<String, String> finalQueryData = getQueryData(queryData, sequentialSearch);
 
         if (selectedProgram != null)
             if (canCreateTei())
-                enroll(selectedProgram.uid(), null, queryData);
+                enroll(selectedProgram.uid(), null, finalQueryData);
             else
                 view.displayMessage(view.getContext().getString(R.string.search_access_error));
         else
             view.displayMessage(view.getContext().getString(R.string.search_program_not_selected));
+    }
+
+    private HashMap<String, String> getQueryData(HashMap<String, String> queryData, SequentialSearch sequentialSearch) {
+        if (sequentialSearch == null) {
+            return queryData;
+        } else {
+            return sequentialSearch.getFinalQueryData();
+        }
     }
 
     private boolean canCreateTei() {
