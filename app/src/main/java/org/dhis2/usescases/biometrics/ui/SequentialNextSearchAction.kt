@@ -9,9 +9,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import org.dhis2.R
 import org.dhis2.usescases.biometrics.ui.buttons.RegisterNewPatientButton
-import org.dhis2.usescases.biometrics.ui.buttons.SearchWithAttributesButton
-import org.dhis2.usescases.biometrics.ui.buttons.SearchWithBiometricsButton
+import org.dhis2.usescases.biometrics.ui.buttons.TealBorderButton
+import org.dhis2.usescases.biometrics.ui.buttons.TealGradientButton
 
 @Composable
 internal fun SequentialNextSearchActions(
@@ -36,14 +37,16 @@ internal fun SequentialNextSearchAction(
 ) {
     when (sequentialSearchAction) {
         is SequentialSearchAction.SearchWithBiometrics -> {
-            SearchWithBiometricsButton(
+            TealGradientButton(
+                textId = R.string.biometrics_search,
                 modifier = Modifier.defaultMinSize(minHeight = 50.dp, minWidth = 270.dp),
                 onClick = { onClick(sequentialSearchAction) },
             )
         }
 
         is SequentialSearchAction.SearchWithAttributes -> {
-            SearchWithAttributesButton(
+            TealBorderButton(
+                textId = R.string.search_with_attributes,
                 modifier = Modifier.defaultMinSize(minHeight = 50.dp, minWidth = 270.dp),
                 onClick = { onClick(sequentialSearchAction) },
             )
