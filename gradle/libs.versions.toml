@@ -137,6 +137,8 @@ soloaderSDK = "0.10.5"
 liveDataTesting = "1.3.0"
 appauth = "0.8.1"
 listenablefuture = "9999.0-empty-to-avoid-conflict-with-guava"
+googleServices = "4.4.2"
+
 
 #Eyeseetea
 atv = "1.2.9"
@@ -341,6 +343,8 @@ eyeseetea-libsimprints = { group = "com.simprints", name = "libsimprints", versi
 sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
+google-services = { id = "com.google.gms.google-services", version.ref = "googleServices" }
+
 
 [bundles]
 uicomponents-implementation = ["androidx-coreKtx", "androidx-appcompat", "androidx-activity-compose", "androidx-material3", "google-material", "lottie-compose", "dhis2-mobile-designsystem"]

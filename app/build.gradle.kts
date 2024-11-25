@@ -291,6 +291,9 @@ dependencies {
     implementation(platform(libs.dispatcher.dispatchBOM))
     implementation(libs.dispatcher.dispatchCore)
 
+    implementation("com.google.android.gms:play-services-code-scanner:16.1.0")
+
+
     coreLibraryDesugaring(libs.desugar)
 
     debugImplementation(libs.analytics.flipper)

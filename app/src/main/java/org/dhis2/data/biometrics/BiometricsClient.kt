@@ -7,7 +7,10 @@ import android.os.Build
 import android.os.Parcelable
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanner
+import com.google.mlkit.vision.codescanner.GmsBarcodeScanning
 import com.simprints.libsimprints.Constants
+import com.simprints.libsimprints.Constants.SIMPRINTS_PROJECT_ID
 import com.simprints.libsimprints.Identification
 import com.simprints.libsimprints.RefusalForm
 import com.simprints.libsimprints.Registration
@@ -23,7 +26,7 @@ import org.dhis2.commons.biometrics.BIOMETRICS_VERIFY_REQUEST
 import timber.log.Timber
 
 sealed class RegisterResult {
-    data class Completed(val guid: String) : RegisterResult()
+    data class Completed(val guid: String, val scanCode: String? = null) : RegisterResult()
     data class PossibleDuplicates(val items: List<SimprintsItem>, val sessionId: String) :
         RegisterResult()
 
@@ -55,7 +58,7 @@ sealed class VerifyResult {
 
 
 class BiometricsClient(
-    projectId: String, userId: String, private val confidenceScoreFilter: Int
+    projectId: String, userId: String, private val confidenceScoreFilter: Int, private val scanner: GmsBarcodeScanner
 ) {
 
     init {
@@ -113,11 +116,22 @@ class BiometricsClient(
         Timber.d("Biometrics identify!")
         Timber.d("moduleId: $finalModuleId")
 
-        val intent = simHelper.identify(finalModuleId).apply {
-            action = "com.simprints.simqrcodeadapter.VERIFY"
-        }
-
-        launchSimprintsAppFromActivity(activity, intent, BIOMETRICS_IDENTIFY_REQUEST)
+        scanner.startScan()
+            .addOnSuccessListener { barcode ->
+                // Task completed successfully
+            }
+            .addOnCanceledListener {
+                val intent = simHelper.identify(finalModuleId).apply {
+                    putExtra(SIMPRINTS_PROJECT_ID, "x7DpQKYaQsH3pcKyfHpg")
+                }
+                launchSimprintsAppFromActivity(activity, intent, BIOMETRICS_IDENTIFY_REQUEST)
+            }
+            .addOnFailureListener { e ->
+                val intent = simHelper.identify(finalModuleId).apply {
+                    putExtra(SIMPRINTS_PROJECT_ID, "x7DpQKYaQsH3pcKyfHpg")
+                }
+                launchSimprintsAppFromActivity(activity, intent, BIOMETRICS_IDENTIFY_REQUEST)
+            }
     }
 
     fun verify(
@@ -175,7 +189,19 @@ class BiometricsClient(
             if (registration == null) {
                 RegisterResult.Failure
             } else {
-                RegisterResult.Completed(registration.guid)
+                var scanCode: String? = null
+                scanner.startScan()
+                    .addOnSuccessListener { barcode ->
+                        scanCode = barcode.rawValue
+                    }
+                    .addOnCanceledListener {
+
+                    }
+                    .addOnFailureListener { e ->
+
+                    }
+
+                RegisterResult.Completed(registration.guid, scanCode)
             }
         }
 
