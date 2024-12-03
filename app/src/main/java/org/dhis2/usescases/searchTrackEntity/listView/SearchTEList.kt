@@ -406,11 +406,16 @@ class SearchTEList : FragmentGlobalAbstract() {
     }
 
     private fun showToolbarProgress() {
-        (context as SearchTEActivity).showProgress()
+        if (context != null) {
+            (context as SearchTEActivity).showProgress()
+        }
+
     }
 
     private fun hideToolBarProgress() {
-        (context as SearchTEActivity).hideProgress()
+        if (context != null) {
+            (context as SearchTEActivity).hideProgress()
+        }
     }
 
 
@@ -447,7 +452,7 @@ class SearchTEList : FragmentGlobalAbstract() {
                 if (sequentialSearch?.nextActions?.isNotEmpty() == true) {
                     SequentialNextSearchActions(
                         sequentialSearchActions = sequentialSearch?.nextActions!!,
-                        onClick = { action ->  viewModel.sequentialSearchNextAction(action) })
+                        onClick = { action -> viewModel.sequentialSearchNextAction(action) })
                 }
             }
         }
