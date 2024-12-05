@@ -726,7 +726,6 @@ class SearchTEIViewModel(
             }
 
             hasGlobalResults == null && searchRepository.getProgram(initialProgramUid) != null &&
-                    biometricsMode == BiometricsMode.zero &&
                     searchRepository.filterQueryForProgram(queryData, null).isNotEmpty() &&
                     searchRepository.filtersApplyOnGlobalSearch() &&
                     sequentialSearch.value != null && sequentialSearch.value is SequentialSearch.AttributeSearch -> {
@@ -742,7 +741,6 @@ class SearchTEIViewModel(
             hasGlobalResults == null && searchRepository.getProgram(initialProgramUid) != null &&
                     searchRepository.trackedEntityTypeFields().isNotEmpty() &&
                     searchRepository.filtersApplyOnGlobalSearch() &&
-                    biometricsMode == BiometricsMode.zero &&
                     sequentialSearch.value != null && sequentialSearch.value is SequentialSearch.AttributeSearch -> {
                 listOf(
                     SearchResult(
