@@ -484,23 +484,23 @@ class TEICardMapper(
     }
 
     private fun getConfirmationDialogTitle(item: SearchTeiModel): String {
-        return if (item.attributeValues.isEmpty()) {
-            "-"
-        } else {
-            val firsNameValue =
-                item.attributeValues.values.firstOrNull { it.trackedEntityAttribute() == firstNameAttrUid }
-                    ?.value()
+        val firsNameValue =
+            item.allAttributeValues.values.firstOrNull { it.trackedEntityAttribute() == firstNameAttrUid }
+                ?.value()
 
-            val middleNameValue =
-                item.attributeValues.values.firstOrNull { it.trackedEntityAttribute() == middleNameAttrUid }
-                    ?.value()
+        val middleNameValue =
+            item.allAttributeValues.values.firstOrNull { it.trackedEntityAttribute() == middleNameAttrUid }
+                ?.value()
 
-            val lastNameValue =
-                item.attributeValues.values.firstOrNull { it.trackedEntityAttribute() == lastNameAttrUid }
-                    ?.value()
+        val lastNameValue =
+            item.allAttributeValues.values.firstOrNull { it.trackedEntityAttribute() == lastNameAttrUid }
+                ?.value()
 
-            "$firsNameValue $middleNameValue $lastNameValue"
-        }
+        return listOfNotNull(firsNameValue, middleNameValue, lastNameValue)
+            .filter { it != "-" } // DHIS2 D2 empty attribute default value
+            .filter { it.isNotBlank() }
+            .joinToString(separator = " ") { it.trim() }
+            .takeIf { it.isNotBlank() } ?: "-"
     }
 
     private fun getConfirmationDialogSubtitle(item: SearchTeiModel): String {

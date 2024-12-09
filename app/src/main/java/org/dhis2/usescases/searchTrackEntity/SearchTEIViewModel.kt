@@ -28,6 +28,7 @@ import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.biometrics.getBiometricsConfig
 import org.dhis2.data.search.SearchParametersModel
+import org.dhis2.form.extensions.IS_SEARCH_OUTSIDE_PROGRAM_AVAILABLE
 import org.dhis2.form.model.FieldUiModelImpl
 import org.dhis2.form.ui.intent.FormIntent
 import org.dhis2.form.ui.provider.DisplayNameProvider
@@ -254,7 +255,7 @@ class SearchTEIViewModel(
         )
     }
 
-    fun setSearchScreen() {
+    fun setSearchScreen(fromRelationship:Boolean? = null) {
         _screenState.postValue(
             SearchList(
                 previousSate = _screenState.value?.screenState ?: SearchScreenState.NONE,
@@ -270,14 +271,14 @@ class SearchTEIViewModel(
                         ?.minAttributesRequiredToSearch()
                         ?: 1,
                     isForced = false,
-                    isOpened = biometricsMode != BiometricsMode.full,
+                    isOpened = biometricsMode != BiometricsMode.full || fromRelationship == true,
                 ),
                 searchFilters = SearchFilters(
                     hasActiveFilters = hasActiveFilters(),
                     isOpened = false,
                 ),
                 searchHelper = SearchHelper(
-                    isOpened = biometricsMode == BiometricsMode.full,
+                    isOpened = biometricsMode == BiometricsMode.full && (fromRelationship == null || fromRelationship == false),
                 ),
                 biometricsMode
             ),
@@ -726,13 +727,16 @@ class SearchTEIViewModel(
             }
 
             hasGlobalResults == null && searchRepository.getProgram(initialProgramUid) != null &&
-                    biometricsMode == BiometricsMode.zero &&
                     searchRepository.filterQueryForProgram(queryData, null).isNotEmpty() &&
                     searchRepository.filtersApplyOnGlobalSearch() &&
                     sequentialSearch.value != null && sequentialSearch.value is SequentialSearch.AttributeSearch -> {
                 listOf(
                     SearchResult(
-                        SearchResult.SearchResultType.SEARCH_OUTSIDE,
+                        if (IS_SEARCH_OUTSIDE_PROGRAM_AVAILABLE) {
+                            SearchResult.SearchResultType.SEARCH_OUTSIDE
+                        } else {
+                            SearchResult.SearchResultType.NO_MORE_RESULTS
+                        },
                         searchRepository.getProgram(initialProgramUid)?.displayName(),
 
                         ),
@@ -742,7 +746,6 @@ class SearchTEIViewModel(
             hasGlobalResults == null && searchRepository.getProgram(initialProgramUid) != null &&
                     searchRepository.trackedEntityTypeFields().isNotEmpty() &&
                     searchRepository.filtersApplyOnGlobalSearch() &&
-                    biometricsMode == BiometricsMode.zero &&
                     sequentialSearch.value != null && sequentialSearch.value is SequentialSearch.AttributeSearch -> {
                 listOf(
                     SearchResult(
