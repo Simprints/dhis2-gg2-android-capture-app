@@ -7,6 +7,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.lifecycle.Lifecycle
+import timber.log.Timber
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
@@ -307,6 +309,14 @@ class SearchTEList : FragmentGlobalAbstract() {
                 displayResult(null)
             }
         }
+
+        scrollToTopOnSequentialSearch()
+    }
+
+    private fun scrollToTopOnSequentialSearch() {
+        viewModel.sequentialSearch.observe(viewLifecycleOwner) {
+            recycler.scrollToPosition(0)
+        }
     }
 
     private fun updateRecycler() {
@@ -406,11 +416,19 @@ class SearchTEList : FragmentGlobalAbstract() {
     }
 
     private fun showToolbarProgress() {
-        (context as SearchTEActivity).showProgress()
+        if (viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            if (context != null) {
+                (context as SearchTEActivity).showProgress()
+            } else {
+                Timber.w("Cannot show toolbar progress - context is null")
+            }
+        }
     }
 
     private fun hideToolBarProgress() {
-        (context as SearchTEActivity).hideProgress()
+        if (context != null) {
+            (context as SearchTEActivity).hideProgress()
+        }
     }
 
 
@@ -447,7 +465,7 @@ class SearchTEList : FragmentGlobalAbstract() {
                 if (sequentialSearch?.nextActions?.isNotEmpty() == true) {
                     SequentialNextSearchActions(
                         sequentialSearchActions = sequentialSearch?.nextActions!!,
-                        onClick = { action ->  viewModel.sequentialSearchNextAction(action) })
+                        onClick = { action -> viewModel.sequentialSearchNextAction(action) })
                 }
             }
         }
