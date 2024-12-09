@@ -7,6 +7,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.lifecycle.Lifecycle
+import timber.log.Timber
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
@@ -406,10 +408,13 @@ class SearchTEList : FragmentGlobalAbstract() {
     }
 
     private fun showToolbarProgress() {
-        if (context != null) {
-            (context as SearchTEActivity).showProgress()
+        if (viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            if (context != null) {
+                (context as SearchTEActivity).showProgress()
+            } else {
+                Timber.w("Cannot show toolbar progress - context is null")
+            }
         }
-
     }
 
     private fun hideToolBarProgress() {
