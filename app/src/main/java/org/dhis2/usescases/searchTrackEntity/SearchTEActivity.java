@@ -253,7 +253,7 @@ public class SearchTEActivity extends ActivityGlobalAbstract implements SearchTE
                 binding.landOpenSearchButton,
                 viewModel,
                 () -> {
-                    viewModel.setSearchScreen();
+                    viewModel.setSearchScreen(fromRelationship);
                     return Unit.INSTANCE;
                 }
         );

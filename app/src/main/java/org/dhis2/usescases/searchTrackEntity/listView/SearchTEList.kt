@@ -7,6 +7,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.lifecycle.Lifecycle
+import timber.log.Timber
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
@@ -213,7 +215,7 @@ class SearchTEList : FragmentGlobalAbstract() {
                         closeFilterVisibility = isFilterOpened,
                         isLandscape = isLandscape(),
                         queryData = queryData,
-                        onSearchClick = { viewModel.setSearchScreen() },
+                        onSearchClick = { viewModel.setSearchScreen(fromRelationship) },
                         onEnrollClick = { viewModel.onEnrollClick() },
                         onCloseFilters = { viewModel.onFiltersClick(isLandscape()) },
                         onClearSearchQuery = {
@@ -306,6 +308,14 @@ class SearchTEList : FragmentGlobalAbstract() {
             } else {
                 displayResult(null)
             }
+        }
+
+        scrollToTopOnSequentialSearch()
+    }
+
+    private fun scrollToTopOnSequentialSearch() {
+        viewModel.sequentialSearch.observe(viewLifecycleOwner) {
+            recycler.scrollToPosition(0)
         }
     }
 
@@ -406,10 +416,13 @@ class SearchTEList : FragmentGlobalAbstract() {
     }
 
     private fun showToolbarProgress() {
-        if (context != null) {
-            (context as SearchTEActivity).showProgress()
+        if (viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+            if (context != null) {
+                (context as SearchTEActivity).showProgress()
+            } else {
+                Timber.w("Cannot show toolbar progress - context is null")
+            }
         }
-
     }
 
     private fun hideToolBarProgress() {
