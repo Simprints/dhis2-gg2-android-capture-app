@@ -50,6 +50,7 @@ import org.dhis2.data.forms.dataentry.ProgramAdapter;
 import org.dhis2.databinding.ActivitySearchBinding;
 import org.dhis2.form.ui.intent.FormIntent;
 import org.dhis2.ui.ThemeManager;
+import org.dhis2.usescases.biometrics.ui.SequentialSearch;
 import org.dhis2.usescases.biometrics.ui.SequentialSearchAction;
 import org.dhis2.usescases.biometrics.ui.confirmationDialog.BiometricsSearchConfirmationDialog;
 import org.dhis2.usescases.biometrics.ui.SearchHelperFragment;
@@ -227,10 +228,11 @@ public class SearchTEActivity extends ActivityGlobalAbstract implements SearchTE
                     presenter.onBiometricsClick();
                 } else if (action instanceof SequentialSearchAction.SearchWithAttributes) {
                     viewModel.openSearchForm();
+
+                    callBiometricsNoneOfAboveIfRequired();
                 } else {
                     presenter.onEnrollClick(new HashMap<>(viewModel.getQueryData()),
                             viewModel.getSequentialSearch().getValue());
-
 
                     viewModel.resetSequentialSearch();
                     viewModel.clearQueryData();
@@ -265,6 +267,14 @@ public class SearchTEActivity extends ActivityGlobalAbstract implements SearchTE
             openSyncDialog();
         }
 
+    }
+
+    private void callBiometricsNoneOfAboveIfRequired() {
+        SequentialSearch sequentialSearch = viewModel.getSequentialSearch().getValue();
+
+        if (sequentialSearch instanceof SequentialSearch.BiometricsSearch) {
+            presenter.onBiometricsNoneOfTheAboveClick();
+        }
     }
 
     private void initializeVariables(Bundle savedInstanceState) {
@@ -447,8 +457,6 @@ public class SearchTEActivity extends ActivityGlobalAbstract implements SearchTE
                 teiCardMapper,
                 () -> {
                     lastSelection = null;
-                    viewModel.resetSequentialSearch();
-                    presenter.onBiometricsNoneOfTheAboveClick();
                     return Unit.INSTANCE;
                 },
                 () -> {
@@ -477,7 +485,6 @@ public class SearchTEActivity extends ActivityGlobalAbstract implements SearchTE
     @Override
     public void sendBiometricsNoneSelected(String sessionId) {
         BiometricsClientFactory.INSTANCE.get(this).noneSelected(this, sessionId);
-        viewModel.clearQueryData();
     }
 
     @Override
