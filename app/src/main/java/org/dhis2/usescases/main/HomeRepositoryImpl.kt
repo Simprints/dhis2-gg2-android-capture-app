@@ -37,7 +37,8 @@ class HomeRepositoryImpl(
 
         val corruptedBiometricsValues = teiAttributeValues.filter {
             it.value()?.startsWith(BIOMETRICS_SEARCH_PATTERN) == true ||
-                    it.value()?.startsWith(BIOMETRICS_FAILURE_PATTERN) == true
+                    it.value()?.startsWith(BIOMETRICS_FAILURE_PATTERN) == true ||
+                    it.value().isNullOrEmpty()
         }
 
         corruptedBiometricsValues.forEach {
@@ -126,10 +127,19 @@ class HomeRepositoryImpl(
         }
     }
 
-    fun deleteBiometricsAttributeValue(teiUid: String, biometricUid: String) {
+    /**
+     * Deletes a biometric attribute value for a given tracked entity instance
+     * Used to clean up corrupted or invalid biometric data
+     *
+     * @param teiUid The tracked entity instance UID
+     * @param biometricUid The biometric attribute UID
+     */
+    private fun deleteBiometricsAttributeValue(teiUid: String, biometricUid: String) {
         val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
             .value(biometricUid, teiUid)
 
+        Timber.d("Deleting biometric value for TEI: $teiUid and attribute: $biometricUid")
         valueRepository.blockingDelete()
+        Timber.d("Successfully deleted biometric value")
     }
 }
