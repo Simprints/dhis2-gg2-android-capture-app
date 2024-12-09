@@ -309,6 +309,14 @@ class SearchTEList : FragmentGlobalAbstract() {
                 displayResult(null)
             }
         }
+
+        scrollToTopOnSequentialSearch()
+    }
+
+    private fun scrollToTopOnSequentialSearch() {
+        viewModel.sequentialSearch.observe(viewLifecycleOwner) {
+            recycler.scrollToPosition(0)
+        }
     }
 
     private fun updateRecycler() {
