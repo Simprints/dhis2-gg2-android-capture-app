@@ -254,7 +254,7 @@ class SearchTEIViewModel(
         )
     }
 
-    fun setSearchScreen() {
+    fun setSearchScreen(fromRelationship:Boolean? = null) {
         _screenState.postValue(
             SearchList(
                 previousSate = _screenState.value?.screenState ?: SearchScreenState.NONE,
@@ -270,14 +270,14 @@ class SearchTEIViewModel(
                         ?.minAttributesRequiredToSearch()
                         ?: 1,
                     isForced = false,
-                    isOpened = biometricsMode != BiometricsMode.full,
+                    isOpened = biometricsMode != BiometricsMode.full || fromRelationship == true,
                 ),
                 searchFilters = SearchFilters(
                     hasActiveFilters = hasActiveFilters(),
                     isOpened = false,
                 ),
                 searchHelper = SearchHelper(
-                    isOpened = biometricsMode == BiometricsMode.full,
+                    isOpened = biometricsMode == BiometricsMode.full && (fromRelationship == null || fromRelationship == false),
                 ),
                 biometricsMode
             ),
