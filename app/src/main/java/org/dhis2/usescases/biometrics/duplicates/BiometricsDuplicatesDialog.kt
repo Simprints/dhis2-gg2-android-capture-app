@@ -12,6 +12,19 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.widget.Toast
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.databinding.DataBindingUtil
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
@@ -31,6 +44,8 @@ import org.dhis2.data.biometrics.BiometricsClient
 import org.dhis2.data.biometrics.BiometricsClientFactory.get
 import org.dhis2.data.biometrics.SimprintsItem
 import org.dhis2.databinding.DialogBiometricsDuplicatesBinding
+import org.dhis2.usescases.biometrics.ui.buttons.TealBorderButton
+import org.dhis2.usescases.biometrics.ui.buttons.TealGradientButton
 import org.dhis2.usescases.searchTrackEntity.ui.mapper.TEICardMapper
 import org.dhis2.utils.LastSelection
 import org.hisp.dhis.android.core.arch.call.D2Progress
@@ -73,6 +88,7 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
         return dialog
     }
 
+    @ExperimentalAnimationApi
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -87,7 +103,8 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
 
 
         val possibleDuplicates: List<SimprintsItem> =
-            requireArguments().getParcelableArrayList<SimprintsItemParcelable>(POSSIBLE_DUPLICATES)?.toList()?.map {
+            requireArguments().getParcelableArrayList<SimprintsItemParcelable>(POSSIBLE_DUPLICATES)
+                ?.toList()?.map {
                 SimprintsItem(it.guid, it.confidence)
             } ?: emptyList()
 
@@ -97,21 +114,6 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
         val trackedEntityTypeUid = requireArguments().getString(TRACKED_ENTITY_TYPE_UID)!!
         val biometricsAttributeUid = requireArguments().getString(BIOMETRICS_ATTRIBUTE_UID)!!
         val enrollNewVisible = requireArguments().getBoolean(ENROL_NEW_VISIBLE)
-
-        if (enrollNewVisible){
-            binding.enrollNewButton.visibility = View.VISIBLE
-
-        } else {
-            binding.enrollNewButton.visibility = View.GONE
-        }
-
-        binding.enrollNewButton.setOnClickListener {
-            presenter.enrollNewClick()
-        }
-
-        binding.enrollWithoutBiometricsButton.setOnClickListener {
-            presenter.enrollWithoutBiometrics()
-        }
 
         this.adapter =
             BiometricsDuplicatesDialogAdapter(teiCardMapper, ColorUtils()) { searchTeiModel ->
@@ -132,6 +134,8 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
             trackedEntityTypeUid,
             biometricsAttributeUid
         )
+
+        configureButtons(binding.buttonsContainer, enrollNewVisible)
 
         return binding.root
     }
@@ -258,6 +262,27 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
             .inject(this)
     }
 
+    @ExperimentalAnimationApi
+    private fun configureButtons(buttonsContainer: ComposeView, enrollNewVisible: Boolean) {
+        buttonsContainer.apply {
+            setViewCompositionStrategy(
+                ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
+            )
+            setContent {
+                DialogActions(
+                    enrollNewVisible = enrollNewVisible,
+                    enrolWithoutBiometrics = {
+                        presenter.enrollWithoutBiometrics()
+                    },
+                    enrolNewBiometrics = {
+                        presenter.enrollNewClick()
+                    }
+                )
+            }
+        }
+    }
+
+
     companion object {
         private const val POSSIBLE_DUPLICATES = "POSSIBLE_DUPLICATES"
         private const val BIOMETRICS_SESSION_ID = "BIOMETRICS_SESSION_ID"
@@ -285,7 +310,10 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
                 SimprintsItemParcelable(it.guid, it.confidence)
             }
 
-            args.putParcelableArrayList(POSSIBLE_DUPLICATES, ArrayList(possibleDuplicatesParcelable))
+            args.putParcelableArrayList(
+                POSSIBLE_DUPLICATES,
+                ArrayList(possibleDuplicatesParcelable)
+            )
             args.putString(BIOMETRICS_SESSION_ID, sessionId)
             args.putString(PROGRAM_UID, programUid)
             args.putString(TRACKED_ENTITY_TYPE_UID, trackedEntityTypeUid)
@@ -301,7 +329,7 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
 data class SimprintsItemParcelable(
     val guid: String,
     val confidence: Float
-): Parcelable {
+) : Parcelable {
     constructor(parcel: Parcel) : this(
         parcel.readString() ?: "",
         parcel.readFloat()
@@ -326,9 +354,65 @@ data class SimprintsItemParcelable(
             return arrayOfNulls(size)
         }
     }
+
 }
 
-inline fun <reified T : Parcelable> Intent.extractParcelableArrayListExtra(key: String): List<T>? = when {
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> getParcelableArrayListExtra(key, T::class.java)
-    else -> @Suppress("DEPRECATION") getParcelableArrayListExtra(key)
+
+inline fun <reified T : Parcelable> Intent.extractParcelableArrayListExtra(key: String): List<T>? =
+    when {
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> getParcelableArrayListExtra(
+            key,
+            T::class.java
+        )
+
+        else -> @Suppress("DEPRECATION") getParcelableArrayListExtra(key)
+    }
+
+
+@Composable
+fun DialogActions(
+    enrollNewVisible: Boolean,
+    enrolWithoutBiometrics: () -> Unit = { },
+    enrolNewBiometrics: () -> Unit = { }
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(16.dp),
+    ) {
+        TealBorderButton(
+            textId = R.string.biometrics_enroll_without_biometrics,
+            modifier = Modifier.weight(1f),
+            onClick = enrolWithoutBiometrics
+        )
+
+        if (enrollNewVisible) {
+            Spacer(modifier = Modifier.width(8.dp))
+
+            TealGradientButton(
+                textId = R.string.biometrics_enroll_new,
+                modifier = Modifier.weight(1f),
+                onClick = enrolNewBiometrics
+            )
+        }
+    }
+
+}
+
+@Preview(name = "NEXUS_5X_new", device = Devices.NEXUS_5)
+@Preview(name = "PIXEL_3A_new", device = Devices.PIXEL_3A)
+@Composable
+fun DialogActionsPreview() {
+    DialogActions(
+        enrollNewVisible = true,
+        enrolWithoutBiometrics = {},
+        enrolNewBiometrics = {})
+}
+
+@Preview(name = "NEXUS_5X_no_new", device = Devices.NEXUS_5)
+@Preview(name = "PIXEL_3A_no_new", device = Devices.PIXEL_3A)
+@Composable
+fun DialogActionsWithoutNewPreview() {
+    DialogActions(
+        enrollNewVisible = false,
+        enrolWithoutBiometrics = {},
+        enrolNewBiometrics = {})
 }

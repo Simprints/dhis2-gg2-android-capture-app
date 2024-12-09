@@ -22,9 +22,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import org.dhis2.R
 import org.dhis2.usescases.biometrics.ui.buttons.RegisterNewPatientButton
-import org.dhis2.usescases.biometrics.ui.buttons.SearchWithAttributesButton
-import org.dhis2.usescases.biometrics.ui.buttons.SearchWithBiometricsButton
+import org.dhis2.usescases.biometrics.ui.buttons.TealBorderButton
+import org.dhis2.usescases.biometrics.ui.buttons.TealGradientButton
 import org.dhis2.usescases.searchTrackEntity.SearchTEActivity
 import org.dhis2.usescases.searchTrackEntity.SearchTEIViewModel
 import org.dhis2.usescases.searchTrackEntity.SearchTeiViewModelFactory
@@ -64,12 +65,16 @@ fun SearchHelperContent(onAction: (action: SequentialSearchAction) -> Unit = { }
     Surface(color = Color.White) {
         Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(16.dp)) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                SearchWithBiometricsButton( Modifier.fillMaxWidth(),
+                TealGradientButton(
+                    textId = R.string.biometrics_search,
+                    modifier =  Modifier.fillMaxWidth(),
                     onClick = { onAction(SequentialSearchAction.SearchWithBiometrics) })
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                SearchWithAttributesButton( Modifier.fillMaxWidth(),
+                TealBorderButton(
+                    textId = R.string.search_with_attributes,
+                    modifier =Modifier.fillMaxWidth(),
                     onClick = { onAction(SequentialSearchAction.SearchWithAttributes) })
 
                 Spacer(modifier = Modifier.height(64.dp))

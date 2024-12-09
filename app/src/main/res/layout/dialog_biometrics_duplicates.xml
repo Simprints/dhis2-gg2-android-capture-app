@@ -69,37 +69,14 @@
                 android:layout_marginBottom="@dimen/default_top_margin"
                 android:clipToPadding="false"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                app:layout_constraintBottom_toTopOf="@id/enroll_new_button"
+                app:layout_constraintBottom_toTopOf="@id/buttonsContainer"
                 app:layout_constraintTop_toBottomOf="@id/title" />
 
-            <Button
-                android:id="@+id/enroll_without_biometrics_button"
-                style="?borderlessButtonStyle"
-                android:layout_width="0dp"
+            <androidx.compose.ui.platform.ComposeView
+                android:id="@+id/buttonsContainer"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_margin="0dp"
-                android:background="@android:color/transparent"
-                android:text="@string/biometrics_enroll_without_biometrics"
-                android:textColor="@color/colorGreyDefault"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/enroll_new_button"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintWidth_percent="0.5" />
-
-            <Button
-                android:id="@+id/enroll_new_button"
-                style="?borderlessButtonStyle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_margin="0dp"
-                android:background="@android:color/transparent"
-                android:text="@string/biometrics_enroll_new"
-                android:textColor="@color/colorGreyDefault"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/enroll_without_biometrics_button"
-                app:layout_constraintWidth_percent="0.45" />
-
+                app:layout_constraintBottom_toBottomOf="parent"/>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
     </RelativeLayout>
