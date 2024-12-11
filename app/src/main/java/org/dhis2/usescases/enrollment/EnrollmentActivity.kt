@@ -460,10 +460,12 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
     }
 
     override fun showPossibleDuplicatesDialog(
-        possibleDuplicates: List<SimprintsItem>, sessionId: String, programUid: String,
+        possibleDuplicates: List<SimprintsItem>, sessionId: String,
+        programUid: String,
         trackedEntityTypeUid: String,
         biometricsAttributeUid: String,
-        enrollNewVisible: Boolean
+        enrollNewVisible: Boolean,
+        orgUnit: String
     ) {
         val dialog = BiometricsDuplicatesDialog.newInstance(
             possibleDuplicates, sessionId, programUid,
@@ -487,7 +489,7 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
         }
 
         dialog.setOnEnrollNewListener { biometricsSessionId ->
-            BiometricsClientFactory.get(this).registerLast(this, biometricsSessionId)
+            BiometricsClientFactory.get(this).registerLast(this, biometricsSessionId, orgUnit)
         }
 
         dialog.setOnEnrollWithoutBiometricsListener {
@@ -500,7 +502,7 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
         )
     }
 
-    override fun registerLast(sessionId: String) {
-        BiometricsClientFactory.get(this).registerLast(this, sessionId)
+    override fun registerLast(sessionId: String, orgUnit: String) {
+        BiometricsClientFactory.get(this).registerLast(this, sessionId, orgUnit)
     }
 }

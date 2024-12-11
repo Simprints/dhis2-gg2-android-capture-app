@@ -55,10 +55,10 @@ class TEIDataContracts {
         fun refreshCard()
         fun registerBiometrics(orgUnit: String, trackedEntityInstance: String, ageInMonths: Long)
         fun showBiometricsAgeGroupNotSupported()
-        fun registerLast(sessionId: String)
+        fun registerLast(sessionId: String, orgUnit: String)
         fun showPossibleDuplicatesDialog( possibleDuplicates: List<SimprintsItem>, sessionId: String, programUid: String,
                                           trackedEntityTypeUid: String, biometricsAttributeUid: String,
-                                          enrollNewVisible:Boolean)
+                                          enrollNewVisible:Boolean, orgUnit: String)
 
         fun showUnableSaveBiometricsMessage()
     }
