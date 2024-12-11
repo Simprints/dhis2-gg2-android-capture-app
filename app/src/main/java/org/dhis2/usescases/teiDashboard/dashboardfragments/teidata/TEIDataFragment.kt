@@ -676,15 +676,14 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
         ).show()
     }
 
-    override fun registerLast(sessionId: String) {
-        get(requireContext()).registerLastFromFragment(this, sessionId)
+    override fun registerLast(sessionId: String, orgUnit: String) {
+        get(requireContext()).registerLastFromFragment(this, sessionId, orgUnit)
     }
-
 
     override fun showPossibleDuplicatesDialog(
         possibleDuplicates: List<SimprintsItem>, sessionId: String, programUid: String,
         trackedEntityTypeUid: String, biometricsAttributeUid: String,
-        enrollNewVisible: Boolean
+        enrollNewVisible: Boolean, orgUnit: String
     ) {
         val dialog = BiometricsDuplicatesDialog.newInstance(
             possibleDuplicates, sessionId, programUid,
@@ -706,7 +705,7 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
         }
 
         dialog.setOnEnrollNewListener { biometricsSessionId ->
-            get(requireContext()).registerLastFromFragment(this, biometricsSessionId)
+            get(requireContext()).registerLastFromFragment(this, biometricsSessionId, orgUnit)
         }
 
         dialog.setOnEnrollWithoutBiometricsListener {
