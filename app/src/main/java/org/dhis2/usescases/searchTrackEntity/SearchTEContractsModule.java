@@ -71,7 +71,6 @@ public class SearchTEContractsModule {
                 String enrollmentUid, boolean isOnline);
 
         void showBiometricsSearchConfirmation(SearchTeiModel item);
-        void sendBiometricsNoneSelected(String sessionId);
         void launchBiometricsIdentify(String moduleId);
     }
 
@@ -145,8 +144,6 @@ public class SearchTEContractsModule {
         void searchOnBiometrics(List <SimprintsItem> simprintsItems, String sessionId, Boolean ageNotSupported);
 
         boolean getBiometricsSearchStatus();
-
-        void onBiometricsNoneOfTheAboveClick();
 
         void setBiometricListener(SearchTEPresenter.BiometricsSearchListener biometricsSearchListener);
 

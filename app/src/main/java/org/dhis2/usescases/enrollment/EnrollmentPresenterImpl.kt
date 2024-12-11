@@ -352,10 +352,12 @@ class EnrollmentPresenterImpl(
         val teiTypeUid = d2.trackedEntityModule().trackedEntityInstances().uid(teiUid).blockingGet()
             ?.trackedEntityType()!!
 
+        val orgUnitAsModuleId = getOrgUnit()
+
         if (possibleDuplicates.isEmpty()) {
-            view.registerLast(sessionId)
+            view.registerLast(sessionId, orgUnitAsModuleId)
         } else if (possibleDuplicates.size == 1 && possibleDuplicates[0].guid == biometricsUiModel!!.value) {
-            view.registerLast(sessionId)
+            view.registerLast(sessionId, orgUnitAsModuleId)
         } else {
             val finalPossibleDuplicates =
                 possibleDuplicates.filter { it.guid != biometricsUiModel!!.value }
@@ -369,7 +371,8 @@ class EnrollmentPresenterImpl(
                 program,
                 teiTypeUid,
                 biometricsAttUid,
-                enrollNewVisible
+                enrollNewVisible,
+                orgUnitAsModuleId
             )
         }
     }
@@ -384,14 +387,11 @@ class EnrollmentPresenterImpl(
                 showOrHideSaveButton()
             }
 
-            biometricsUiModel?.setBiometricsRegisterListener {
-                val orgUnit = enrollmentObjectRepository.get().blockingGet()
-                    ?.organisationUnit()!!
+            val orgUnitAsModuleId = getOrgUnit()
 
+            biometricsUiModel?.setBiometricsRegisterListener {
                 val ageInMonths =
                     getAgeInMonthsByFieldUiModel(basicPreferenceProvider, fields)
-
-                val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnit, d2, basicPreferenceProvider)
 
                 view.registerBiometrics(orgUnitAsModuleId, ageInMonths)
                 pendingSave = true
@@ -407,13 +407,20 @@ class EnrollmentPresenterImpl(
 
             biometricsUiModel?.setRegisterLastAndSave { sessionId ->
                 pendingSave = true
-                view.registerLast(sessionId)
+                view.registerLast(sessionId, orgUnitAsModuleId)
             }
 
             if (biometricsUiModel?.value?.startsWith(BIOMETRICS_FAILURE_PATTERN) == true) {
                 resetBiometricsFailureAfterTime()
             }
         }
+    }
+
+    private fun getOrgUnit(): String {
+        val orgUnit = enrollmentObjectRepository.get().blockingGet()
+            ?.organisationUnit()!!
+
+        return getOrgUnitAsModuleId(orgUnit, d2, basicPreferenceProvider)
     }
 
     private fun resetBiometricsFailureAfterTime() {

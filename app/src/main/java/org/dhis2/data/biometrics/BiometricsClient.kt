@@ -319,7 +319,7 @@ class BiometricsClient(
         launchSimprintsAppFromFragment(fragment, intent, BIOMETRICS_CONFIRM_IDENTITY_REQUEST)
     }
 
-    fun noneSelected(activity: Activity, sessionId: String) {
+/*    fun noneSelected(activity: Activity, sessionId: String) {
         Timber.d("Biometrics confirmIdentify!")
         Timber.d("sessionId: $sessionId")
         Timber.d("guid: none_selected")
@@ -327,24 +327,28 @@ class BiometricsClient(
         val intent = simHelper.confirmIdentity(sessionId, "none_selected")
 
         launchSimprintsAppFromActivity(activity, intent, BIOMETRICS_CONFIRM_IDENTITY_REQUEST)
-    }
+    }*/
 
-    fun registerLast(activity: Activity, sessionId: String) {
+    fun registerLast(activity: Activity, sessionId: String, moduleId: String?) {
+        val finalModuleId = moduleId ?: defaultModuleId
+
         Timber.d("Biometrics confirmIdentify!")
-        Timber.d("moduleId: $defaultModuleId")
+        Timber.d("moduleId: $finalModuleId")
         Timber.d("sessionId: $sessionId")
 
-        val intent = simHelper.registerLastBiometrics(defaultModuleId, sessionId)
+        val intent = simHelper.registerLastBiometrics(finalModuleId, sessionId)
 
         launchSimprintsAppFromActivity(activity, intent, BIOMETRICS_ENROLL_LAST_REQUEST)
     }
 
-    fun registerLastFromFragment(fragment: Fragment, sessionId: String) {
+    fun registerLastFromFragment(fragment: Fragment, sessionId: String, moduleId: String?) {
+        val finalModuleId = moduleId ?: defaultModuleId
+
         Timber.d("Biometrics confirmIdentify!")
-        Timber.d("moduleId: $defaultModuleId")
+        Timber.d("moduleId: $finalModuleId")
         Timber.d("sessionId: $sessionId")
 
-        val intent = simHelper.registerLastBiometrics(defaultModuleId, sessionId)
+        val intent = simHelper.registerLastBiometrics(finalModuleId, sessionId)
 
         launchSimprintsAppFromFragment(fragment, intent, BIOMETRICS_ENROLL_LAST_REQUEST)
     }

@@ -39,8 +39,8 @@ import org.dhis2.form.data.RulesUtilsProviderImpl
 import org.dhis2.form.model.EventMode
 import org.dhis2.mobileProgramRules.RuleEngineHelper
 import org.dhis2.usescases.biometrics.biometricAttributeId
-import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.duplicates.LastPossibleDuplicates
+import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.getAgeInMonthsByAttributes
 import org.dhis2.usescases.biometrics.getOrgUnitAsModuleId
 import org.dhis2.usescases.biometrics.isLastVerificationValid
@@ -564,17 +564,15 @@ class TEIDataPresenter(
 
     private fun registerBiometrics() {
         if (dashboardModel != null) {
-            val orgUnit = orgUnitUid ?: return
-
             val ageInMonths = getAgeInMonthsByAttributes(
                 basicPreferenceProvider,
                 dashboardModel!!.trackedEntityAttributeValues,
             )
 
-            val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnit, d2, basicPreferenceProvider)
+            val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnitUid ?: return, d2, basicPreferenceProvider)
 
             if (lastBiometricsSearchSessionId != null){
-                view.registerLast(lastBiometricsSearchSessionId)
+                view.registerLast(lastBiometricsSearchSessionId, orgUnitAsModuleId)
             } else {
                 view.registerBiometrics(
                     orgUnitAsModuleId, dashboardModel!!.trackedEntityInstance.uid(), ageInMonths
@@ -727,10 +725,12 @@ class TEIDataPresenter(
         val biometricsValue =
             values.firstOrNull { it.trackedEntityAttribute() == dashboardModel!!.getBiometricsAttributeUid() }
 
+        val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnitUid ?: return, d2, basicPreferenceProvider)
+
         if (possibleDuplicates.isEmpty()) {
-            view.registerLast(sessionId)
+            view.registerLast(sessionId, orgUnitAsModuleId)
         } else if (possibleDuplicates.size == 1 && possibleDuplicates[0].guid == biometricsValue?.value()) {
-            view.registerLast(sessionId)
+            view.registerLast(sessionId, orgUnitAsModuleId)
         } else {
             val finalPossibleDuplicates =
                 possibleDuplicates.filter { it.guid != biometricsValue?.value() }
@@ -743,7 +743,8 @@ class TEIDataPresenter(
                 program,
                 teiTypeUid,
                 biometricsAttUid,
-                enrollNewVisible
+                enrollNewVisible,
+                orgUnitAsModuleId
             )
         }
     }
