@@ -55,18 +55,18 @@ sealed class VerifyResult {
 
 class BiometricsClient(
     projectId: String,
-    userId: String,
+    user: String,
     private val confidenceScoreFilter: Int
 ) {
 
     init {
         Timber.d("BiometricsClient!")
-        Timber.d("userId: $userId")
+        Timber.d("userId: $user")
         Timber.d("projectId: $projectId")
         Timber.d("confidenceScoreFilter: $confidenceScoreFilter")
     }
 
-    private val simHelper = SimHelper(projectId, userId)
+    private val simHelper = SimHelper(projectId, user)
     private val defaultModuleId = "NA"
 
     fun register(activity: Activity, moduleId: String, ageInMonths: Long) {
