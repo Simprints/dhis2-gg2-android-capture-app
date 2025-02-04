@@ -583,7 +583,15 @@ class TEIDataPresenter(
             val userOrgUnits = getUserOrgUnits(dashboardModel!!.currentEnrollment.program())
 
             if (lastBiometricsSearchSessionId != null) {
-                view.registerLast(lastBiometricsSearchSessionId, orgUnitAsModuleId)
+                view.registerLast(
+                    lastBiometricsSearchSessionId,
+                    orgUnitAsModuleId,
+                    ageInMonths,
+                    dashboardModel!!.trackedEntityInstance.uid(),
+                    orgUnit,
+                    getOrgUnitName(orgUnit),
+                    userOrgUnits
+                )
             } else {
                 view.registerBiometrics(
                     orgUnitAsModuleId,
@@ -729,6 +737,8 @@ class TEIDataPresenter(
     ) {
         lastRegisterResult = null
 
+        val orgUnit = orgUnitUid ?: return
+
         val program = programUid ?: ""
         val biometricsAttUid = biometricAttributeId
         val teiUid = getEnrollment()!!.trackedEntityInstance() ?: ""
@@ -742,13 +752,26 @@ class TEIDataPresenter(
         val biometricsValue =
             values.firstOrNull { it.trackedEntityAttribute() == dashboardModel!!.getBiometricsAttributeUid() }
 
+        val ageInMonths = getAgeInMonthsByAttributes(
+            basicPreferenceProvider,
+            dashboardModel!!.trackedEntityAttributeValues,
+        )
+
         val orgUnitAsModuleId =
             getOrgUnitAsModuleId(orgUnitUid ?: return, d2, basicPreferenceProvider)
 
-        if (possibleDuplicates.isEmpty()) {
-            view.registerLast(sessionId, orgUnitAsModuleId)
-        } else if (possibleDuplicates.size == 1 && possibleDuplicates[0].guid == biometricsValue?.value()) {
-            view.registerLast(sessionId, orgUnitAsModuleId)
+        val userOrgUnits = getUserOrgUnits(dashboardModel!!.currentEnrollment.program())
+
+        if (possibleDuplicates.isEmpty() || (possibleDuplicates.size == 1 && possibleDuplicates[0].guid == biometricsValue?.value())) {
+            view.registerLast(
+                sessionId,
+                orgUnitAsModuleId,
+                ageInMonths,
+                teiUid,
+                orgUnit,
+                getOrgUnitName(orgUnit),
+                userOrgUnits
+            )
         } else {
             val finalPossibleDuplicates =
                 possibleDuplicates.filter { it.guid != biometricsValue?.value() }
@@ -762,7 +785,13 @@ class TEIDataPresenter(
                 teiTypeUid,
                 biometricsAttUid,
                 enrollNewVisible,
-                orgUnitAsModuleId
+                orgUnitAsModuleId,
+                ageInMonths,
+                teiUid,
+                orgUnit,
+                getOrgUnitName(orgUnit),
+                userOrgUnits
+
             )
         }
     }

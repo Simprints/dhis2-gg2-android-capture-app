@@ -652,7 +652,7 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
         ageInMonths: Long,
         enrollingOrgUnitId: String,
         enrollingOrgUnitName: String,
-        userOrgUnits:List<String>
+        userOrgUnits: List<String>
     ) {
         val biometricsClient = get(requireContext())
 
@@ -674,7 +674,7 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
         ageInMonths: Long,
         enrollingOrgUnitId: String,
         enrollingOrgUnitName: String,
-        userOrgUnits:List<String>
+        userOrgUnits: List<String>
     ) {
         val biometricsClient = get(requireContext())
 
@@ -696,14 +696,36 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
         ).show()
     }
 
-    override fun registerLast(sessionId: String, orgUnit: String) {
-        get(requireContext()).registerLastFromFragment(this, sessionId, orgUnit)
+    override fun registerLast(
+        sessionId: String,
+        moduleId: String,
+        ageInMonths: Long?,
+        trackedEntityInstanceUId: String,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>
+    ) {
+        get(requireContext()).registerLastFromFragment(
+            this,
+            sessionId,
+            moduleId,
+            ageInMonths,
+            trackedEntityInstanceUId,
+            enrollingOrgUnitId,
+            enrollingOrgUnitName,
+            userOrgUnits
+        )
     }
 
     override fun showPossibleDuplicatesDialog(
         possibleDuplicates: List<SimprintsItem>, sessionId: String, programUid: String,
         trackedEntityTypeUid: String, biometricsAttributeUid: String,
-        enrollNewVisible: Boolean, orgUnit: String
+        enrollNewVisible: Boolean, moduleId: String,
+        ageInMonths: Long?,
+        trackedEntityInstanceUId: String,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>
     ) {
         val dialog = BiometricsDuplicatesDialog.newInstance(
             possibleDuplicates, sessionId, programUid,
@@ -725,7 +747,16 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
         }
 
         dialog.setOnEnrollNewListener { biometricsSessionId ->
-            get(requireContext()).registerLastFromFragment(this, biometricsSessionId, orgUnit)
+            get(requireContext()).registerLastFromFragment(
+                this,
+                biometricsSessionId,
+                moduleId,
+                ageInMonths,
+                trackedEntityInstanceUId,
+                enrollingOrgUnitId,
+                enrollingOrgUnitName,
+                userOrgUnits
+            )
         }
 
         dialog.setOnEnrollWithoutBiometricsListener {

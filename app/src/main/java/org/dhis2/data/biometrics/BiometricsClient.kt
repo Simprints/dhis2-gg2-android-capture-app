@@ -9,6 +9,7 @@ import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.simprints.libsimprints.Constants
 import com.simprints.libsimprints.Identification
+import com.simprints.libsimprints.Metadata
 import com.simprints.libsimprints.RefusalForm
 import com.simprints.libsimprints.Registration
 import com.simprints.libsimprints.SimHelper
@@ -390,7 +391,8 @@ class BiometricsClient(
         }*/
 
     fun registerLast(
-        activity: Activity, sessionId: String,
+        activity: Activity,
+        sessionId: String,
         moduleId: String?,
         ageInMonths: Long? = null,
         trackedEntityInstanceUId: String,
@@ -398,6 +400,49 @@ class BiometricsClient(
         enrollingOrgUnitName: String,
         userOrgUnits: List<String>
     ) {
+        val intent = createRegisterLastIntent(
+            moduleId,
+            sessionId,
+            ageInMonths,
+            trackedEntityInstanceUId,
+            enrollingOrgUnitId,
+            enrollingOrgUnitName,
+            userOrgUnits
+        )
+
+        launchSimprintsAppFromActivity(activity, intent, BIOMETRICS_ENROLL_LAST_REQUEST)
+    }
+
+    fun registerLastFromFragment(fragment: Fragment, sessionId: String,
+                                 moduleId: String?,
+                                 ageInMonths: Long? = null,
+                                 trackedEntityInstanceUId: String,
+                                 enrollingOrgUnitId: String,
+                                 enrollingOrgUnitName: String,
+                                 userOrgUnits: List<String>) {
+
+        val intent = createRegisterLastIntent(
+            moduleId,
+            sessionId,
+            ageInMonths,
+            trackedEntityInstanceUId,
+            enrollingOrgUnitId,
+            enrollingOrgUnitName,
+            userOrgUnits
+        )
+
+        launchSimprintsAppFromFragment(fragment, intent, BIOMETRICS_ENROLL_LAST_REQUEST)
+    }
+
+    private fun createRegisterLastIntent(
+        moduleId: String?,
+        sessionId: String,
+        ageInMonths: Long?,
+        trackedEntityInstanceUId: String,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>
+    ): Intent {
         val finalModuleId = moduleId ?: defaultModuleId
 
         Timber.d("Biometrics confirmIdentify!")
@@ -414,7 +459,7 @@ class BiometricsClient(
             )
 
         val intent = if (ageInMonths != null) {
-            val metadata = com.simprints.libsimprints.Metadata()
+            val metadata = Metadata()
                 .put("subjectAge", ageInMonths)
 
             simHelper.registerLastBiometrics(finalModuleId, sessionId, metadata)
@@ -424,19 +469,7 @@ class BiometricsClient(
 
         extras.forEach { intent.putExtra(it.key, it.value) }
 
-        launchSimprintsAppFromActivity(activity, intent, BIOMETRICS_ENROLL_LAST_REQUEST)
-    }
-
-    fun registerLastFromFragment(fragment: Fragment, sessionId: String, moduleId: String?) {
-        val finalModuleId = moduleId ?: defaultModuleId
-
-        Timber.d("Biometrics confirmIdentify!")
-        Timber.d("moduleId: $finalModuleId")
-        Timber.d("sessionId: $sessionId")
-
-        val intent = simHelper.registerLastBiometrics(finalModuleId, sessionId)
-
-        launchSimprintsAppFromFragment(fragment, intent, BIOMETRICS_ENROLL_LAST_REQUEST)
+        return intent
     }
 
     private fun checkBiometricsCompleted(data: Intent) =
