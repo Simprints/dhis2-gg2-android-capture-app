@@ -484,7 +484,12 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
         trackedEntityTypeUid: String,
         biometricsAttributeUid: String,
         enrollNewVisible: Boolean,
-        orgUnit: String
+        moduleId: String,
+        ageInMonths: Long?,
+        trackedEntityInstanceUId: String,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>
     ) {
         val dialog = BiometricsDuplicatesDialog.newInstance(
             possibleDuplicates, sessionId, programUid,
@@ -508,7 +513,15 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
         }
 
         dialog.setOnEnrollNewListener { biometricsSessionId ->
-            BiometricsClientFactory.get(this).registerLast(this, biometricsSessionId, orgUnit)
+            BiometricsClientFactory.get(this).registerLast(
+                this,
+                biometricsSessionId,
+                moduleId,
+                ageInMonths,
+                trackedEntityInstanceUId,
+                enrollingOrgUnitId,
+                enrollingOrgUnitName,
+                userOrgUnits)
         }
 
         dialog.setOnEnrollWithoutBiometricsListener {
@@ -521,7 +534,21 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
         )
     }
 
-    override fun registerLast(sessionId: String, orgUnit: String) {
-        BiometricsClientFactory.get(this).registerLast(this, sessionId, orgUnit)
+    override fun registerLast(sessionId: String,
+                              moduleId: String,
+                              ageInMonths: Long?,
+                              trackedEntityInstanceUId: String,
+                              enrollingOrgUnitId: String,
+                              enrollingOrgUnitName: String,
+                              userOrgUnits: List<String>) {
+        BiometricsClientFactory.get(this).registerLast(
+            this,
+            sessionId,
+            moduleId,
+            ageInMonths,
+            trackedEntityInstanceUId,
+            enrollingOrgUnitId,
+            enrollingOrgUnitName,
+            userOrgUnits)
     }
 }

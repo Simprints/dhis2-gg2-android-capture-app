@@ -31,6 +31,7 @@ import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
 import org.dhis2.usescases.biometrics.BIOMETRICS_ENABLED
 import org.dhis2.usescases.biometrics.duplicates.LastPossibleDuplicates
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
+import org.dhis2.usescases.biometrics.getAgeInMonthsByAttributes
 import org.dhis2.usescases.biometrics.getAgeInMonthsByFieldUiModel
 import org.dhis2.usescases.biometrics.getOrgUnitAsModuleId
 import org.dhis2.usescases.biometrics.isUnderAgeThreshold
@@ -349,7 +350,11 @@ class EnrollmentPresenterImpl(
     ) {
         val program = getProgram()!!.uid()
         val biometricsAttUid = biometricsUiModel!!.uid
-        val teiUid = getEnrollment()!!.trackedEntityInstance()
+        val teiUid = getEnrollment()!!.trackedEntityInstance() ?: ""
+
+        val tei =
+            d2.trackedEntityModule().trackedEntityInstances().withTrackedEntityAttributeValues()
+                .uid(teiUid).blockingGet()
 
         val teiTypeUid = d2.trackedEntityModule().trackedEntityInstances().uid(teiUid).blockingGet()
             ?.trackedEntityType()!!
@@ -359,11 +364,35 @@ class EnrollmentPresenterImpl(
         val orgUnitName = orgUnit?.name() ?: ""
 
         val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnitUId, d2, basicPreferenceProvider)
+        val userOrgUnits = getUserOrgUnits(getProgram()?.uid())
+
+        val ageInMonths = tei?.trackedEntityAttributeValues()?.let {
+            getAgeInMonthsByAttributes(
+                basicPreferenceProvider,
+                it
+            )
+        }
 
         if (possibleDuplicates.isEmpty()) {
-            view.registerLast(sessionId, orgUnitAsModuleId)
+            view.registerLast(
+                sessionId,
+                orgUnitAsModuleId,
+                ageInMonths,
+                teiUid,
+                orgUnitUId,
+                orgUnitName,
+                userOrgUnits
+            )
         } else if (possibleDuplicates.size == 1 && possibleDuplicates[0].guid == biometricsUiModel!!.value) {
-            view.registerLast(sessionId, orgUnitAsModuleId)
+            view.registerLast(
+                sessionId,
+                orgUnitAsModuleId,
+                ageInMonths,
+                teiUid,
+                orgUnitUId,
+                orgUnitName,
+                userOrgUnits
+            )
         } else {
             val finalPossibleDuplicates =
                 possibleDuplicates.filter { it.guid != biometricsUiModel!!.value }
@@ -378,7 +407,12 @@ class EnrollmentPresenterImpl(
                 teiTypeUid,
                 biometricsAttUid,
                 enrollNewVisible,
-                orgUnitAsModuleId
+                orgUnitAsModuleId,
+                ageInMonths,
+                teiUid,
+                orgUnitUId,
+                orgUnitName,
+                userOrgUnits
             )
         }
     }
@@ -399,13 +433,12 @@ class EnrollmentPresenterImpl(
             val userOrgUnits = getUserOrgUnits(getProgram()?.uid())
 
             val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnitUId, d2, basicPreferenceProvider)
+            val ageInMonths =
+                getAgeInMonthsByFieldUiModel(basicPreferenceProvider, fields)
+
+            val teiUid = teiRepository.blockingGet()?.uid() ?: ""
 
             biometricsUiModel?.setBiometricsRegisterListener {
-                val ageInMonths =
-                    getAgeInMonthsByFieldUiModel(basicPreferenceProvider, fields)
-
-                val teiUid = teiRepository.blockingGet()?.uid() ?: ""
-
                 view.registerBiometrics(
                     orgUnitAsModuleId,
                     ageInMonths,
@@ -428,7 +461,15 @@ class EnrollmentPresenterImpl(
 
             biometricsUiModel?.setRegisterLastAndSave { sessionId ->
                 pendingSave = true
-                view.registerLast(sessionId, orgUnitAsModuleId)
+                view.registerLast(
+                    sessionId,
+                    orgUnitAsModuleId,
+                    ageInMonths,
+                    teiUid,
+                    orgUnitUId,
+                    orgUnitName,
+                    userOrgUnits
+                )
             }
 
             if (biometricsUiModel?.value?.startsWith(BIOMETRICS_FAILURE_PATTERN) == true) {
