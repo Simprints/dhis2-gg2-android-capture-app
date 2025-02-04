@@ -30,7 +30,6 @@ sealed class RegisterResult {
     data object Failure : RegisterResult()
     data object RegisterLastFailure : RegisterResult()
     data object AgeGroupNotSupported : RegisterResult()
-
 }
 
 data class SimprintsItem(
@@ -76,12 +75,15 @@ class BiometricsClient(
         moduleId: String,
         ageInMonths: Long,
         trackedEntityInstanceUId: String,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String
     ) {
         Timber.d("Biometrics register!")
         Timber.d("moduleId: $moduleId")
         Timber.d("subjectAge: $ageInMonths")
 
-        val extras = createExtras(trackedEntityInstanceUId)
+        val extras =
+            createExtras(trackedEntityInstanceUId, enrollingOrgUnitId, enrollingOrgUnitName)
 
         val metadata = com.simprints.libsimprints.Metadata()
             .put("subjectAge", ageInMonths)
@@ -97,13 +99,16 @@ class BiometricsClient(
         fragment: Fragment,
         moduleId: String,
         trackedEntityInstanceUId: String,
-        ageInMonths: Long?
+        ageInMonths: Long?,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String
     ) {
         Timber.d("Biometrics register!")
         Timber.d("moduleId: $moduleId")
         Timber.d("subjectAge: $ageInMonths")
 
-        val extras = createExtras(trackedEntityInstanceUId)
+        val extras =
+            createExtras(trackedEntityInstanceUId, enrollingOrgUnitId, enrollingOrgUnitName)
 
         val intent = if (ageInMonths != null) {
             val metadata = com.simprints.libsimprints.Metadata()
@@ -127,7 +132,11 @@ class BiometricsClient(
         Timber.d("Biometrics identify!")
         Timber.d("moduleId: $finalModuleId")
 
-        val extras = createExtras(trackedEntityInstanceUId = null)
+        val extras = createExtras(
+            trackedEntityInstanceUId = null,
+            enrollingOrgUnitId = null,
+            enrollingOrgUnitName = null
+        )
 
         val intent = simHelper.identify(finalModuleId)
 
@@ -140,7 +149,9 @@ class BiometricsClient(
         fragment: Fragment,
         guid: String,
         moduleId: String, trackedEntityInstanceUId: String,
-        ageInMonths: Long? = null
+        ageInMonths: Long? = null,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String
     ) {
 
         if (guid == null) {
@@ -152,7 +163,8 @@ class BiometricsClient(
         Timber.d("moduleId: $moduleId")
         Timber.d("subjectAge: $ageInMonths")
 
-        val extras = createExtras(trackedEntityInstanceUId)
+        val extras =
+            createExtras(trackedEntityInstanceUId, enrollingOrgUnitId, enrollingOrgUnitName)
 
         val intent = if (ageInMonths != null) {
             val metadata = com.simprints.libsimprints.Metadata()
@@ -454,10 +466,16 @@ class BiometricsClient(
         }
     }
 
-    private fun createExtras(trackedEntityInstanceUId: String?): Map<String, String?> {
+    private fun createExtras(
+        trackedEntityInstanceUId: String?,
+        enrollingOrgUnitId: String?,
+        enrollingOrgUnitName: String?
+    ): Map<String, String?> {
         val extras: HashMap<String, String?> = HashMap()
 
         extras[SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID] = trackedEntityInstanceUId
+        extras[SIMPRINTS_ENROLLING_ORG_UNIT_ID] = enrollingOrgUnitId
+        extras[SIMPRINTS_ENROLLING_ORG_UNIT_NAME] = enrollingOrgUnitName
 
         printExtras(extras)
 
@@ -465,21 +483,17 @@ class BiometricsClient(
     }
 
     private fun printExtras(extras: Map<String, String?>) {
-        Timber.d(
-            "extras: ${
-                extras.entries.joinToString(
-                    prefix = "[",
-                    separator = ", ",
-                    postfix = "]",
-                    limit = 2,
-                    truncated = "..."
-                )
-            }"
-        )
+        Timber.d("extras:")
+
+        extras.entries.forEach {
+            Timber.d("${it.key}: ${it.value}")
+        }
     }
 
     companion object {
         const val SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID = "trackedEntityInstanceId"
+        const val SIMPRINTS_ENROLLING_ORG_UNIT_ID = "enrollingOrgUnitId"
+        const val SIMPRINTS_ENROLLING_ORG_UNIT_NAME = "enrollingOrgUnitName"
     }
 }
 

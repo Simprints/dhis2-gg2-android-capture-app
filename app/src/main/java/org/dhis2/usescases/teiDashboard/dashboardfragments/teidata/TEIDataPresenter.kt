@@ -97,7 +97,7 @@ class TEIDataPresenter(
     private val d2ErrorUtils: D2ErrorUtils,
     private val basicPreferenceProvider: BasicPreferenceProvider,
     private val resourceManager: ResourceManager,
-    private val lastBiometricsSearchSessionId: String?
+    private val lastBiometricsSearchSessionId: String?,
 ) {
     private var dashboardModel: DashboardEnrollmentModel? = null
     private val groupingProcessor: BehaviorProcessor<Boolean> = BehaviorProcessor.create()
@@ -557,25 +557,34 @@ class TEIDataPresenter(
             view.launchBiometricsVerification(
                 biometricValue,
                 orgUnitAsModuleId, dashboardModel!!.trackedEntityInstance.uid(),
-                ageInMonths
+                ageInMonths,
+                orgUnit,
+                getOrgUnitName(orgUnit),
             )
         }
     }
 
     private fun registerBiometrics() {
         if (dashboardModel != null) {
+            val orgUnit = orgUnitUid ?: return
+
             val ageInMonths = getAgeInMonthsByAttributes(
                 basicPreferenceProvider,
                 dashboardModel!!.trackedEntityAttributeValues,
             )
 
-            val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnitUid ?: return, d2, basicPreferenceProvider)
+            val orgUnitAsModuleId =
+                getOrgUnitAsModuleId(orgUnit, d2, basicPreferenceProvider)
 
-            if (lastBiometricsSearchSessionId != null){
+            if (lastBiometricsSearchSessionId != null) {
                 view.registerLast(lastBiometricsSearchSessionId, orgUnitAsModuleId)
             } else {
                 view.registerBiometrics(
-                    orgUnitAsModuleId, dashboardModel!!.trackedEntityInstance.uid(), ageInMonths
+                    orgUnitAsModuleId,
+                    dashboardModel!!.trackedEntityInstance.uid(),
+                    ageInMonths,
+                    orgUnit,
+                    getOrgUnitName(orgUnit),
                 )
             }
         }
@@ -628,6 +637,7 @@ class TEIDataPresenter(
                     }
                 }
             }
+
             is RegisterResult.RegisterLastFailure -> {
                 view.showUnableSaveBiometricsMessage()
             }
@@ -725,7 +735,8 @@ class TEIDataPresenter(
         val biometricsValue =
             values.firstOrNull { it.trackedEntityAttribute() == dashboardModel!!.getBiometricsAttributeUid() }
 
-        val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnitUid ?: return, d2, basicPreferenceProvider)
+        val orgUnitAsModuleId =
+            getOrgUnitAsModuleId(orgUnitUid ?: return, d2, basicPreferenceProvider)
 
         if (possibleDuplicates.isEmpty()) {
             view.registerLast(sessionId, orgUnitAsModuleId)

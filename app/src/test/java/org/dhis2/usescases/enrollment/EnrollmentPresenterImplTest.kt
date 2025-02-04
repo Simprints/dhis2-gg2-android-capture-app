@@ -24,14 +24,15 @@ import org.hisp.dhis.android.core.common.Access
 import org.hisp.dhis.android.core.common.DataAccess
 import org.hisp.dhis.android.core.common.FeatureType
 import org.hisp.dhis.android.core.common.Geometry
-import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.common.State
+import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.enrollment.EnrollmentAccess
 import org.hisp.dhis.android.core.enrollment.EnrollmentObjectRepository
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.event.Event
 import org.hisp.dhis.android.core.event.EventCollectionRepository
 import org.hisp.dhis.android.core.event.EventStatus
+import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceObjectRepository
@@ -49,6 +50,7 @@ class EnrollmentPresenterImplTest {
 
     private val enrollmentFormRepository: EnrollmentFormRepository = mock()
     private val programRepository: ReadOnlyOneObjectRepositoryFinalImpl<Program> = mock()
+    private val orgUnitRepository: ReadOnlyOneObjectRepositoryFinalImpl<OrganisationUnit> = mock()
     private val teiRepository: TrackedEntityInstanceObjectRepository = mock()
     private val dataEntryRepository: EnrollmentRepository = mock()
     lateinit var presenter: EnrollmentPresenterImpl
@@ -71,6 +73,7 @@ class EnrollmentPresenterImplTest {
             dataEntryRepository,
             teiRepository,
             programRepository,
+            orgUnitRepository,
             schedulers,
             enrollmentFormRepository,
             analyticsHelper,
@@ -374,6 +377,7 @@ class EnrollmentPresenterImplTest {
             dataEntryRepository,
             teiRepository,
             programRepository,
+            orgUnitRepository,
             schedulers,
             enrollmentFormRepository,
             analyticsHelper,

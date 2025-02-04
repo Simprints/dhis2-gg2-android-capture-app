@@ -9,6 +9,8 @@ import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureCo
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.domain.ReOpenEventUseCase
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.injection.EventDispatchers
 import org.hisp.dhis.android.core.D2
+import org.hisp.dhis.android.core.arch.repositories.`object`.ReadOnlyOneObjectRepositoryFinalImpl
+import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 
 @Module
 class EventCaptureFormModule(
@@ -24,7 +26,8 @@ class EventCaptureFormModule(
         resourceManager: ResourceManager,
         reOpenEventUseCase: ReOpenEventUseCase,
         eventDispatchers: EventDispatchers,
-        basicPreferenceProvider: BasicPreferenceProvider
+        basicPreferenceProvider: BasicPreferenceProvider,
+        orgUnitRepository: ReadOnlyOneObjectRepositoryFinalImpl<OrganisationUnit>
     ): EventCaptureFormPresenter {
         return EventCaptureFormPresenter(
             view,
@@ -34,7 +37,8 @@ class EventCaptureFormModule(
             resourceManager,
             reOpenEventUseCase,
             eventDispatchers,
-            basicPreferenceProvider
+            basicPreferenceProvider,
+            orgUnitRepository
         )
     }
 
@@ -48,4 +52,14 @@ class EventCaptureFormModule(
     @Provides
     @PerFragment
     fun provideEventDispatchers() = EventDispatchers()
+
+    @Provides
+    @PerFragment
+    fun provideOrgUnitRepository(d2: D2): ReadOnlyOneObjectRepositoryFinalImpl<OrganisationUnit> {
+        val event = d2.eventModule().events().uid(eventUid).blockingGet()
+        val enrollmentUid = event?.enrollment()
+        val organisationUnit = d2.enrollmentModule().enrollments().uid(enrollmentUid).blockingGet()?.organisationUnit()
+
+        return d2.organisationUnitModule().organisationUnits().uid(organisationUnit)
+    }
 }

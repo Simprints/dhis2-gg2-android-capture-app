@@ -9,8 +9,8 @@ import org.dhis2.commons.data.EntryMode
 import org.dhis2.commons.di.dagger.PerActivity
 import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.network.NetworkUtils
-import org.dhis2.commons.prefs.PreferenceProviderImpl
 import org.dhis2.commons.prefs.BasicPreferenceProvider
+import org.dhis2.commons.prefs.PreferenceProviderImpl
 import org.dhis2.commons.reporting.CrashReportController
 import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.commons.resources.DhisPeriodUtils
@@ -50,6 +50,7 @@ import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.arch.repositories.`object`.ReadOnlyOneObjectRepositoryFinalImpl
 import org.hisp.dhis.android.core.enrollment.EnrollmentObjectRepository
 import org.hisp.dhis.android.core.event.EventCollectionRepository
+import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceObjectRepository
 
@@ -82,6 +83,14 @@ class EnrollmentModule(
     @PerActivity
     fun provideProgramRepository(d2: D2): ReadOnlyOneObjectRepositoryFinalImpl<Program> {
         return d2.programModule().programs().uid(programUid)
+    }
+
+    @Provides
+    @PerActivity
+    fun provideOrgUnitRepository(d2: D2): ReadOnlyOneObjectRepositoryFinalImpl<OrganisationUnit> {
+        val organisationUnit = d2.enrollmentModule().enrollments().uid(enrollmentUid).blockingGet()?.organisationUnit()
+
+        return d2.organisationUnitModule().organisationUnits().uid(organisationUnit)
     }
 
     @Provides
@@ -149,6 +158,7 @@ class EnrollmentModule(
         dataEntryRepository: EnrollmentRepository,
         teiRepository: TrackedEntityInstanceObjectRepository,
         programRepository: ReadOnlyOneObjectRepositoryFinalImpl<Program>,
+        orgUnitRepository: ReadOnlyOneObjectRepositoryFinalImpl<OrganisationUnit>,
         schedulerProvider: SchedulerProvider,
         enrollmentFormRepository: EnrollmentFormRepository,
         analyticsHelper: AnalyticsHelper,
@@ -164,6 +174,7 @@ class EnrollmentModule(
             dataEntryRepository,
             teiRepository,
             programRepository,
+            orgUnitRepository,
             schedulerProvider,
             enrollmentFormRepository,
             analyticsHelper,

@@ -650,20 +650,39 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
         moduleId: String,
         trackedEntityInstanceId: String,
         ageInMonths: Long,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String
     ) {
         val biometricsClient = get(requireContext())
 
-        biometricsClient.verify(this, guid, moduleId, trackedEntityInstanceId, ageInMonths)
+        biometricsClient.verify(
+            this,
+            guid,
+            moduleId,
+            trackedEntityInstanceId,
+            ageInMonths,
+            enrollingOrgUnitId,
+            enrollingOrgUnitName
+        )
     }
 
     override fun registerBiometrics(
         moduleId: String,
         trackedEntityInstanceUId: String,
-        ageInMonths: Long
+        ageInMonths: Long,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String
     ) {
         val biometricsClient = get(requireContext())
 
-        biometricsClient.registerFromFragment(this, moduleId, trackedEntityInstanceUId, ageInMonths)
+        biometricsClient.registerFromFragment(
+            this,
+            moduleId,
+            trackedEntityInstanceUId,
+            ageInMonths,
+            enrollingOrgUnitId,
+            enrollingOrgUnitName
+        )
     }
 
     override fun showBiometricsAgeGroupNotSupported() {

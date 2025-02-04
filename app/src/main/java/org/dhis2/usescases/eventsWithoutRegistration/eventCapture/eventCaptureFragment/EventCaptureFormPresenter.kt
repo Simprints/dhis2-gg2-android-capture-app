@@ -27,10 +27,12 @@ import org.dhis2.usescases.eventsWithoutRegistration.EventIdlingResourceSingleto
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureContract
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.domain.ReOpenEventUseCase
 import org.hisp.dhis.android.core.D2
+import org.hisp.dhis.android.core.arch.repositories.`object`.ReadOnlyOneObjectRepositoryFinalImpl
 import org.hisp.dhis.android.core.event.Event
 import org.hisp.dhis.android.core.event.EventEditableStatus
 import org.hisp.dhis.android.core.event.EventNonEditableReason
 import org.hisp.dhis.android.core.event.EventStatus
+import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.jetbrains.annotations.Nullable
 
 class EventCaptureFormPresenter(
@@ -42,6 +44,7 @@ class EventCaptureFormPresenter(
     private val reOpenEventUseCase: ReOpenEventUseCase,
     private val dispatcherProvider: DispatcherProvider,
     private val basicPreferenceProvider: BasicPreferenceProvider,
+    private val orgUnitRepository: ReadOnlyOneObjectRepositoryFinalImpl<OrganisationUnit>
 ) {
 
     private var biometricsVerificationStatus: Int = -1
@@ -110,9 +113,21 @@ class EventCaptureFormPresenter(
                     override fun onRetryClick() {
                         val ageInMonths = activityPresenter.getTEIAgeInMonths()
 
-                        val orgUnitAsModuleId = getOrgUnitAsModuleId(teiOrgUnit ?: "", d2, basicPreferenceProvider)
+                        val orgUnitAsModuleId =
+                            getOrgUnitAsModuleId(teiOrgUnit ?: "", d2, basicPreferenceProvider)
 
-                        view.verifyBiometrics(biometricsGuid, orgUnitAsModuleId, trackedEntityInstanceId, ageInMonths)
+                        val orgUnit = orgUnitRepository.blockingGet()
+                        val orgUnitUId = orgUnit?.uid() ?: ""
+                        val orgUnitName = orgUnit?.name() ?: ""
+
+                        view.verifyBiometrics(
+                            biometricsGuid,
+                            orgUnitAsModuleId,
+                            trackedEntityInstanceId,
+                            ageInMonths,
+                            orgUnitUId,
+                            orgUnitName
+                        )
                     }
                 }
             )
@@ -122,9 +137,20 @@ class EventCaptureFormPresenter(
                     override fun onClick() {
                         val ageInMonths = activityPresenter.getTEIAgeInMonths()
 
-                        val orgUnitAsModuleId = getOrgUnitAsModuleId(teiOrgUnit?:"", d2, basicPreferenceProvider)
+                        val orgUnitAsModuleId =
+                            getOrgUnitAsModuleId(teiOrgUnit ?: "", d2, basicPreferenceProvider)
 
-                        view.registerBiometrics(orgUnitAsModuleId, trackedEntityInstanceId, ageInMonths)
+                        val orgUnit = orgUnitRepository.blockingGet()
+                        val orgUnitUId = orgUnit?.uid() ?: ""
+                        val orgUnitName = orgUnit?.name() ?: ""
+
+                        view.registerBiometrics(
+                            orgUnitAsModuleId,
+                            trackedEntityInstanceId,
+                            ageInMonths,
+                            orgUnitUId,
+                            orgUnitName
+                        )
                     }
                 }
             )
@@ -178,13 +204,20 @@ class EventCaptureFormPresenter(
             ) {
                 val ageInMonths = activityPresenter.getTEIAgeInMonths()
 
-                val orgUnitAsModuleId = getOrgUnitAsModuleId(this.teiOrgUnit ?: "", d2, basicPreferenceProvider)
+                val orgUnitAsModuleId =
+                    getOrgUnitAsModuleId(this.teiOrgUnit ?: "", d2, basicPreferenceProvider)
+
+                val orgUnit = orgUnitRepository.blockingGet()
+                val orgUnitUId = orgUnit?.uid() ?: ""
+                val orgUnitName = orgUnit?.name() ?: ""
 
                 view.verifyBiometrics(
                     this.biometricsGuid,
                     orgUnitAsModuleId,
                     this.trackedEntityInstanceId,
-                    ageInMonths
+                    ageInMonths,
+                    orgUnitUId,
+                    orgUnitName
                 )
             } else {
                 refreshBiometricsStatus(1, false)

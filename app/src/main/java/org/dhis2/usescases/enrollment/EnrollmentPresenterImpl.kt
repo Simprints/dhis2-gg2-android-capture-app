@@ -48,6 +48,7 @@ import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.event.EventCollectionRepository
 import org.hisp.dhis.android.core.event.EventStatus
 import org.hisp.dhis.android.core.maintenance.D2Error
+import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityAttributeValue
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceObjectRepository
@@ -64,6 +65,7 @@ class EnrollmentPresenterImpl(
     private val dataEntryRepository: EnrollmentRepository,
     private val teiRepository: TrackedEntityInstanceObjectRepository,
     private val programRepository: ReadOnlyOneObjectRepositoryFinalImpl<Program>,
+    private val orgUnitRepository: ReadOnlyOneObjectRepositoryFinalImpl<OrganisationUnit>,
     private val schedulerProvider: SchedulerProvider,
     private val enrollmentFormRepository: EnrollmentFormRepository,
     private val analyticsHelper: AnalyticsHelper,
@@ -352,7 +354,11 @@ class EnrollmentPresenterImpl(
         val teiTypeUid = d2.trackedEntityModule().trackedEntityInstances().uid(teiUid).blockingGet()
             ?.trackedEntityType()!!
 
-        val orgUnitAsModuleId = getOrgUnit()
+        val orgUnit = orgUnitRepository.blockingGet()
+        val orgUnitUId = orgUnit?.uid() ?: ""
+        val orgUnitName = orgUnit?.name() ?: ""
+
+        val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnitUId, d2, basicPreferenceProvider)
 
         if (possibleDuplicates.isEmpty()) {
             view.registerLast(sessionId, orgUnitAsModuleId)
@@ -387,7 +393,11 @@ class EnrollmentPresenterImpl(
                 showOrHideSaveButton()
             }
 
-            val orgUnitAsModuleId = getOrgUnit()
+            val orgUnit = orgUnitRepository.blockingGet()
+            val orgUnitUId = orgUnit?.uid() ?: ""
+            val orgUnitName = orgUnit?.name() ?: ""
+
+            val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnitUId, d2, basicPreferenceProvider)
 
             biometricsUiModel?.setBiometricsRegisterListener {
                 val ageInMonths =
@@ -395,7 +405,14 @@ class EnrollmentPresenterImpl(
 
                 val teiUid = teiRepository.blockingGet()?.uid() ?: ""
 
-                view.registerBiometrics(orgUnitAsModuleId, ageInMonths, teiUid)
+                view.registerBiometrics(
+                    orgUnitAsModuleId,
+                    ageInMonths,
+                    teiUid,
+                    orgUnitUId,
+                    orgUnitName
+                )
+
                 pendingSave = true
             }
 
@@ -416,13 +433,6 @@ class EnrollmentPresenterImpl(
                 resetBiometricsFailureAfterTime()
             }
         }
-    }
-
-    private fun getOrgUnit(): String {
-        val orgUnit = enrollmentObjectRepository.get().blockingGet()
-            ?.organisationUnit()!!
-
-        return getOrgUnitAsModuleId(orgUnit, d2, basicPreferenceProvider)
     }
 
     private fun resetBiometricsFailureAfterTime() {

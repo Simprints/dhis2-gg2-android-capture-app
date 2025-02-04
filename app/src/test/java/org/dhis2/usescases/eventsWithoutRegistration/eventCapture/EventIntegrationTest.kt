@@ -24,8 +24,10 @@ import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.model.EventCom
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.provider.EventCaptureResourcesProvider
 import org.dhis2.utils.customviews.FormBottomDialog
 import org.hisp.dhis.android.core.D2
+import org.hisp.dhis.android.core.arch.repositories.`object`.ReadOnlyOneObjectRepositoryFinalImpl
 import org.hisp.dhis.android.core.common.ValidationStrategy
 import org.hisp.dhis.android.core.event.EventStatus
+import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.Mockito
@@ -49,6 +51,8 @@ class EventIntegrationTest {
     private val reOpenUseCase: ReOpenEventUseCase = mock()
     private val dispatcherProvider: DispatcherProvider = mock()
     private val basicPreferenceProvider: BasicPreferenceProvider = mock()
+    private val orgUnitRepository: ReadOnlyOneObjectRepositoryFinalImpl<OrganisationUnit> = mock()
+
 
     private val resourceProvider: EventCaptureResourcesProvider = mock {
         on { provideNotSavedText() } doReturn "not_saved"
@@ -81,7 +85,8 @@ class EventIntegrationTest {
         resourceManager = resourceManager,
         reOpenEventUseCase = reOpenUseCase,
         dispatcherProvider = dispatcherProvider,
-        basicPreferenceProvider = basicPreferenceProvider
+        basicPreferenceProvider = basicPreferenceProvider,
+        orgUnitRepository = orgUnitRepository,
     )
 
     @Test

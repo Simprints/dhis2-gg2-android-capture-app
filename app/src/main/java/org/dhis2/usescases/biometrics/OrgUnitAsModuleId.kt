@@ -9,8 +9,7 @@ fun getOrgUnitAsModuleId(
     d2: D2,
     basicPreferenceProvider: BasicPreferenceProvider
 ): String {
-    val orgUnit =
-        d2.organisationUnitModule().organisationUnits().uid(selectedOrgUnitUid).blockingGet()
+    val orgUnit = d2.organisationUnitModule().organisationUnits().uid(selectedOrgUnitUid).blockingGet()
 
     val orgUnitLevelAsModuleId =
         basicPreferenceProvider.getInt(BiometricsPreference.ORG_UNIT_LEVEL_AS_MODULE_ID, 0)
