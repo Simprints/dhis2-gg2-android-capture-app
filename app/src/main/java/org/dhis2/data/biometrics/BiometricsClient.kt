@@ -76,14 +76,20 @@ class BiometricsClient(
         ageInMonths: Long,
         trackedEntityInstanceUId: String,
         enrollingOrgUnitId: String,
-        enrollingOrgUnitName: String
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>
     ) {
         Timber.d("Biometrics register!")
         Timber.d("moduleId: $moduleId")
         Timber.d("subjectAge: $ageInMonths")
 
         val extras =
-            createExtras(trackedEntityInstanceUId, enrollingOrgUnitId, enrollingOrgUnitName)
+            createExtras(
+                trackedEntityInstanceUId,
+                enrollingOrgUnitId,
+                enrollingOrgUnitName,
+                userOrgUnits
+            )
 
         val metadata = com.simprints.libsimprints.Metadata()
             .put("subjectAge", ageInMonths)
@@ -101,14 +107,20 @@ class BiometricsClient(
         trackedEntityInstanceUId: String,
         ageInMonths: Long?,
         enrollingOrgUnitId: String,
-        enrollingOrgUnitName: String
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>
     ) {
         Timber.d("Biometrics register!")
         Timber.d("moduleId: $moduleId")
         Timber.d("subjectAge: $ageInMonths")
 
         val extras =
-            createExtras(trackedEntityInstanceUId, enrollingOrgUnitId, enrollingOrgUnitName)
+            createExtras(
+                trackedEntityInstanceUId,
+                enrollingOrgUnitId,
+                enrollingOrgUnitName,
+                userOrgUnits
+            )
 
         val intent = if (ageInMonths != null) {
             val metadata = com.simprints.libsimprints.Metadata()
@@ -126,7 +138,7 @@ class BiometricsClient(
         }
     }
 
-    fun identify(activity: Activity, moduleId: String?) {
+    fun identify(activity: Activity, moduleId: String?, userOrgUnits: List<String>) {
         val finalModuleId = moduleId ?: defaultModuleId
 
         Timber.d("Biometrics identify!")
@@ -135,7 +147,8 @@ class BiometricsClient(
         val extras = createExtras(
             trackedEntityInstanceUId = null,
             enrollingOrgUnitId = null,
-            enrollingOrgUnitName = null
+            enrollingOrgUnitName = null,
+            userOrgUnits = userOrgUnits
         )
 
         val intent = simHelper.identify(finalModuleId)
@@ -151,7 +164,8 @@ class BiometricsClient(
         moduleId: String, trackedEntityInstanceUId: String,
         ageInMonths: Long? = null,
         enrollingOrgUnitId: String,
-        enrollingOrgUnitName: String
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>
     ) {
 
         if (guid == null) {
@@ -164,7 +178,12 @@ class BiometricsClient(
         Timber.d("subjectAge: $ageInMonths")
 
         val extras =
-            createExtras(trackedEntityInstanceUId, enrollingOrgUnitId, enrollingOrgUnitName)
+            createExtras(
+                trackedEntityInstanceUId,
+                enrollingOrgUnitId,
+                enrollingOrgUnitName,
+                userOrgUnits
+            )
 
         val intent = if (ageInMonths != null) {
             val metadata = com.simprints.libsimprints.Metadata()
@@ -469,13 +488,15 @@ class BiometricsClient(
     private fun createExtras(
         trackedEntityInstanceUId: String?,
         enrollingOrgUnitId: String?,
-        enrollingOrgUnitName: String?
+        enrollingOrgUnitName: String?,
+        userOrgUnits: List<String>
     ): Map<String, String?> {
         val extras: HashMap<String, String?> = HashMap()
 
         extras[SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID] = trackedEntityInstanceUId
         extras[SIMPRINTS_ENROLLING_ORG_UNIT_ID] = enrollingOrgUnitId
         extras[SIMPRINTS_ENROLLING_ORG_UNIT_NAME] = enrollingOrgUnitName
+        extras[SIMPRINTS_USER_UNITS] = userOrgUnits?.joinToString(",")
 
         printExtras(extras)
 
@@ -494,6 +515,7 @@ class BiometricsClient(
         const val SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID = "trackedEntityInstanceId"
         const val SIMPRINTS_ENROLLING_ORG_UNIT_ID = "enrollingOrgUnitId"
         const val SIMPRINTS_ENROLLING_ORG_UNIT_NAME = "enrollingOrgUnitName"
+        const val SIMPRINTS_USER_UNITS = "userOrgUnits"
     }
 }
 

@@ -425,11 +425,11 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
         List<String> userOrgUnits = searchRepository.getUserOrgUnits(selectedProgram.uid());
 
         if (userOrgUnits.size() > 1) {
-            view.launchBiometricsIdentify(null);
+            view.launchBiometricsIdentify(null, userOrgUnits);
         } else {
             String orgUnitAsModuleId = getOrgUnitAsModuleId(userOrgUnits.get(0), d2, basicPreferenceProvider);
 
-            view.launchBiometricsIdentify(orgUnitAsModuleId);
+            view.launchBiometricsIdentify(orgUnitAsModuleId, userOrgUnits);
         }
     }
 

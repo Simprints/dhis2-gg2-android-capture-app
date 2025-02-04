@@ -396,6 +396,7 @@ class EnrollmentPresenterImpl(
             val orgUnit = orgUnitRepository.blockingGet()
             val orgUnitUId = orgUnit?.uid() ?: ""
             val orgUnitName = orgUnit?.name() ?: ""
+            val userOrgUnits = getUserOrgUnits(getProgram()?.uid())
 
             val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnitUId, d2, basicPreferenceProvider)
 
@@ -410,7 +411,8 @@ class EnrollmentPresenterImpl(
                     ageInMonths,
                     teiUid,
                     orgUnitUId,
-                    orgUnitName
+                    orgUnitName,
+                    userOrgUnits
                 )
 
                 pendingSave = true
@@ -506,5 +508,15 @@ class EnrollmentPresenterImpl(
         pendingSave = true
 
         saveBiometricValue(null)
+    }
+
+    private fun getUserOrgUnits(programUid: String?): List<String> {
+        val programs: MutableList<String> = ArrayList()
+        if (programUid != null) {
+            programs.add(programUid)
+        }
+        return d2.organisationUnitModule().organisationUnits()
+            .byOrganisationUnitScope(OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
+            .byProgramUids(programs).blockingGetUids()
     }
 }

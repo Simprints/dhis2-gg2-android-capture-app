@@ -68,6 +68,7 @@ import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.Enrollment
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.event.EventStatus
+import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.android.core.program.ProgramStage
 import org.hisp.dhis.rules.models.RuleEffect
@@ -552,6 +553,8 @@ class TEIDataPresenter(
                 dashboardModel!!.trackedEntityAttributeValues
             )
 
+            val userOrgUnits = getUserOrgUnits(dashboardModel!!.currentEnrollment.program())
+
             val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnit, d2, basicPreferenceProvider)
 
             view.launchBiometricsVerification(
@@ -560,6 +563,7 @@ class TEIDataPresenter(
                 ageInMonths,
                 orgUnit,
                 getOrgUnitName(orgUnit),
+                userOrgUnits
             )
         }
     }
@@ -576,6 +580,8 @@ class TEIDataPresenter(
             val orgUnitAsModuleId =
                 getOrgUnitAsModuleId(orgUnit, d2, basicPreferenceProvider)
 
+            val userOrgUnits = getUserOrgUnits(dashboardModel!!.currentEnrollment.program())
+
             if (lastBiometricsSearchSessionId != null) {
                 view.registerLast(lastBiometricsSearchSessionId, orgUnitAsModuleId)
             } else {
@@ -585,6 +591,7 @@ class TEIDataPresenter(
                     ageInMonths,
                     orgUnit,
                     getOrgUnitName(orgUnit),
+                    userOrgUnits
                 )
             }
         }
@@ -760,4 +767,13 @@ class TEIDataPresenter(
         }
     }
 
+    private fun getUserOrgUnits(programUid: String?): List<String> {
+        val programs: MutableList<String> = ArrayList()
+        if (programUid != null) {
+            programs.add(programUid)
+        }
+        return d2.organisationUnitModule().organisationUnits()
+            .byOrganisationUnitScope(OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
+            .byProgramUids(programs).blockingGetUids()
+    }
 }

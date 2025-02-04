@@ -120,13 +120,16 @@ class EventCaptureFormPresenter(
                         val orgUnitUId = orgUnit?.uid() ?: ""
                         val orgUnitName = orgUnit?.name() ?: ""
 
+                        val userOrgUnits = getUserOrgUnits(d2.eventModule().events().uid(eventUid).blockingGet()?.program())
+
                         view.verifyBiometrics(
                             biometricsGuid,
                             orgUnitAsModuleId,
                             trackedEntityInstanceId,
                             ageInMonths,
                             orgUnitUId,
-                            orgUnitName
+                            orgUnitName,
+                            userOrgUnits
                         )
                     }
                 }
@@ -143,13 +146,15 @@ class EventCaptureFormPresenter(
                         val orgUnit = orgUnitRepository.blockingGet()
                         val orgUnitUId = orgUnit?.uid() ?: ""
                         val orgUnitName = orgUnit?.name() ?: ""
+                        val userOrgUnits = getUserOrgUnits(d2.eventModule().events().uid(eventUid).blockingGet()?.program())
 
                         view.registerBiometrics(
                             orgUnitAsModuleId,
                             trackedEntityInstanceId,
                             ageInMonths,
                             orgUnitUId,
-                            orgUnitName
+                            orgUnitName,
+                            userOrgUnits
                         )
                     }
                 }
@@ -210,6 +215,7 @@ class EventCaptureFormPresenter(
                 val orgUnit = orgUnitRepository.blockingGet()
                 val orgUnitUId = orgUnit?.uid() ?: ""
                 val orgUnitName = orgUnit?.name() ?: ""
+                val userOrgUnits = getUserOrgUnits(d2.eventModule().events().uid(eventUid).blockingGet()?.program())
 
                 view.verifyBiometrics(
                     this.biometricsGuid,
@@ -217,7 +223,8 @@ class EventCaptureFormPresenter(
                     this.trackedEntityInstanceId,
                     ageInMonths,
                     orgUnitUId,
-                    orgUnitName
+                    orgUnitName,
+                    userOrgUnits
                 )
             } else {
                 refreshBiometricsStatus(1, false)
@@ -330,5 +337,15 @@ class EventCaptureFormPresenter(
             1 -> BiometricsDataElementStatus.SUCCESS
             else -> BiometricsDataElementStatus.NOT_DONE
         }
+    }
+
+    private fun getUserOrgUnits(programUid: String?): List<String> {
+        val programs: MutableList<String> = ArrayList()
+        if (programUid != null) {
+            programs.add(programUid)
+        }
+        return d2.organisationUnitModule().organisationUnits()
+            .byOrganisationUnitScope(OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
+            .byProgramUids(programs).blockingGetUids()
     }
 }

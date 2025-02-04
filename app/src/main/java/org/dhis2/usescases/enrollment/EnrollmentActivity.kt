@@ -464,7 +464,8 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
         ageInMonths: Long,
         trackedEntityInstanceId: String,
         enrollingOrgUnitId: String,
-        enrollingOrgUnitName: String
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>
     ) {
         BiometricsClientFactory.get(this).register(
             this,
@@ -472,7 +473,8 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
             ageInMonths,
             trackedEntityInstanceId,
             enrollingOrgUnitId,
-            enrollingOrgUnitName
+            enrollingOrgUnitName,
+            userOrgUnits
         )
     }
 

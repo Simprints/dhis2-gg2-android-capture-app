@@ -651,7 +651,8 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
         trackedEntityInstanceId: String,
         ageInMonths: Long,
         enrollingOrgUnitId: String,
-        enrollingOrgUnitName: String
+        enrollingOrgUnitName: String,
+        userOrgUnits:List<String>
     ) {
         val biometricsClient = get(requireContext())
 
@@ -662,7 +663,8 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
             trackedEntityInstanceId,
             ageInMonths,
             enrollingOrgUnitId,
-            enrollingOrgUnitName
+            enrollingOrgUnitName,
+            userOrgUnits
         )
     }
 
@@ -671,7 +673,8 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
         trackedEntityInstanceUId: String,
         ageInMonths: Long,
         enrollingOrgUnitId: String,
-        enrollingOrgUnitName: String
+        enrollingOrgUnitName: String,
+        userOrgUnits:List<String>
     ) {
         val biometricsClient = get(requireContext())
 
@@ -681,7 +684,8 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
             trackedEntityInstanceUId,
             ageInMonths,
             enrollingOrgUnitId,
-            enrollingOrgUnitName
+            enrollingOrgUnitName,
+            userOrgUnits
         )
     }
 

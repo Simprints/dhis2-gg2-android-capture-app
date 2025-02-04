@@ -51,14 +51,18 @@ class TEIDataContracts {
             trackedEntityInstance: String,
             ageInMonths: Long,
             enrollingOrgUnitId: String,
-            enrollingOrgUnitName: String
+            enrollingOrgUnitName: String,
+            userOrgUnits:List<String>
         )
 
         fun refreshCard()
         fun registerBiometrics(
-            orgUnit: String, trackedEntityInstance: String, ageInMonths: Long,
+            orgUnit: String,
+            trackedEntityInstance: String,
+            ageInMonths: Long,
             enrollingOrgUnitId: String,
-            enrollingOrgUnitName: String
+            enrollingOrgUnitName: String,
+            userOrgUnits:List<String>
         )
 
         fun showBiometricsAgeGroupNotSupported()

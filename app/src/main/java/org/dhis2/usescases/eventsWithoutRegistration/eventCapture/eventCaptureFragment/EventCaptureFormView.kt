@@ -16,8 +16,8 @@ interface EventCaptureFormView {
         trackedEntityInstanceId: String?,
         ageInMonths: Long,
         enrollingOrgUnitId: String,
-        enrollingOrgUnitName: String
-
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>
     )
 
     fun registerBiometrics(
@@ -25,6 +25,7 @@ interface EventCaptureFormView {
         trackedEntityInstanceId: String?,
         ageInMonths: Long,
         enrollingOrgUnitId: String,
-        enrollingOrgUnitName: String
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>
     )
 }

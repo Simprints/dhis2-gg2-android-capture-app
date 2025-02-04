@@ -25,9 +25,12 @@ interface EnrollmentView : AbstractActivityContracts.View {
     fun displayTeiPicture(picturePath: String)
     fun showDateEditionWarning()
     fun registerBiometrics(
-        moduleId: String, ageInMonths: Long, trackedEntityInstanceId: String,
+        moduleId: String,
+        ageInMonths: Long,
+        trackedEntityInstanceId: String,
         enrollingOrgUnitId: String,
-        enrollingOrgUnitName: String
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>,
     )
 
     fun showPossibleDuplicatesDialog(

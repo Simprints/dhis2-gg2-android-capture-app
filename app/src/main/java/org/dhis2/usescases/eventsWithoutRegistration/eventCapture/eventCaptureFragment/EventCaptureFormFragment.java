@@ -46,6 +46,7 @@ import org.dhis2.usescases.general.FragmentGlobalAbstract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -308,7 +309,8 @@ public class EventCaptureFormFragment extends FragmentGlobalAbstract implements 
                                  @Nullable String trackedEntityInstanceId,
                                  long ageInMonths,
                                  @NonNull String enrollingOrgUnitId,
-                                 @NonNull String enrollingOrgUnitName) {
+                                 @NonNull String enrollingOrgUnitName,
+                                 List<String> userOrgUnits) {
         BiometricsClientFactory.INSTANCE.get(this.getContext()).verify(
                 this,
                 biometricsGuid,
@@ -316,7 +318,8 @@ public class EventCaptureFormFragment extends FragmentGlobalAbstract implements 
                 trackedEntityInstanceId,
                 ageInMonths,
                 enrollingOrgUnitId,
-                enrollingOrgUnitName);
+                enrollingOrgUnitName,
+                userOrgUnits);
     }
 
     @Override
@@ -324,13 +327,15 @@ public class EventCaptureFormFragment extends FragmentGlobalAbstract implements 
                                    @Nullable String trackedEntityInstanceId,
                                    long ageInMonths,
                                    @NonNull String enrollingOrgUnitId,
-                                   @NonNull String enrollingOrgUnitName) {
+                                   @NonNull String enrollingOrgUnitName,
+                                   List<String> userOrgUnits) {
         BiometricsClientFactory.INSTANCE.get(this.getContext()).registerFromFragment(
                 this,
                 teiOrgUnit,
                 trackedEntityInstanceId,
                 ageInMonths,
                 enrollingOrgUnitId,
-                enrollingOrgUnitName);
+                enrollingOrgUnitName,
+                userOrgUnits);
     }
 }
