@@ -46,7 +46,6 @@ import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.sync.OnDismissListener
 import org.dhis2.commons.sync.SyncContext.EnrollmentEvent
-import org.dhis2.data.biometrics.BiometricsClient
 import org.dhis2.data.biometrics.BiometricsClientFactory.get
 import org.dhis2.data.biometrics.SimprintsItem
 import org.dhis2.databinding.FragmentTeiDataBinding
@@ -648,14 +647,13 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
 
     override fun launchBiometricsVerification(
         guid: String,
-        orgUnitUid: String,
+        moduleId: String,
         trackedEntityInstanceId: String,
         ageInMonths: Long,
     ) {
         val biometricsClient = get(requireContext())
-        val extras: HashMap<String, String> = HashMap()
-        extras[BiometricsClient.SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID] = trackedEntityInstanceId
-        biometricsClient.verify(this, guid, orgUnitUid, extras, ageInMonths)
+
+        biometricsClient.verify(this, guid, moduleId, trackedEntityInstanceId, ageInMonths)
     }
 
     override fun registerBiometrics(

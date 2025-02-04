@@ -304,10 +304,7 @@ public class EventCaptureFormFragment extends FragmentGlobalAbstract implements 
 
     @Override
     public void verifyBiometrics(@Nullable String biometricsGuid, @Nullable String moduleId, @Nullable String trackedEntityInstanceId, long ageInMonths) {
-        HashMap extras = new HashMap<>();
-        extras.put(BiometricsClient.SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceId);
-
-        BiometricsClientFactory.INSTANCE.get(this.getContext()).verify(this, biometricsGuid, moduleId, extras, ageInMonths);
+        BiometricsClientFactory.INSTANCE.get(this.getContext()).verify(this, biometricsGuid, moduleId, trackedEntityInstanceId, ageInMonths);
     }
 
     @Override

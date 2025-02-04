@@ -127,7 +127,11 @@ class BiometricsClient(
         Timber.d("Biometrics identify!")
         Timber.d("moduleId: $finalModuleId")
 
+        val extras = createExtras(trackedEntityInstanceUId = null)
+
         val intent = simHelper.identify(finalModuleId)
+
+        extras.forEach { intent.putExtra(it.key, it.value) }
 
         launchSimprintsAppFromActivity(activity, intent, BIOMETRICS_IDENTIFY_REQUEST)
     }
@@ -135,7 +139,7 @@ class BiometricsClient(
     fun verify(
         fragment: Fragment,
         guid: String,
-        moduleId: String, extras: Map<String, String>,
+        moduleId: String, trackedEntityInstanceUId: String,
         ageInMonths: Long? = null
     ) {
 
@@ -148,7 +152,7 @@ class BiometricsClient(
         Timber.d("moduleId: $moduleId")
         Timber.d("subjectAge: $ageInMonths")
 
-        printExtras(extras)
+        val extras = createExtras(trackedEntityInstanceUId)
 
         val intent = if (ageInMonths != null) {
             val metadata = com.simprints.libsimprints.Metadata()
@@ -450,17 +454,17 @@ class BiometricsClient(
         }
     }
 
-    private fun createExtras(trackedEntityInstanceUId: String?): Map<String, String> {
-        val extras: HashMap<String, String> = HashMap()
+    private fun createExtras(trackedEntityInstanceUId: String?): Map<String, String?> {
+        val extras: HashMap<String, String?> = HashMap()
 
-        extras[SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID] = trackedEntityInstanceUId ?: ""
+        extras[SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID] = trackedEntityInstanceUId
 
         printExtras(extras)
 
         return extras
     }
 
-    private fun printExtras(extras: Map<String, String>) {
+    private fun printExtras(extras: Map<String, String?>) {
         Timber.d(
             "extras: ${
                 extras.entries.joinToString(
