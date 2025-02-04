@@ -455,8 +455,8 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
         dialog.show()
     }
 
-    override fun registerBiometrics(orgUnit: String, ageInMonths: Long) {
-        BiometricsClientFactory.get(this).register(this, orgUnit, ageInMonths)
+    override fun registerBiometrics(moduleId: String, ageInMonths: Long, trackedEntityInstanceId:String) {
+        BiometricsClientFactory.get(this).register(this, moduleId, ageInMonths, trackedEntityInstanceId)
     }
 
     override fun showPossibleDuplicatesDialog(

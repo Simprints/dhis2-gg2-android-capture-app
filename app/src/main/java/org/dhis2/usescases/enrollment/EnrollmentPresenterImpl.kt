@@ -393,7 +393,9 @@ class EnrollmentPresenterImpl(
                 val ageInMonths =
                     getAgeInMonthsByFieldUiModel(basicPreferenceProvider, fields)
 
-                view.registerBiometrics(orgUnitAsModuleId, ageInMonths)
+                val teiUid = teiRepository.blockingGet()?.uid() ?: ""
+
+                view.registerBiometrics(orgUnitAsModuleId, ageInMonths, teiUid)
                 pendingSave = true
             }
 

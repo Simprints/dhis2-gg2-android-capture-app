@@ -659,14 +659,13 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
     }
 
     override fun registerBiometrics(
-        orgUnitUid: String,
+        moduleId: String,
         trackedEntityInstanceUId: String,
         ageInMonths: Long
     ) {
         val biometricsClient = get(requireContext())
-        val extras: HashMap<String, String> = HashMap()
-        extras[BiometricsClient.SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID] = trackedEntityInstanceUId
-        biometricsClient.registerFromFragment(this, orgUnitUid, extras, ageInMonths)
+
+        biometricsClient.registerFromFragment(this, moduleId, trackedEntityInstanceUId, ageInMonths)
     }
 
     override fun showBiometricsAgeGroupNotSupported() {
