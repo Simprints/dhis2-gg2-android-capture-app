@@ -12,13 +12,12 @@ import org.dhis2.form.data.SuccessfulResult
 import org.dhis2.form.model.EventMode
 import org.dhis2.ui.dialogs.bottomsheet.FieldWithIssue
 import org.dhis2.ui.dialogs.bottomsheet.IssueType
+import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureContract
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.domain.ReOpenEventUseCase
 import org.hisp.dhis.android.core.D2
-import org.hisp.dhis.android.core.arch.repositories.`object`.ReadOnlyOneObjectRepositoryFinalImpl
 import org.hisp.dhis.android.core.event.EventEditableStatus
 import org.hisp.dhis.android.core.event.EventNonEditableReason
-import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.doReturn
@@ -40,7 +39,7 @@ class EventCaptureFormPresenterTest {
     private val dispatcherProvider: DispatcherProvider = mock()
 
     private val basicPreferenceProvider: BasicPreferenceProvider = mock()
-    private val orgUnitRepository: ReadOnlyOneObjectRepositoryFinalImpl<OrganisationUnit> = mock()
+    private val orgUnitRepository: OrgUnitRepository = mock()
 
     @Before
     fun setUp() {

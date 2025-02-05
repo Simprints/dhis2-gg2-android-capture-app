@@ -23,16 +23,15 @@ import org.dhis2.usescases.biometrics.BIOMETRICS_ENABLED
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.getOrgUnitAsModuleId
 import org.dhis2.usescases.biometrics.isLastVerificationValid
+import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.eventsWithoutRegistration.EventIdlingResourceSingleton
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureContract
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.domain.ReOpenEventUseCase
 import org.hisp.dhis.android.core.D2
-import org.hisp.dhis.android.core.arch.repositories.`object`.ReadOnlyOneObjectRepositoryFinalImpl
 import org.hisp.dhis.android.core.event.Event
 import org.hisp.dhis.android.core.event.EventEditableStatus
 import org.hisp.dhis.android.core.event.EventNonEditableReason
 import org.hisp.dhis.android.core.event.EventStatus
-import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.jetbrains.annotations.Nullable
 
 class EventCaptureFormPresenter(
@@ -44,7 +43,7 @@ class EventCaptureFormPresenter(
     private val reOpenEventUseCase: ReOpenEventUseCase,
     private val dispatcherProvider: DispatcherProvider,
     private val basicPreferenceProvider: BasicPreferenceProvider,
-    private val orgUnitRepository: ReadOnlyOneObjectRepositoryFinalImpl<OrganisationUnit>
+    private val orgUnitRepository: OrgUnitRepository
 ) {
 
     private var biometricsVerificationStatus: Int = -1
@@ -116,11 +115,11 @@ class EventCaptureFormPresenter(
                         val orgUnitAsModuleId =
                             getOrgUnitAsModuleId(teiOrgUnit ?: "", d2, basicPreferenceProvider)
 
-                        val orgUnit = orgUnitRepository.blockingGet()
-                        val orgUnitUId = orgUnit?.uid() ?: ""
-                        val orgUnitName = orgUnit?.name() ?: ""
+                        val orgUnit = orgUnitRepository.getByUid(getOrgUnitId())
+                        val orgUnitUId = orgUnit.uid() ?: ""
+                        val orgUnitName = orgUnit.name() ?: ""
 
-                        val userOrgUnits = getUserOrgUnits(d2.eventModule().events().uid(eventUid).blockingGet()?.program())
+                        val userOrgUnits = orgUnitRepository.getUserOrgUnits(getProgramId())
 
                         view.verifyBiometrics(
                             biometricsGuid,
@@ -129,7 +128,7 @@ class EventCaptureFormPresenter(
                             ageInMonths,
                             orgUnitUId,
                             orgUnitName,
-                            userOrgUnits
+                            userOrgUnits.map { it.uid() }
                         )
                     }
                 }
@@ -143,10 +142,11 @@ class EventCaptureFormPresenter(
                         val orgUnitAsModuleId =
                             getOrgUnitAsModuleId(teiOrgUnit ?: "", d2, basicPreferenceProvider)
 
-                        val orgUnit = orgUnitRepository.blockingGet()
-                        val orgUnitUId = orgUnit?.uid() ?: ""
-                        val orgUnitName = orgUnit?.name() ?: ""
-                        val userOrgUnits = getUserOrgUnits(d2.eventModule().events().uid(eventUid).blockingGet()?.program())
+                        val orgUnit = orgUnitRepository.getByUid(getOrgUnitId())
+                        val orgUnitUId = orgUnit.uid() ?: ""
+                        val orgUnitName = orgUnit.name() ?: ""
+
+                        val userOrgUnits = orgUnitRepository.getUserOrgUnits(getProgramId())
 
                         view.registerBiometrics(
                             orgUnitAsModuleId,
@@ -154,7 +154,7 @@ class EventCaptureFormPresenter(
                             ageInMonths,
                             orgUnitUId,
                             orgUnitName,
-                            userOrgUnits
+                            userOrgUnits.map { it.uid() }
                         )
                     }
                 }
@@ -212,10 +212,11 @@ class EventCaptureFormPresenter(
                 val orgUnitAsModuleId =
                     getOrgUnitAsModuleId(this.teiOrgUnit ?: "", d2, basicPreferenceProvider)
 
-                val orgUnit = orgUnitRepository.blockingGet()
-                val orgUnitUId = orgUnit?.uid() ?: ""
-                val orgUnitName = orgUnit?.name() ?: ""
-                val userOrgUnits = getUserOrgUnits(d2.eventModule().events().uid(eventUid).blockingGet()?.program())
+                val orgUnit = orgUnitRepository.getByUid(getOrgUnitId())
+                val orgUnitUId = orgUnit.uid() ?: ""
+                val orgUnitName = orgUnit.name() ?: ""
+
+                val userOrgUnits = orgUnitRepository.getUserOrgUnits(getProgramId())
 
                 view.verifyBiometrics(
                     this.biometricsGuid,
@@ -224,7 +225,7 @@ class EventCaptureFormPresenter(
                     ageInMonths,
                     orgUnitUId,
                     orgUnitName,
-                    userOrgUnits
+                    userOrgUnits.map { it.uid() }
                 )
             } else {
                 refreshBiometricsStatus(1, false)
@@ -339,13 +340,16 @@ class EventCaptureFormPresenter(
         }
     }
 
-    private fun getUserOrgUnits(programUid: String?): List<String> {
-        val programs: MutableList<String> = ArrayList()
-        if (programUid != null) {
-            programs.add(programUid)
-        }
-        return d2.organisationUnitModule().organisationUnits()
-            .byOrganisationUnitScope(OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
-            .byProgramUids(programs).blockingGetUids()
+    private fun getOrgUnitId(): String {
+        val event = d2.eventModule().events().uid(eventUid).blockingGet()
+        val enrollmentUid = event?.enrollment()
+        val organisationUnit = d2.enrollmentModule().enrollments().uid(enrollmentUid).blockingGet()?.organisationUnit()
+
+        return organisationUnit ?: ""
+    }
+
+    private fun getProgramId(): String {
+        val event = d2.eventModule().events().uid(eventUid).blockingGet()
+        return event?.program() ?: ""
     }
 }

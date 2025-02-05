@@ -35,6 +35,7 @@ import org.dhis2.usescases.biometrics.getAgeInMonthsByAttributes
 import org.dhis2.usescases.biometrics.getAgeInMonthsByFieldUiModel
 import org.dhis2.usescases.biometrics.getOrgUnitAsModuleId
 import org.dhis2.usescases.biometrics.isUnderAgeThreshold
+import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.teiDashboard.TeiAttributesProvider
 import org.dhis2.utils.analytics.AnalyticsHelper
 import org.dhis2.utils.analytics.DELETE_AND_BACK
@@ -49,7 +50,6 @@ import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.event.EventCollectionRepository
 import org.hisp.dhis.android.core.event.EventStatus
 import org.hisp.dhis.android.core.maintenance.D2Error
-import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityAttributeValue
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceObjectRepository
@@ -66,7 +66,7 @@ class EnrollmentPresenterImpl(
     private val dataEntryRepository: EnrollmentRepository,
     private val teiRepository: TrackedEntityInstanceObjectRepository,
     private val programRepository: ReadOnlyOneObjectRepositoryFinalImpl<Program>,
-    private val orgUnitRepository: ReadOnlyOneObjectRepositoryFinalImpl<OrganisationUnit>,
+    private val orgUnitRepository: OrgUnitRepository,
     private val schedulerProvider: SchedulerProvider,
     private val enrollmentFormRepository: EnrollmentFormRepository,
     private val analyticsHelper: AnalyticsHelper,
@@ -359,12 +359,12 @@ class EnrollmentPresenterImpl(
         val teiTypeUid = d2.trackedEntityModule().trackedEntityInstances().uid(teiUid).blockingGet()
             ?.trackedEntityType()!!
 
-        val orgUnit = orgUnitRepository.blockingGet()
-        val orgUnitUId = orgUnit?.uid() ?: ""
-        val orgUnitName = orgUnit?.name() ?: ""
+        val orgUnit = orgUnitRepository.getByUid(getEnrollment()!!.organisationUnit() ?: "")
+        val orgUnitUId = orgUnit.uid() ?: ""
+        val orgUnitName = orgUnit.name() ?: ""
 
         val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnitUId, d2, basicPreferenceProvider)
-        val userOrgUnits = getUserOrgUnits(getProgram()?.uid())
+        val userOrgUnits = orgUnitRepository.getUserOrgUnits(getProgram()?.uid() ?: "")
 
         val ageInMonths = tei?.trackedEntityAttributeValues()?.let {
             getAgeInMonthsByAttributes(
@@ -381,7 +381,7 @@ class EnrollmentPresenterImpl(
                 teiUid,
                 orgUnitUId,
                 orgUnitName,
-                userOrgUnits
+                userOrgUnits.map { it.uid() }
             )
         } else if (possibleDuplicates.size == 1 && possibleDuplicates[0].guid == biometricsUiModel!!.value) {
             view.registerLast(
@@ -391,7 +391,7 @@ class EnrollmentPresenterImpl(
                 teiUid,
                 orgUnitUId,
                 orgUnitName,
-                userOrgUnits
+                userOrgUnits.map { it.uid() }
             )
         } else {
             val finalPossibleDuplicates =
@@ -412,7 +412,7 @@ class EnrollmentPresenterImpl(
                 teiUid,
                 orgUnitUId,
                 orgUnitName,
-                userOrgUnits
+                userOrgUnits.map { it.uid() }
             )
         }
     }
@@ -427,10 +427,11 @@ class EnrollmentPresenterImpl(
                 showOrHideSaveButton()
             }
 
-            val orgUnit = orgUnitRepository.blockingGet()
-            val orgUnitUId = orgUnit?.uid() ?: ""
-            val orgUnitName = orgUnit?.name() ?: ""
-            val userOrgUnits = getUserOrgUnits(getProgram()?.uid())
+            val orgUnit = orgUnitRepository.getByUid(getEnrollment()!!.organisationUnit() ?: "")
+            val orgUnitUId = orgUnit.uid() ?: ""
+            val orgUnitName = orgUnit.name() ?: ""
+
+            val userOrgUnits = orgUnitRepository.getUserOrgUnits(getProgram()?.uid() ?: "")
 
             val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnitUId, d2, basicPreferenceProvider)
             val ageInMonths =
@@ -445,7 +446,7 @@ class EnrollmentPresenterImpl(
                     teiUid,
                     orgUnitUId,
                     orgUnitName,
-                    userOrgUnits
+                    userOrgUnits.map { it.uid() }
                 )
 
                 pendingSave = true
@@ -468,7 +469,7 @@ class EnrollmentPresenterImpl(
                     teiUid,
                     orgUnitUId,
                     orgUnitName,
-                    userOrgUnits
+                    userOrgUnits.map { it.uid() }
                 )
             }
 
@@ -549,15 +550,5 @@ class EnrollmentPresenterImpl(
         pendingSave = true
 
         saveBiometricValue(null)
-    }
-
-    private fun getUserOrgUnits(programUid: String?): List<String> {
-        val programs: MutableList<String> = ArrayList()
-        if (programUid != null) {
-            programs.add(programUid)
-        }
-        return d2.organisationUnitModule().organisationUnits()
-            .byOrganisationUnitScope(OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
-            .byProgramUids(programs).blockingGetUids()
     }
 }

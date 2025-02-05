@@ -45,6 +45,7 @@ import org.dhis2.usescases.biometrics.getAgeInMonthsByAttributes
 import org.dhis2.usescases.biometrics.getOrgUnitAsModuleId
 import org.dhis2.usescases.biometrics.isLastVerificationValid
 import org.dhis2.usescases.biometrics.isUnderAgeThreshold
+import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioModel
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioRegistrationMapper
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioVerificationMapper
@@ -68,7 +69,6 @@ import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.enrollment.Enrollment
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.event.EventStatus
-import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.android.core.program.ProgramStage
 import org.hisp.dhis.rules.models.RuleEffect
@@ -99,6 +99,7 @@ class TEIDataPresenter(
     private val basicPreferenceProvider: BasicPreferenceProvider,
     private val resourceManager: ResourceManager,
     private val lastBiometricsSearchSessionId: String?,
+    private val orgUnitRepository: OrgUnitRepository
 ) {
     private var dashboardModel: DashboardEnrollmentModel? = null
     private val groupingProcessor: BehaviorProcessor<Boolean> = BehaviorProcessor.create()
@@ -546,31 +547,32 @@ class TEIDataPresenter(
     private fun verifyBiometrics() {
         if (dashboardModel != null) {
             val biometricValue = dashboardModel!!.getBiometricValue() ?: return
-            val orgUnit = orgUnitUid ?: return
+            val orgUnitId = orgUnitUid ?: return
 
             val ageInMonths = getAgeInMonthsByAttributes(
                 basicPreferenceProvider,
                 dashboardModel!!.trackedEntityAttributeValues
             )
 
-            val userOrgUnits = getUserOrgUnits(dashboardModel!!.currentEnrollment.program())
+            val userOrgUnits = orgUnitRepository.getUserOrgUnits(dashboardModel!!.currentEnrollment.program()?:"")
+            val orgUnit = orgUnitRepository.getByUid(orgUnitId)
 
-            val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnit, d2, basicPreferenceProvider)
+            val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnitId, d2, basicPreferenceProvider)
 
             view.launchBiometricsVerification(
                 biometricValue,
                 orgUnitAsModuleId, dashboardModel!!.trackedEntityInstance.uid(),
                 ageInMonths,
-                orgUnit,
-                getOrgUnitName(orgUnit),
-                userOrgUnits
+                orgUnitId,
+                orgUnit.name() ?:"",
+                userOrgUnits.map { it.uid() }
             )
         }
     }
 
     private fun registerBiometrics() {
         if (dashboardModel != null) {
-            val orgUnit = orgUnitUid ?: return
+            val orgUnitId = orgUnitUid ?: return
 
             val ageInMonths = getAgeInMonthsByAttributes(
                 basicPreferenceProvider,
@@ -578,9 +580,10 @@ class TEIDataPresenter(
             )
 
             val orgUnitAsModuleId =
-                getOrgUnitAsModuleId(orgUnit, d2, basicPreferenceProvider)
+                getOrgUnitAsModuleId(orgUnitId, d2, basicPreferenceProvider)
 
-            val userOrgUnits = getUserOrgUnits(dashboardModel!!.currentEnrollment.program())
+            val userOrgUnits = orgUnitRepository.getUserOrgUnits(dashboardModel!!.currentEnrollment.program()?:"")
+            val orgUnit = orgUnitRepository.getByUid(orgUnitId)
 
             if (lastBiometricsSearchSessionId != null) {
                 view.registerLast(
@@ -588,18 +591,18 @@ class TEIDataPresenter(
                     orgUnitAsModuleId,
                     ageInMonths,
                     dashboardModel!!.trackedEntityInstance.uid(),
-                    orgUnit,
-                    getOrgUnitName(orgUnit),
-                    userOrgUnits
+                    orgUnitId,
+                    orgUnit.name() ?:"",
+                    userOrgUnits.map { it.uid() }
                 )
             } else {
                 view.registerBiometrics(
                     orgUnitAsModuleId,
                     dashboardModel!!.trackedEntityInstance.uid(),
                     ageInMonths,
-                    orgUnit,
-                    getOrgUnitName(orgUnit),
-                    userOrgUnits
+                    orgUnitId,
+                    orgUnit.name() ?:"",
+                    userOrgUnits.map { it.uid() }
                 )
             }
         }
@@ -737,7 +740,7 @@ class TEIDataPresenter(
     ) {
         lastRegisterResult = null
 
-        val orgUnit = orgUnitUid ?: return
+        val orgUnitId = orgUnitUid ?: return
 
         val program = programUid ?: ""
         val biometricsAttUid = biometricAttributeId
@@ -760,7 +763,8 @@ class TEIDataPresenter(
         val orgUnitAsModuleId =
             getOrgUnitAsModuleId(orgUnitUid ?: return, d2, basicPreferenceProvider)
 
-        val userOrgUnits = getUserOrgUnits(dashboardModel!!.currentEnrollment.program())
+        val userOrgUnits = orgUnitRepository.getUserOrgUnits(dashboardModel!!.currentEnrollment.program()?:"")
+        val orgUnit = orgUnitRepository.getByUid(orgUnitId)
 
         if (possibleDuplicates.isEmpty() || (possibleDuplicates.size == 1 && possibleDuplicates[0].guid == biometricsValue?.value())) {
             view.registerLast(
@@ -768,9 +772,9 @@ class TEIDataPresenter(
                 orgUnitAsModuleId,
                 ageInMonths,
                 teiUid,
-                orgUnit,
-                getOrgUnitName(orgUnit),
-                userOrgUnits
+                orgUnitId,
+                orgUnit.name() ?:"",
+                userOrgUnits.map { it.uid() }
             )
         } else {
             val finalPossibleDuplicates =
@@ -788,21 +792,11 @@ class TEIDataPresenter(
                 orgUnitAsModuleId,
                 ageInMonths,
                 teiUid,
-                orgUnit,
-                getOrgUnitName(orgUnit),
-                userOrgUnits
+                orgUnitId,
+                orgUnit.name() ?:"",
+                userOrgUnits.map { it.uid() }
 
             )
         }
-    }
-
-    private fun getUserOrgUnits(programUid: String?): List<String> {
-        val programs: MutableList<String> = ArrayList()
-        if (programUid != null) {
-            programs.add(programUid)
-        }
-        return d2.organisationUnitModule().organisationUnits()
-            .byOrganisationUnitScope(OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
-            .byProgramUids(programs).blockingGetUids()
     }
 }
