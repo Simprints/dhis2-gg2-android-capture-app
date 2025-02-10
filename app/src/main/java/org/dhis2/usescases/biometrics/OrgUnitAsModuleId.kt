@@ -15,24 +15,38 @@ fun getOrgUnitAsModuleId(
         basicPreferenceProvider.getInt(BiometricsPreference.ORG_UNIT_LEVEL_AS_MODULE_ID, 0)
 
     val path = orgUnit?.path() ?: selectedOrgUnitUid
+    val level = orgUnit?.level() ?: 0
 
-    return getOrgUnitAsModuleIdByPath(selectedOrgUnitUid, path, orgUnitLevelAsModuleId)
+    return getOrgUnitAsModuleIdByPath(selectedOrgUnitUid, level, path, orgUnitLevelAsModuleId)
 }
 
 fun getOrgUnitAsModuleIdByPath(
     selectedOrgUnitUid: String,
+    selectedOrgUnitLevel: Int,
     path: String,
     orgUnitLevelAsModuleId: Int
 ): String {
-    val pathList = path.split("/")
+    val maxOrgUnitLevelAsModuleId = 4
+
+    val pathList = path.split("/").filter { it.isNotBlank() }
 
     return if (pathList.contains(selectedOrgUnitUid)) {
+
+        val orgUnitLevelsPath = (1..selectedOrgUnitLevel).toList()
+
         val pathIndexToSelect = pathList.indexOf(selectedOrgUnitUid) + orgUnitLevelAsModuleId
 
-        if (pathIndexToSelect < 0) {
+        if (pathIndexToSelect < 0){
             pathList[0]
-        } else{
-            pathList[pathIndexToSelect]
+        } else {
+            val pathLevel = orgUnitLevelsPath[pathIndexToSelect]
+
+            if (pathLevel > maxOrgUnitLevelAsModuleId) {
+                val maxIndex = orgUnitLevelsPath.indexOf(maxOrgUnitLevelAsModuleId)
+                pathList[maxIndex]
+            } else{
+                pathList[pathIndexToSelect]
+            }
         }
     } else {
         selectedOrgUnitUid
