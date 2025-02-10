@@ -12,6 +12,7 @@ import org.dhis2.form.data.SuccessfulResult
 import org.dhis2.form.model.EventMode
 import org.dhis2.ui.dialogs.bottomsheet.FieldWithIssue
 import org.dhis2.ui.dialogs.bottomsheet.IssueType
+import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureContract
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.domain.ReOpenEventUseCase
 import org.hisp.dhis.android.core.D2
@@ -38,6 +39,7 @@ class EventCaptureFormPresenterTest {
     private val dispatcherProvider: DispatcherProvider = mock()
 
     private val basicPreferenceProvider: BasicPreferenceProvider = mock()
+    private val orgUnitRepository: OrgUnitRepository = mock()
 
     @Before
     fun setUp() {
@@ -49,7 +51,8 @@ class EventCaptureFormPresenterTest {
             resourceManager = resourceManager,
             reOpenEventUseCase = reOpenUseCase,
             dispatcherProvider = dispatcherProvider,
-            basicPreferenceProvider
+            basicPreferenceProvider,
+            orgUnitRepository
         )
     }
 

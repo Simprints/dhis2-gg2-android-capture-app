@@ -27,6 +27,7 @@ import org.dhis2.form.model.EventMode
 import org.dhis2.mobileProgramRules.RuleEngineHelper
 import org.dhis2.ui.MetadataIconData
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
+import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.programEventDetail.usecase.CreateEventUseCase
 import org.dhis2.usescases.teiDashboard.DashboardEnrollmentModel
 import org.dhis2.usescases.teiDashboard.DashboardRepository
@@ -89,6 +90,7 @@ class TeiDataPresenterTest {
 
     private val basicPreferenceProvider: BasicPreferenceProvider = mock()
     private val resourceManager: ResourceManager = mock()
+    private val orgUnitRepository: OrgUnitRepository = mock()
 
     @Before
     fun setUp() {
@@ -113,7 +115,8 @@ class TeiDataPresenterTest {
             d2ErrorUtils,
             basicPreferenceProvider,
             resourceManager,
-            null
+            null,
+            orgUnitRepository
         )
     }
 
@@ -397,7 +400,8 @@ class TeiDataPresenterTest {
             d2ErrorUtils,
             basicPreferenceProvider,
             resourceManager,
-            null
+            null,
+            orgUnitRepository
         )
 
         return teiDataPresenter;

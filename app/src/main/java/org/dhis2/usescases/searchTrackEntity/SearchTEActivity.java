@@ -434,8 +434,8 @@ public class SearchTEActivity extends ActivityGlobalAbstract implements SearchTE
     }
 
     @Override
-    public void launchBiometricsIdentify(String moduleId) {
-        BiometricsClientFactory.INSTANCE.get(this).identify(this, moduleId);
+    public void launchBiometricsIdentify(String moduleId, List<String> userOrgUnits) {
+        BiometricsClientFactory.INSTANCE.get(this).identify(this, moduleId, userOrgUnits);
     }
 
     @Override
