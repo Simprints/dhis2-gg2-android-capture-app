@@ -46,6 +46,7 @@ import org.dhis2.usescases.general.FragmentGlobalAbstract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -114,7 +115,7 @@ public class EventCaptureFormFragment extends FragmentGlobalAbstract implements 
         biometricsGuid = getArguments().getString(BIOMETRICS_GUID);
         biometricsVerificationStatus = getArguments().getInt(BIOMETRICS_VERIFICATION_STATUS);
         teiOrgUnit = getArguments().getString(BIOMETRICS_TEI_ORGANISATION_UNIT);
-        trackedEntityInstanceId =  getArguments().getString(BIOMETRICS_TRACKED_ENTITY_INSTANCE_ID);
+        trackedEntityInstanceId = getArguments().getString(BIOMETRICS_TRACKED_ENTITY_INSTANCE_ID);
 
         activity.eventCaptureComponent.plus(
                 new EventCaptureFormModule(
@@ -145,7 +146,7 @@ public class EventCaptureFormFragment extends FragmentGlobalAbstract implements 
                 .onPercentageUpdate(percentage -> {
                     activity.updatePercentage(percentage);
                     return Unit.INSTANCE;
-                }).onItemChangeListener(rowAction ->{
+                }).onItemChangeListener(rowAction -> {
                     activity.refreshProgramStageName();
                     return Unit.INSTANCE;
                 })
@@ -159,7 +160,7 @@ public class EventCaptureFormFragment extends FragmentGlobalAbstract implements 
                 .useComposeForm(
                         featureConfig.isFeatureEnable(Feature.COMPOSE_FORMS)
                 )
-                .onFieldsLoadingListener ( fields -> presenter.onFieldsLoading(fields))
+                .onFieldsLoadingListener(fields -> presenter.onFieldsLoading(fields))
                 .build();
         activity.setFormEditionListener(this);
         super.onCreate(savedInstanceState);
@@ -211,19 +212,19 @@ public class EventCaptureFormFragment extends FragmentGlobalAbstract implements 
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         switch (requestCode) {
             case BIOMETRICS_VERIFY_REQUEST: {
-                    VerifyResult result = BiometricsClientFactory.INSTANCE.get(
-                            this.getContext()).handleVerifyResponse(requestCode, data);
+                VerifyResult result = BiometricsClientFactory.INSTANCE.get(
+                        this.getContext()).handleVerifyResponse(requestCode, data);
 
-                    if (result instanceof VerifyResult.Match) {
-                        presenter.refreshBiometricsStatus(1, true, null);
-                    } else if (result instanceof VerifyResult.NoMatch) {
-                        presenter.refreshBiometricsStatus(0, true,null);
-                    } else if (result instanceof VerifyResult.Failure) {
-                        presenter.refreshBiometricsStatus(0, true,null);
-                    } else if (result instanceof VerifyResult.AgeGroupNotSupported) {
-                        Toast.makeText(getContext(), R.string.age_group_not_supported,
-                                Toast.LENGTH_SHORT).show();
-                    }
+                if (result instanceof VerifyResult.Match) {
+                    presenter.refreshBiometricsStatus(1, true, null);
+                } else if (result instanceof VerifyResult.NoMatch) {
+                    presenter.refreshBiometricsStatus(0, true, null);
+                } else if (result instanceof VerifyResult.Failure) {
+                    presenter.refreshBiometricsStatus(0, true, null);
+                } else if (result instanceof VerifyResult.AgeGroupNotSupported) {
+                    Toast.makeText(getContext(), R.string.age_group_not_supported,
+                            Toast.LENGTH_SHORT).show();
+                }
 
                 break;
             }
@@ -232,7 +233,7 @@ public class EventCaptureFormFragment extends FragmentGlobalAbstract implements 
                     RegisterResult result = BiometricsClientFactory.INSTANCE.get(
                             this.getContext()).handleRegisterResponse(requestCode, data);
                     if (result instanceof RegisterResult.Completed) {
-                        presenter.refreshBiometricsStatus(1, true,((RegisterResult.Completed) result).getGuid());
+                        presenter.refreshBiometricsStatus(1, true, ((RegisterResult.Completed) result).getGuid());
                     } else if (result instanceof RegisterResult.Failure || result instanceof RegisterResult.RegisterLastFailure) {
                         presenter.refreshBiometricsStatus(0, true, null);
                     } else if (result instanceof RegisterResult.PossibleDuplicates) {
@@ -303,18 +304,38 @@ public class EventCaptureFormFragment extends FragmentGlobalAbstract implements 
     }
 
     @Override
-    public void verifyBiometrics(@Nullable String biometricsGuid, @Nullable String teiOrgUnit, @Nullable String trackedEntityInstanceId, long ageInMonths) {
-        HashMap extras = new HashMap<>();
-        extras.put(BiometricsClient.SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceId);
-
-        BiometricsClientFactory.INSTANCE.get(this.getContext()).verify(this, biometricsGuid, teiOrgUnit, extras, ageInMonths);
+    public void verifyBiometrics(@Nullable String biometricsGuid,
+                                 @Nullable String moduleId,
+                                 @Nullable String trackedEntityInstanceId,
+                                 long ageInMonths,
+                                 @NonNull String enrollingOrgUnitId,
+                                 @NonNull String enrollingOrgUnitName,
+                                 List<String> userOrgUnits) {
+        BiometricsClientFactory.INSTANCE.get(this.getContext()).verify(
+                this,
+                biometricsGuid,
+                moduleId,
+                trackedEntityInstanceId,
+                ageInMonths,
+                enrollingOrgUnitId,
+                enrollingOrgUnitName,
+                userOrgUnits);
     }
 
     @Override
-    public void registerBiometrics(@Nullable String teiOrgUnit, @Nullable String trackedEntityInstanceId, long ageInMonths) {
-        HashMap extras = new HashMap<>();
-        extras.put(BiometricsClient.SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceId);
-
-        BiometricsClientFactory.INSTANCE.get(this.getContext()).registerFromFragment(this, teiOrgUnit, extras , ageInMonths);
+    public void registerBiometrics(@Nullable String moduleId,
+                                   @Nullable String trackedEntityInstanceId,
+                                   long ageInMonths,
+                                   @NonNull String enrollingOrgUnitId,
+                                   @NonNull String enrollingOrgUnitName,
+                                   List<String> userOrgUnits) {
+        BiometricsClientFactory.INSTANCE.get(this.getContext()).registerFromFragment(
+                this,
+                teiOrgUnit,
+                trackedEntityInstanceId,
+                ageInMonths,
+                enrollingOrgUnitId,
+                enrollingOrgUnitName,
+                userOrgUnits);
     }
 }

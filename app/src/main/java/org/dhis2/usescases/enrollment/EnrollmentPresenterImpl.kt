@@ -31,9 +31,11 @@ import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
 import org.dhis2.usescases.biometrics.BIOMETRICS_ENABLED
 import org.dhis2.usescases.biometrics.duplicates.LastPossibleDuplicates
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
+import org.dhis2.usescases.biometrics.getAgeInMonthsByAttributes
 import org.dhis2.usescases.biometrics.getAgeInMonthsByFieldUiModel
 import org.dhis2.usescases.biometrics.getOrgUnitAsModuleId
 import org.dhis2.usescases.biometrics.isUnderAgeThreshold
+import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.teiDashboard.TeiAttributesProvider
 import org.dhis2.utils.analytics.AnalyticsHelper
 import org.dhis2.utils.analytics.DELETE_AND_BACK
@@ -64,6 +66,7 @@ class EnrollmentPresenterImpl(
     private val dataEntryRepository: EnrollmentRepository,
     private val teiRepository: TrackedEntityInstanceObjectRepository,
     private val programRepository: ReadOnlyOneObjectRepositoryFinalImpl<Program>,
+    private val orgUnitRepository: OrgUnitRepository,
     private val schedulerProvider: SchedulerProvider,
     private val enrollmentFormRepository: EnrollmentFormRepository,
     private val analyticsHelper: AnalyticsHelper,
@@ -347,17 +350,49 @@ class EnrollmentPresenterImpl(
     ) {
         val program = getProgram()!!.uid()
         val biometricsAttUid = biometricsUiModel!!.uid
-        val teiUid = getEnrollment()!!.trackedEntityInstance()
+        val teiUid = getEnrollment()!!.trackedEntityInstance() ?: ""
+
+        val tei =
+            d2.trackedEntityModule().trackedEntityInstances().withTrackedEntityAttributeValues()
+                .uid(teiUid).blockingGet()
 
         val teiTypeUid = d2.trackedEntityModule().trackedEntityInstances().uid(teiUid).blockingGet()
             ?.trackedEntityType()!!
 
-        val orgUnitAsModuleId = getOrgUnit()
+        val orgUnit = orgUnitRepository.getByUid(getEnrollment()!!.organisationUnit() ?: "")
+        val orgUnitUId = orgUnit.uid() ?: ""
+        val orgUnitName = orgUnit.name() ?: ""
+
+        val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnitUId, d2, basicPreferenceProvider)
+        val userOrgUnits = orgUnitRepository.getUserOrgUnits(getProgram()?.uid() ?: "")
+
+        val ageInMonths = tei?.trackedEntityAttributeValues()?.let {
+            getAgeInMonthsByAttributes(
+                basicPreferenceProvider,
+                it
+            )
+        }
 
         if (possibleDuplicates.isEmpty()) {
-            view.registerLast(sessionId, orgUnitAsModuleId)
+            view.registerLast(
+                sessionId,
+                orgUnitAsModuleId,
+                ageInMonths,
+                teiUid,
+                orgUnitUId,
+                orgUnitName,
+                userOrgUnits.map { it.uid() }
+            )
         } else if (possibleDuplicates.size == 1 && possibleDuplicates[0].guid == biometricsUiModel!!.value) {
-            view.registerLast(sessionId, orgUnitAsModuleId)
+            view.registerLast(
+                sessionId,
+                orgUnitAsModuleId,
+                ageInMonths,
+                teiUid,
+                orgUnitUId,
+                orgUnitName,
+                userOrgUnits.map { it.uid() }
+            )
         } else {
             val finalPossibleDuplicates =
                 possibleDuplicates.filter { it.guid != biometricsUiModel!!.value }
@@ -372,7 +407,12 @@ class EnrollmentPresenterImpl(
                 teiTypeUid,
                 biometricsAttUid,
                 enrollNewVisible,
-                orgUnitAsModuleId
+                orgUnitAsModuleId,
+                ageInMonths,
+                teiUid,
+                orgUnitUId,
+                orgUnitName,
+                userOrgUnits.map { it.uid() }
             )
         }
     }
@@ -387,13 +427,28 @@ class EnrollmentPresenterImpl(
                 showOrHideSaveButton()
             }
 
-            val orgUnitAsModuleId = getOrgUnit()
+            val orgUnit = orgUnitRepository.getByUid(getEnrollment()!!.organisationUnit() ?: "")
+            val orgUnitUId = orgUnit.uid() ?: ""
+            val orgUnitName = orgUnit.name() ?: ""
+
+            val userOrgUnits = orgUnitRepository.getUserOrgUnits(getProgram()?.uid() ?: "")
+
+            val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnitUId, d2, basicPreferenceProvider)
+            val ageInMonths =
+                getAgeInMonthsByFieldUiModel(basicPreferenceProvider, fields)
+
+            val teiUid = teiRepository.blockingGet()?.uid() ?: ""
 
             biometricsUiModel?.setBiometricsRegisterListener {
-                val ageInMonths =
-                    getAgeInMonthsByFieldUiModel(basicPreferenceProvider, fields)
+                view.registerBiometrics(
+                    orgUnitAsModuleId,
+                    ageInMonths,
+                    teiUid,
+                    orgUnitUId,
+                    orgUnitName,
+                    userOrgUnits.map { it.uid() }
+                )
 
-                view.registerBiometrics(orgUnitAsModuleId, ageInMonths)
                 pendingSave = true
             }
 
@@ -407,20 +462,21 @@ class EnrollmentPresenterImpl(
 
             biometricsUiModel?.setRegisterLastAndSave { sessionId ->
                 pendingSave = true
-                view.registerLast(sessionId, orgUnitAsModuleId)
+                view.registerLast(
+                    sessionId,
+                    orgUnitAsModuleId,
+                    ageInMonths,
+                    teiUid,
+                    orgUnitUId,
+                    orgUnitName,
+                    userOrgUnits.map { it.uid() }
+                )
             }
 
             if (biometricsUiModel?.value?.startsWith(BIOMETRICS_FAILURE_PATTERN) == true) {
                 resetBiometricsFailureAfterTime()
             }
         }
-    }
-
-    private fun getOrgUnit(): String {
-        val orgUnit = enrollmentObjectRepository.get().blockingGet()
-            ?.organisationUnit()!!
-
-        return getOrgUnitAsModuleId(orgUnit, d2, basicPreferenceProvider)
     }
 
     private fun resetBiometricsFailureAfterTime() {

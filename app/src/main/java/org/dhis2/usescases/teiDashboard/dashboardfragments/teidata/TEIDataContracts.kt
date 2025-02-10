@@ -49,16 +49,44 @@ class TEIDataContracts {
             guid: String,
             orgUnitUid: String,
             trackedEntityInstance: String,
-            ageInMonths: Long
+            ageInMonths: Long,
+            enrollingOrgUnitId: String,
+            enrollingOrgUnitName: String,
+            userOrgUnits: List<String>
         )
 
         fun refreshCard()
-        fun registerBiometrics(orgUnit: String, trackedEntityInstance: String, ageInMonths: Long)
+        fun registerBiometrics(
+            orgUnit: String,
+            trackedEntityInstance: String,
+            ageInMonths: Long,
+            enrollingOrgUnitId: String,
+            enrollingOrgUnitName: String,
+            userOrgUnits: List<String>
+        )
+
         fun showBiometricsAgeGroupNotSupported()
-        fun registerLast(sessionId: String, orgUnit: String)
-        fun showPossibleDuplicatesDialog( possibleDuplicates: List<SimprintsItem>, sessionId: String, programUid: String,
-                                          trackedEntityTypeUid: String, biometricsAttributeUid: String,
-                                          enrollNewVisible:Boolean, orgUnit: String)
+        fun registerLast(
+            sessionId: String,
+            moduleId: String,
+            ageInMonths: Long?,
+            trackedEntityInstanceUId: String,
+            enrollingOrgUnitId: String,
+            enrollingOrgUnitName: String,
+            userOrgUnits: List<String>
+        )
+
+        fun showPossibleDuplicatesDialog(
+            possibleDuplicates: List<SimprintsItem>, sessionId: String, programUid: String,
+            trackedEntityTypeUid: String, biometricsAttributeUid: String,
+            enrollNewVisible: Boolean,
+            moduleId: String,
+            ageInMonths: Long?,
+            trackedEntityInstanceUId: String,
+            enrollingOrgUnitId: String,
+            enrollingOrgUnitName: String,
+            userOrgUnits: List<String>
+        )
 
         fun showUnableSaveBiometricsMessage()
     }

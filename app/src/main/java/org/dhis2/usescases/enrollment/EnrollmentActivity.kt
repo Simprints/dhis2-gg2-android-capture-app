@@ -120,7 +120,7 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
                 } else {
                     hideProgress()
 
-                    if (presenter.biometricsMode != BiometricsMode.full){
+                    if (presenter.biometricsMode != BiometricsMode.full) {
                         presenter.showOrHideSaveButton()
                     }
                 }
@@ -192,7 +192,7 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
 
         when (requestCode) {
             RQ_INCIDENT_GEOMETRY, RQ_ENROLLMENT_GEOMETRY -> {
-                if (resultCode == Activity.RESULT_OK  && data?.hasExtra(MapSelectorActivity.DATA_EXTRA) == true) {
+                if (resultCode == Activity.RESULT_OK && data?.hasExtra(MapSelectorActivity.DATA_EXTRA) == true) {
                     handleGeometry(
                         FeatureType.valueOfFeatureType(
                             data.getStringExtra(MapSelectorActivity.LOCATION_TYPE_EXTRA),
@@ -211,6 +211,7 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
                         is RegisterResult.Completed -> {
                             presenter.onBiometricsCompleted(result.guid)
                         }
+
                         is RegisterResult.PossibleDuplicates -> {
                             presenter.onBiometricsPossibleDuplicates(
                                 result.items,
@@ -224,6 +225,7 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
+
                         else -> {
                             presenter.onBiometricsFailure()
                         }
@@ -264,7 +266,9 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
 
             }
 
-            RQ_EVENT -> if (resultCode == Activity.RESULT_OK)  openDashboard(presenter.getEnrollment()!!.uid()!!)
+            RQ_EVENT -> if (resultCode == Activity.RESULT_OK) openDashboard(
+                presenter.getEnrollment()!!.uid()!!
+            )
         }
     }
 
@@ -455,8 +459,23 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
         dialog.show()
     }
 
-    override fun registerBiometrics(orgUnit: String, ageInMonths: Long) {
-        BiometricsClientFactory.get(this).register(this, orgUnit, ageInMonths)
+    override fun registerBiometrics(
+        moduleId: String,
+        ageInMonths: Long,
+        trackedEntityInstanceId: String,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>
+    ) {
+        BiometricsClientFactory.get(this).register(
+            this,
+            moduleId,
+            ageInMonths,
+            trackedEntityInstanceId,
+            enrollingOrgUnitId,
+            enrollingOrgUnitName,
+            userOrgUnits
+        )
     }
 
     override fun showPossibleDuplicatesDialog(
@@ -465,7 +484,12 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
         trackedEntityTypeUid: String,
         biometricsAttributeUid: String,
         enrollNewVisible: Boolean,
-        orgUnit: String
+        moduleId: String,
+        ageInMonths: Long?,
+        trackedEntityInstanceUId: String,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>
     ) {
         val dialog = BiometricsDuplicatesDialog.newInstance(
             possibleDuplicates, sessionId, programUid,
@@ -489,7 +513,15 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
         }
 
         dialog.setOnEnrollNewListener { biometricsSessionId ->
-            BiometricsClientFactory.get(this).registerLast(this, biometricsSessionId, orgUnit)
+            BiometricsClientFactory.get(this).registerLast(
+                this,
+                biometricsSessionId,
+                moduleId,
+                ageInMonths,
+                trackedEntityInstanceUId,
+                enrollingOrgUnitId,
+                enrollingOrgUnitName,
+                userOrgUnits)
         }
 
         dialog.setOnEnrollWithoutBiometricsListener {
@@ -502,7 +534,21 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
         )
     }
 
-    override fun registerLast(sessionId: String, orgUnit: String) {
-        BiometricsClientFactory.get(this).registerLast(this, sessionId, orgUnit)
+    override fun registerLast(sessionId: String,
+                              moduleId: String,
+                              ageInMonths: Long?,
+                              trackedEntityInstanceUId: String,
+                              enrollingOrgUnitId: String,
+                              enrollingOrgUnitName: String,
+                              userOrgUnits: List<String>) {
+        BiometricsClientFactory.get(this).registerLast(
+            this,
+            sessionId,
+            moduleId,
+            ageInMonths,
+            trackedEntityInstanceUId,
+            enrollingOrgUnitId,
+            enrollingOrgUnitName,
+            userOrgUnits)
     }
 }

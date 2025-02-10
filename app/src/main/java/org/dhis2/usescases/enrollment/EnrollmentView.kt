@@ -24,16 +24,37 @@ interface EnrollmentView : AbstractActivityContracts.View {
     fun hideProgress()
     fun displayTeiPicture(picturePath: String)
     fun showDateEditionWarning()
-    fun registerBiometrics(orgUnit: String, ageInMonths: Long)
+    fun registerBiometrics(
+        moduleId: String,
+        ageInMonths: Long,
+        trackedEntityInstanceId: String,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>,
+    )
+
     fun showPossibleDuplicatesDialog(
         guids: List<SimprintsItem>,
         sessionId: String,
         programUid: String,
         trackedEntityTypeUid: String,
         biometricsAttributeUid: String,
-        enrollNewVisible:Boolean,
-        orgUnit: String
+        enrollNewVisible: Boolean,
+        moduleId: String,
+        ageInMonths: Long?,
+        trackedEntityInstanceId: String,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>,
     )
 
-    fun registerLast(sessionId: String, orgUnit: String)
+    fun registerLast(
+        sessionId: String,
+        moduleId: String,
+        ageInMonths: Long?,
+        trackedEntityInstanceId: String,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>,
+    )
 }
