@@ -9,14 +9,15 @@ import org.dhis2.commons.data.EntryMode
 import org.dhis2.commons.di.dagger.PerActivity
 import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.network.NetworkUtils
-import org.dhis2.commons.prefs.PreferenceProviderImpl
 import org.dhis2.commons.prefs.BasicPreferenceProvider
+import org.dhis2.commons.prefs.PreferenceProviderImpl
 import org.dhis2.commons.reporting.CrashReportController
 import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.commons.resources.DhisPeriodUtils
 import org.dhis2.commons.resources.MetadataIconProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
+import org.dhis2.data.biometrics.OrgUnitD2Repository
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
 import org.dhis2.data.forms.dataentry.SearchTEIRepository
 import org.dhis2.data.forms.dataentry.SearchTEIRepositoryImpl
@@ -44,6 +45,7 @@ import org.dhis2.form.ui.provider.UiStyleProviderImpl
 import org.dhis2.form.ui.style.FormUiModelColorFactoryImpl
 import org.dhis2.form.ui.style.LongTextUiColorFactoryImpl
 import org.dhis2.form.ui.validation.FieldErrorMessageProvider
+import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.teiDashboard.TeiAttributesProvider
 import org.dhis2.utils.analytics.AnalyticsHelper
 import org.hisp.dhis.android.core.D2
@@ -149,6 +151,7 @@ class EnrollmentModule(
         dataEntryRepository: EnrollmentRepository,
         teiRepository: TrackedEntityInstanceObjectRepository,
         programRepository: ReadOnlyOneObjectRepositoryFinalImpl<Program>,
+        orgUnitRepository: OrgUnitRepository,
         schedulerProvider: SchedulerProvider,
         enrollmentFormRepository: EnrollmentFormRepository,
         analyticsHelper: AnalyticsHelper,
@@ -164,6 +167,7 @@ class EnrollmentModule(
             dataEntryRepository,
             teiRepository,
             programRepository,
+            orgUnitRepository,
             schedulerProvider,
             enrollmentFormRepository,
             analyticsHelper,
@@ -172,6 +176,13 @@ class EnrollmentModule(
             teiAttributesProvider,
             basicPreferenceProvider
         )
+    }
+
+
+    @Provides
+    @PerActivity
+    fun provideOrgUnitRepository(d2: D2): OrgUnitRepository {
+        return OrgUnitD2Repository(d2)
     }
 
     @Provides

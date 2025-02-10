@@ -16,12 +16,14 @@ import org.dhis2.commons.resources.MetadataIconProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.dhis2.data.biometrics.OrgUnitD2Repository
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
 import org.dhis2.data.forms.dataentry.SearchTEIRepository
 import org.dhis2.data.forms.dataentry.SearchTEIRepositoryImpl
 import org.dhis2.form.data.FormValueStore
 import org.dhis2.form.data.OptionsRepository
 import org.dhis2.mobileProgramRules.RuleEngineHelper
+import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.programEventDetail.usecase.CreateEventUseCase
 import org.dhis2.usescases.teiDashboard.DashboardRepository
 import org.dhis2.usescases.teiDashboard.dashboardfragments.teidata.teievents.ui.mapper.TEIEventCardMapper
@@ -59,7 +61,8 @@ class TEIDataModule(
         createEventUseCase: CreateEventUseCase,
         d2ErrorUtils: D2ErrorUtils,
         basicPreferenceProvider: BasicPreferenceProvider,
-        resourceManager: ResourceManager
+        resourceManager: ResourceManager,
+        orgUnitRepository: OrgUnitRepository
     ): TEIDataPresenter {
         return TEIDataPresenter(
             view,
@@ -82,8 +85,15 @@ class TEIDataModule(
             d2ErrorUtils,
             basicPreferenceProvider,
             resourceManager,
-            lastBiometricsSessionId
+            lastBiometricsSessionId,
+            orgUnitRepository
         )
+    }
+
+    @Provides
+    @PerFragment
+    fun provideOrgUnitRepository(d2: D2): OrgUnitRepository {
+        return OrgUnitD2Repository(d2)
     }
 
     @Provides

@@ -71,7 +71,7 @@ public class SearchTEContractsModule {
                 String enrollmentUid, boolean isOnline);
 
         void showBiometricsSearchConfirmation(SearchTeiModel item);
-        void launchBiometricsIdentify(String moduleId);
+        void launchBiometricsIdentify(String moduleId, List<String> userOrgUnits);
     }
 
     public interface Presenter {

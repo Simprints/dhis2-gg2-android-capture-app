@@ -14,6 +14,7 @@ import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.FieldUiModelImpl
 import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
+import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.enrollment.EnrollmentActivity.EnrollmentMode.CHECK
 import org.dhis2.usescases.enrollment.EnrollmentActivity.EnrollmentMode.NEW
 import org.dhis2.usescases.teiDashboard.TeiAttributesProvider
@@ -24,8 +25,8 @@ import org.hisp.dhis.android.core.common.Access
 import org.hisp.dhis.android.core.common.DataAccess
 import org.hisp.dhis.android.core.common.FeatureType
 import org.hisp.dhis.android.core.common.Geometry
-import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.common.State
+import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.enrollment.EnrollmentAccess
 import org.hisp.dhis.android.core.enrollment.EnrollmentObjectRepository
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
@@ -49,6 +50,7 @@ class EnrollmentPresenterImplTest {
 
     private val enrollmentFormRepository: EnrollmentFormRepository = mock()
     private val programRepository: ReadOnlyOneObjectRepositoryFinalImpl<Program> = mock()
+    private val orgUnitRepository: OrgUnitRepository = mock()
     private val teiRepository: TrackedEntityInstanceObjectRepository = mock()
     private val dataEntryRepository: EnrollmentRepository = mock()
     lateinit var presenter: EnrollmentPresenterImpl
@@ -71,6 +73,7 @@ class EnrollmentPresenterImplTest {
             dataEntryRepository,
             teiRepository,
             programRepository,
+            orgUnitRepository,
             schedulers,
             enrollmentFormRepository,
             analyticsHelper,
@@ -374,6 +377,7 @@ class EnrollmentPresenterImplTest {
             dataEntryRepository,
             teiRepository,
             programRepository,
+            orgUnitRepository,
             schedulers,
             enrollmentFormRepository,
             analyticsHelper,

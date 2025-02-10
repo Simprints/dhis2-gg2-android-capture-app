@@ -16,6 +16,7 @@ import org.dhis2.ui.dialogs.bottomsheet.BottomSheetDialogUiModel
 import org.dhis2.ui.dialogs.bottomsheet.DialogButtonStyle
 import org.dhis2.ui.dialogs.bottomsheet.FieldWithIssue
 import org.dhis2.ui.dialogs.bottomsheet.IssueType
+import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.domain.ConfigureEventCompletionDialog
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.domain.ReOpenEventUseCase
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.eventCaptureFragment.EventCaptureFormPresenter
@@ -49,6 +50,8 @@ class EventIntegrationTest {
     private val reOpenUseCase: ReOpenEventUseCase = mock()
     private val dispatcherProvider: DispatcherProvider = mock()
     private val basicPreferenceProvider: BasicPreferenceProvider = mock()
+    private val orgUnitRepository: OrgUnitRepository = mock()
+
 
     private val resourceProvider: EventCaptureResourcesProvider = mock {
         on { provideNotSavedText() } doReturn "not_saved"
@@ -81,7 +84,8 @@ class EventIntegrationTest {
         resourceManager = resourceManager,
         reOpenEventUseCase = reOpenUseCase,
         dispatcherProvider = dispatcherProvider,
-        basicPreferenceProvider = basicPreferenceProvider
+        basicPreferenceProvider = basicPreferenceProvider,
+        orgUnitRepository = orgUnitRepository,
     )
 
     @Test

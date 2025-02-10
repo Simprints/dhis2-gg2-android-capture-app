@@ -46,7 +46,6 @@ import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.sync.OnDismissListener
 import org.dhis2.commons.sync.SyncContext.EnrollmentEvent
-import org.dhis2.data.biometrics.BiometricsClient
 import org.dhis2.data.biometrics.BiometricsClientFactory.get
 import org.dhis2.data.biometrics.SimprintsItem
 import org.dhis2.databinding.FragmentTeiDataBinding
@@ -648,25 +647,46 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
 
     override fun launchBiometricsVerification(
         guid: String,
-        orgUnitUid: String,
+        moduleId: String,
         trackedEntityInstanceId: String,
         ageInMonths: Long,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>
     ) {
         val biometricsClient = get(requireContext())
-        val extras: HashMap<String, String> = HashMap()
-        extras[BiometricsClient.SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID] = trackedEntityInstanceId
-        biometricsClient.verify(this, guid, orgUnitUid, extras, ageInMonths)
+
+        biometricsClient.verify(
+            this,
+            guid,
+            moduleId,
+            trackedEntityInstanceId,
+            ageInMonths,
+            enrollingOrgUnitId,
+            enrollingOrgUnitName,
+            userOrgUnits
+        )
     }
 
     override fun registerBiometrics(
-        orgUnitUid: String,
+        moduleId: String,
         trackedEntityInstanceUId: String,
-        ageInMonths: Long
+        ageInMonths: Long,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>
     ) {
         val biometricsClient = get(requireContext())
-        val extras: HashMap<String, String> = HashMap()
-        extras[BiometricsClient.SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID] = trackedEntityInstanceUId
-        biometricsClient.registerFromFragment(this, orgUnitUid, extras, ageInMonths)
+
+        biometricsClient.registerFromFragment(
+            this,
+            moduleId,
+            trackedEntityInstanceUId,
+            ageInMonths,
+            enrollingOrgUnitId,
+            enrollingOrgUnitName,
+            userOrgUnits
+        )
     }
 
     override fun showBiometricsAgeGroupNotSupported() {
@@ -676,14 +696,36 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
         ).show()
     }
 
-    override fun registerLast(sessionId: String, orgUnit: String) {
-        get(requireContext()).registerLastFromFragment(this, sessionId, orgUnit)
+    override fun registerLast(
+        sessionId: String,
+        moduleId: String,
+        ageInMonths: Long?,
+        trackedEntityInstanceUId: String,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>
+    ) {
+        get(requireContext()).registerLastFromFragment(
+            this,
+            sessionId,
+            moduleId,
+            ageInMonths,
+            trackedEntityInstanceUId,
+            enrollingOrgUnitId,
+            enrollingOrgUnitName,
+            userOrgUnits
+        )
     }
 
     override fun showPossibleDuplicatesDialog(
         possibleDuplicates: List<SimprintsItem>, sessionId: String, programUid: String,
         trackedEntityTypeUid: String, biometricsAttributeUid: String,
-        enrollNewVisible: Boolean, orgUnit: String
+        enrollNewVisible: Boolean, moduleId: String,
+        ageInMonths: Long?,
+        trackedEntityInstanceUId: String,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>
     ) {
         val dialog = BiometricsDuplicatesDialog.newInstance(
             possibleDuplicates, sessionId, programUid,
@@ -705,7 +747,16 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
         }
 
         dialog.setOnEnrollNewListener { biometricsSessionId ->
-            get(requireContext()).registerLastFromFragment(this, biometricsSessionId, orgUnit)
+            get(requireContext()).registerLastFromFragment(
+                this,
+                biometricsSessionId,
+                moduleId,
+                ageInMonths,
+                trackedEntityInstanceUId,
+                enrollingOrgUnitId,
+                enrollingOrgUnitName,
+                userOrgUnits
+            )
         }
 
         dialog.setOnEnrollWithoutBiometricsListener {
