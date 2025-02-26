@@ -62,6 +62,7 @@ class LoginViewModel(
     private val crashReportController: CrashReportController,
     private val network: NetworkUtils,
     private var userManager: UserManager?,
+    private val biometricsConfigSyncProvider: BiometricsConfigSyncProvider,
 ) : ViewModel() {
 
     private val syncIsPerformedInteractor = SyncIsPerformedInteractor(userManager)
@@ -335,6 +336,7 @@ class LoginViewModel(
             val displayTrackingMessage = hasToDisplayTrackingMessage()
             val isInitialSyncDone = syncIsPerformedInteractor.execute()
             view.saveUsersData(displayTrackingMessage, isInitialSyncDone)
+            biometricsConfigSyncProvider.syncBiometricsConfig(dispatchers)
         }
     }
 
