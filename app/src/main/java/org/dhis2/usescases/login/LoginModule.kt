@@ -66,7 +66,7 @@ class LoginModule(
         analyticsHelper: AnalyticsHelper,
         crashReportController: CrashReportController,
         networkUtils: NetworkUtils,
-        biometricsConfigSyncProvider: BiometricsConfigSyncProvider,
+        syncBiometricsConfig: SyncBiometricsConfig,
     ): LoginViewModel {
         return ViewModelProvider(
             viewModelStoreOwner,
@@ -81,7 +81,7 @@ class LoginModule(
                 crashReportController,
                 networkUtils,
                 userManager,
-                biometricsConfigSyncProvider,
+                syncBiometricsConfig,
             ),
         )[LoginViewModel::class.java]
     }
