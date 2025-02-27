@@ -524,16 +524,37 @@ class BiometricsClient(
         userOrgUnits: List<String>,
         ageInMonths: Long?
     ): Metadata {
-        val metadata = Metadata()
-            .put(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId ?: "")
-            .put(SIMPRINTS_ENROLLING_ORG_UNIT_ID, enrollingOrgUnitId ?: "")
-            .put(SIMPRINTS_ENROLLING_ORG_UNIT_NAME, enrollingOrgUnitName ?: "")
-            .put(SIMPRINTS_USER_UNITS, userOrgUnits.joinToString(","))
 
-        val metadataWithAge = if (ageInMonths != null) {
-            metadata.put(SIMPRINTS_SUBJECT_AGE, ageInMonths)
+        val metadata = Metadata()
+
+        val metadataWithTei = if (trackedEntityInstanceUId != null) {
+            metadata.put(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId)
         } else {
             metadata
+        }
+
+        val metadataWithOrgUnitId = if (enrollingOrgUnitId != null) {
+            metadataWithTei.put(SIMPRINTS_ENROLLING_ORG_UNIT_ID, enrollingOrgUnitId)
+        } else {
+            metadataWithTei
+        }
+
+        val metadataWithOrgUnitName = if (enrollingOrgUnitName != null) {
+            metadataWithOrgUnitId.put(SIMPRINTS_ENROLLING_ORG_UNIT_NAME, enrollingOrgUnitName)
+        } else {
+            metadataWithOrgUnitId
+        }
+
+        val metadataWithUserOrgUnits = if (userOrgUnits.isNotEmpty()) {
+            metadataWithOrgUnitName.put(SIMPRINTS_USER_UNITS, userOrgUnits.joinToString(","))
+        } else {
+            metadataWithOrgUnitName
+        }
+
+        val metadataWithAge = if (ageInMonths != null) {
+            metadataWithUserOrgUnits.put(SIMPRINTS_SUBJECT_AGE, ageInMonths)
+        } else {
+            metadataWithUserOrgUnits
         }
 
         printMetadata(metadataWithAge)
