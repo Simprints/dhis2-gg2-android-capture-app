@@ -54,7 +54,6 @@ sealed class VerifyResult {
     data object AgeGroupNotSupported : VerifyResult()
 }
 
-
 class BiometricsClient(
     projectId: String,
     user: String,
@@ -69,7 +68,6 @@ class BiometricsClient(
     }
 
     private val simHelper = SimHelper(projectId, user)
-    private val defaultModuleId = "NA"
 
     fun register(
         activity: Activity,
@@ -126,7 +124,7 @@ class BiometricsClient(
     }
 
     fun identify(activity: Activity, moduleId: String?, userOrgUnits: List<String>) {
-        val finalModuleId = moduleId ?: defaultModuleId
+        val finalModuleId = moduleId ?: DefaultModuleId
 
         Timber.d("Biometrics identify!")
         Timber.d("moduleId: $finalModuleId")
@@ -424,7 +422,7 @@ class BiometricsClient(
         enrollingOrgUnitName: String,
         userOrgUnits: List<String>
     ): Intent {
-        val finalModuleId = moduleId ?: defaultModuleId
+        val finalModuleId = moduleId ?: DefaultModuleId
 
         Timber.d("Biometrics confirmIdentify!")
         Timber.d("moduleId: $finalModuleId")
@@ -567,6 +565,8 @@ class BiometricsClient(
     }
 
     companion object {
+        const val DefaultModuleId = "NA"
+
         const val SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID = "trackedEntityInstanceId"
         const val SIMPRINTS_ENROLLING_ORG_UNIT_ID = "enrollingOrgUnitId"
         const val SIMPRINTS_ENROLLING_ORG_UNIT_NAME = "enrollingOrgUnitName"
