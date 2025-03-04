@@ -8,6 +8,7 @@ import static org.dhis2.commons.matomo.Actions.SYNC_TEI;
 import static org.dhis2.commons.matomo.Categories.SEARCH;
 import static org.dhis2.commons.matomo.Categories.TRACKER_LIST;
 import static org.dhis2.commons.matomo.Labels.CLICK;
+import static org.dhis2.usescases.biometrics.OrgUnitAsModuleIdByListKt.getOrgUnitAsModuleIdByList;
 import static org.dhis2.usescases.biometrics.OrgUnitAsModuleIdKt.getOrgUnitAsModuleId;
 import static org.dhis2.usescases.teiDashboard.dashboardfragments.relationships.RelationshipFragment.TEI_A_UID;
 import static org.dhis2.utils.analytics.AnalyticsConstants.ADD_RELATIONSHIP;
@@ -41,6 +42,7 @@ import org.dhis2.commons.resources.ColorUtils;
 import org.dhis2.commons.resources.ObjectStyleUtils;
 import org.dhis2.commons.resources.ResourceManager;
 import org.dhis2.commons.schedulers.SchedulerProvider;
+import org.dhis2.data.biometrics.BiometricsClient;
 import org.dhis2.data.biometrics.BiometricsClientFactory;
 import org.dhis2.data.biometrics.SimprintsItem;
 import org.dhis2.data.service.SyncStatusController;
@@ -425,7 +427,9 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
         List<String> userOrgUnits = searchRepository.getUserOrgUnits(selectedProgram.uid());
 
         if (userOrgUnits.size() > 1) {
-            view.launchBiometricsIdentify(null, userOrgUnits);
+            String orgUnitAsModuleId = getOrgUnitAsModuleIdByList(userOrgUnits, d2);
+
+            view.launchBiometricsIdentify(orgUnitAsModuleId, userOrgUnits);
         } else {
             String orgUnitAsModuleId = getOrgUnitAsModuleId(userOrgUnits.get(0), d2, basicPreferenceProvider);
 
