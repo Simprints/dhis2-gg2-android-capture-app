@@ -1021,6 +1021,7 @@ public class SearchRepositoryImpl implements SearchRepository {
                 d2.trackedEntityModule().trackedEntityAttributeValues()
                         .value(biometricUid, teiUid);
 
+        valueRepository.delete().blockingGet();
         ValueExtensionsKt.blockingSetCheck(valueRepository, d2, biometricUid, guid, (_at, _atr) -> {
             crashReportController.addBreadCrumb(
                     "blockingSetCheck Crash",
