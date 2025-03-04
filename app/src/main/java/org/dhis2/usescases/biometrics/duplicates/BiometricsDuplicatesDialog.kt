@@ -40,7 +40,6 @@ import org.dhis2.bindings.app
 import org.dhis2.commons.biometrics.BIOMETRICS_CONFIRM_IDENTITY_REQUEST
 import org.dhis2.commons.data.SearchTeiModel
 import org.dhis2.commons.resources.ColorUtils
-import org.dhis2.data.biometrics.BiometricsClient
 import org.dhis2.data.biometrics.BiometricsClientFactory.get
 import org.dhis2.data.biometrics.SimprintsItem
 import org.dhis2.databinding.DialogBiometricsDuplicatesBinding
@@ -222,10 +221,7 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
     ) {
         lastSelection = LastSelection(teiUid, enrollmentUid, isOnline)
 
-        val extras =
-            mutableMapOf(BiometricsClient.SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID to teiUid)
-
-        context?.let { get(it).confirmIdentify(this, sessionId, guid, extras) }
+        context?.let { get(it).confirmIdentify(this, sessionId, guid, teiUid) }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
