@@ -464,10 +464,7 @@ public class SearchTEActivity extends ActivityGlobalAbstract implements SearchTE
     public void sendBiometricsConfirmIdentity(String sessionId, String guid, String teiUid,
                                               String enrollmentUid, boolean isOnline) {
         if (lastSelection != null) {
-            HashMap extras = new HashMap<>();
-            extras.put(BiometricsClient.SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, lastSelection.getTei().uid());
-
-            BiometricsClientFactory.INSTANCE.get(this).confirmIdentify(this, sessionId, guid, extras);
+            BiometricsClientFactory.INSTANCE.get(this).confirmIdentify(this, sessionId, guid, lastSelection.getTei().uid());
             viewModel.clearQueryData();
         }
     }
