@@ -12,6 +12,7 @@ fun updateBiometricsAttributeValue(d2: D2, teiUid:String, value: String) {
     if (attributeUid != null) {
         val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
             .value(attributeUid, tei.uid())
+        valueRepository.delete().blockingGet()
         valueRepository.blockingSetCheck(d2, attributeUid, value)
     }
 }
