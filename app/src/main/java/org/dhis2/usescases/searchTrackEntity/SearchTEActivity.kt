@@ -807,7 +807,7 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
         }
     }
 
-    override fun openDashboard(teiUid: String, programUid: String?, enrollmentUid: String?, sessionId: String) {
+    override fun openDashboard(teiUid: String, programUid: String?, enrollmentUid: String?, sessionId: String?) {
         searchNavigator.openDashboard(teiUid, programUid, enrollmentUid, sessionId)
         viewModel.resetSequentialSearch()
         viewModel.clearQueryData()
