@@ -9,13 +9,10 @@ import org.dhis2.form.model.OptionSetConfiguration
 import org.dhis2.form.model.PeriodSelector
 import org.dhis2.form.model.UiEventType
 import org.dhis2.form.model.UiRenderType
-import org.dhis2.form.ui.event.RecyclerViewUiEvents
 import org.dhis2.form.ui.event.UiEventFactory
 import org.dhis2.form.ui.intent.FormIntent
 import org.dhis2.form.ui.intent.FormIntent.OnFocus
-import org.dhis2.form.ui.style.FormUiModelStyle
 import org.hisp.dhis.android.core.common.ValueType
-import org.hisp.dhis.android.core.option.Option
 import org.hisp.dhis.mobile.ui.designsystem.component.SelectableDates
 
 enum class BiometricsDataElementStatus {
@@ -26,7 +23,6 @@ enum class BiometricsDataElementStatus {
 
 data class BiometricsDataElementUiModelImpl(
     override val uid: String,
-    override val layoutId: Int,
     override val value: String? = null,
     override val programStageSection: String?,
     val status: BiometricsDataElementStatus,
@@ -65,7 +61,6 @@ data class BiometricsDataElementUiModelImpl(
     override val warning: String? = null
     override val mandatory = false
     override val label = ""
-    override val style: FormUiModelStyle? = null
     override val hint: String? = null
     override val description: String = ""
     override val legend: LegendValue? = null
@@ -88,15 +83,6 @@ data class BiometricsDataElementUiModelImpl(
         )
     }
 
-    override fun onDescriptionClick() {
-        callback?.recyclerViewUiEvents(
-            RecyclerViewUiEvents.ShowDescriptionLabelDialog(
-                label,
-                description
-            )
-        )
-    }
-
     override fun invokeUiEvent(uiEventType: UiEventType) {
         onItemClick()
     }
@@ -105,30 +91,11 @@ data class BiometricsDataElementUiModelImpl(
         callback?.intent(intent)
     }
 
-    override val textColor: Int?
-        get() = style?.textColor(error, warning)
-
-    override val backGroundColor: Pair<Array<Int>, Int?>?
-        get() = style?.backgroundColor(ValueType.TEXT, error, warning)
-
-    override val hasImage: Boolean
-        get() = false
-
     override val isAffirmativeChecked: Boolean
         get() = false
 
     override val isNegativeChecked: Boolean
         get() = false
-
-    override fun onNext() {}
-
-    override fun onTextChange(value: CharSequence?) {
-        val text = when {
-            value?.isEmpty() == true -> null
-            else -> value?.toString()
-        }
-        callback?.intent(FormIntent.OnTextChange(uid, text, valueType))
-    }
 
     override fun onClear() {}
 
@@ -136,10 +103,6 @@ data class BiometricsDataElementUiModelImpl(
         onItemClick()
         callback?.intent(FormIntent.OnSave(uid, value, valueType))
     }
-
-    override fun onSaveBoolean(boolean: Boolean) {}
-
-    override fun onSaveOption(option: Option) {}
 
     override val valueType: ValueType
         get() = ValueType.TEXT

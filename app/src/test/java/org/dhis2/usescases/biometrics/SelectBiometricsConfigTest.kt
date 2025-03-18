@@ -1,5 +1,6 @@
 package org.dhis2.usescases.biometrics
 
+import kotlinx.coroutines.flow.flowOf
 import org.dhis2.usescases.biometrics.entities.BiometricsConfig
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.repositories.BiometricsConfigRepository
@@ -10,7 +11,6 @@ import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.junit.MockitoJUnitRunner
 import org.mockito.kotlin.whenever
-
 
 @RunWith(MockitoJUnitRunner::class)
 class SelectBiometricsConfigTest {
@@ -63,11 +63,11 @@ class SelectBiometricsConfigTest {
     private fun givenABiometricConfigs(userOrgUnitGroups: List<String>): SelectBiometricsConfig {
         whenever(
             biometricsConfigRepository.getBiometricsConfigs()
-        ).thenReturn(configs)
+        ).thenReturn(flowOf(configs))
 
         whenever(
             biometricsConfigRepository.getUserOrgUnitGroups()
-        ).thenReturn(userOrgUnitGroups)
+        ).thenReturn(flowOf(userOrgUnitGroups))
 
         return SelectBiometricsConfig(biometricsConfigRepository)
     }

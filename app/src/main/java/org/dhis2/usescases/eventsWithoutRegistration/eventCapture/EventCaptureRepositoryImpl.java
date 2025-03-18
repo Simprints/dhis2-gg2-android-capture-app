@@ -1,17 +1,10 @@
 package org.dhis2.usescases.eventsWithoutRegistration.eventCapture;
 
-import static org.dhis2.data.biometrics.utils.GetBiometricsTrackedEntityAttributeKt.getBiometricsTrackedEntityAttribute;
-import static org.dhis2.data.biometrics.utils.GetTeiByUidKt.getTeiByUid;
-import static org.dhis2.data.biometrics.utils.GetTrackedEntityAttributeValueByAttributeKt.getTrackedEntityAttributeValueByAttribute;
-import static org.dhis2.data.biometrics.utils.UpdateBiometricsAttributeValueKt.updateBiometricsAttributeValue;
-import static org.dhis2.usescases.biometrics.AgeInMonthsKt.getAgeInMonthsByAttributes;
 import static org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureRepositoryFunctionsKt.getProgramStageName;
 
-import org.dhis2.commons.prefs.BasicPreferenceProvider;
 import org.dhis2.commons.bindings.SdkExtensionsKt;
 import org.dhis2.data.dhislogic.AuthoritiesKt;
 import org.hisp.dhis.android.core.D2;
-import org.hisp.dhis.android.core.common.BaseIdentifiableObject;
 import org.hisp.dhis.android.core.common.ValidationStrategy;
 import org.hisp.dhis.android.core.enrollment.Enrollment;
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus;
@@ -25,12 +18,12 @@ import org.hisp.dhis.android.core.program.ProgramRule;
 import org.hisp.dhis.android.core.program.ProgramRuleAction;
 import org.hisp.dhis.android.core.program.ProgramRuleActionType;
 import org.hisp.dhis.android.core.settings.ProgramConfigurationSetting;
-import org.hisp.dhis.android.core.trackedentity.TrackedEntityAttributeValue;
-import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance;
 
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+
+import javax.annotation.Nullable;
 
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
@@ -42,12 +35,9 @@ public class EventCaptureRepositoryImpl implements EventCaptureContract.EventCap
     private final String eventUid;
     private final D2 d2;
 
-    private final BasicPreferenceProvider basicPreferenceProvider;
-
-    public EventCaptureRepositoryImpl(String eventUid, D2 d2, BasicPreferenceProvider basicPreferenceProvider) {
+    public EventCaptureRepositoryImpl(String eventUid, D2 d2) {
         this.eventUid = eventUid;
         this.d2 = d2;
-        this.basicPreferenceProvider = basicPreferenceProvider;
     }
 
     private Event getCurrentEvent() {
@@ -169,7 +159,8 @@ public class EventCaptureRepositoryImpl implements EventCaptureContract.EventCap
         Event currentEvent = getCurrentEvent();
         return Flowable.just(currentEvent).map(event ->
                 (event.status() == EventStatus.COMPLETED ||
-                        event.status() == EventStatus.ACTIVE) &&
+                        event.status() == EventStatus.ACTIVE ||
+                            event.status() == EventStatus.SKIPPED) &&
                         (event.eventDate() == null || !event.eventDate().after(new Date()))
         );
     }
@@ -229,51 +220,16 @@ public class EventCaptureRepositoryImpl implements EventCaptureContract.EventCap
     }
 
     @Override
-    public Date getBiometricsAttributeValueInTeiLastUpdated() {
-        Date lastUpdated = null;
-
-        TrackedEntityInstance tei = getTeiByEvent(getCurrentEvent());
-
-        String attributeUid = getBiometricsTrackedEntityAttribute(d2);
-
-        TrackedEntityAttributeValue attValue =
-                getTrackedEntityAttributeValueByAttribute(attributeUid, tei.trackedEntityAttributeValues());
-
-        if (attValue != null) {
-            lastUpdated = attValue.lastUpdated();
-        }
-
-        return lastUpdated;
+    @Nullable
+    public String getEnrollmentUid() {
+        return getCurrentEvent().enrollment();
     }
 
     @Override
-    public void updateBiometricsAttributeValueInTei(String biometricsGuid) {
-        TrackedEntityInstance tei = getTeiByEvent(getCurrentEvent());
-
-        updateBiometricsAttributeValue(d2, tei.uid(), biometricsGuid);
+    @Nullable
+    public String getTeiUid() {
+        Enrollment enrollment = d2.enrollmentModule().enrollments().uid(getEnrollmentUid()).blockingGet();
+        return enrollment != null ? enrollment.trackedEntityInstance() : null;
     }
-
-    private TrackedEntityInstance getTeiByEvent(Event currentEvent) {
-        String enrollmentUid = currentEvent.enrollment();
-
-        if (enrollmentUid != null) {
-            Enrollment enrollment = d2.enrollmentModule().enrollments()
-                    .uid(enrollmentUid).blockingGet();
-
-            return getTeiByUid(d2, enrollment.trackedEntityInstance());
-        } else {
-            return null;
-        }
-    }
-
-    @Override
-    public Observable<Long> getAgeInMonths() {
-        TrackedEntityInstance tei = getTeiByEvent(getCurrentEvent());
-
-        Long ageInMonths = getAgeInMonthsByAttributes(basicPreferenceProvider, tei.trackedEntityAttributeValues());
-        return Observable.just(ageInMonths);
-    }
-
-
 }
 

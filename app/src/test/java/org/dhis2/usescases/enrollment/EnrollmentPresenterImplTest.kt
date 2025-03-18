@@ -9,7 +9,6 @@ import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.data.schedulers.TrampolineSchedulerProvider
-import org.dhis2.form.data.EnrollmentRepository
 import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.FieldUiModelImpl
 import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
@@ -52,7 +51,6 @@ class EnrollmentPresenterImplTest {
     private val programRepository: ReadOnlyOneObjectRepositoryFinalImpl<Program> = mock()
     private val orgUnitRepository: OrgUnitRepository = mock()
     private val teiRepository: TrackedEntityInstanceObjectRepository = mock()
-    private val dataEntryRepository: EnrollmentRepository = mock()
     lateinit var presenter: EnrollmentPresenterImpl
     private val enrollmentView: EnrollmentView = mock()
     private val d2: D2 = Mockito.mock(D2::class.java, Mockito.RETURNS_DEEP_STUBS)
@@ -62,6 +60,7 @@ class EnrollmentPresenterImplTest {
     private val matomoAnalyticsController: MatomoAnalyticsController = mock()
     private val eventCollectionRepository: EventCollectionRepository = mock()
     private val teiAttributesProvider: TeiAttributesProvider = mock()
+    private val dateEntryWarningHelper: DateEditionWarningHandler = mock()
     private val basicPreferenceProvider: BasicPreferenceProvider = mock()
 
     @Before
@@ -70,7 +69,6 @@ class EnrollmentPresenterImplTest {
             enrollmentView,
             d2,
             enrollmentRepository,
-            dataEntryRepository,
             teiRepository,
             programRepository,
             orgUnitRepository,
@@ -80,6 +78,7 @@ class EnrollmentPresenterImplTest {
             matomoAnalyticsController,
             eventCollectionRepository,
             teiAttributesProvider,
+            dateEntryWarningHelper,
             basicPreferenceProvider
         )
     }
@@ -319,7 +318,7 @@ class EnrollmentPresenterImplTest {
     }
 
     private fun givenTeiInNoOtherProgram(teiUid: String, programUid: String, value: Boolean) {
-        whenever(dataEntryRepository.isTeiInNoOtherProgram(teiUid, programUid)) doReturn value
+        whenever(enrollmentFormRepository.isTeiInNoOtherProgram(teiUid, programUid)) doReturn value
     }
 
     //EyeSeeTea Customizations
@@ -374,7 +373,6 @@ class EnrollmentPresenterImplTest {
             enrollmentView,
             d2,
             enrollmentRepository,
-            dataEntryRepository,
             teiRepository,
             programRepository,
             orgUnitRepository,
@@ -384,6 +382,7 @@ class EnrollmentPresenterImplTest {
             matomoAnalyticsController,
             eventCollectionRepository,
             teiAttributesProvider,
+            dateEntryWarningHelper,
             basicPreferenceProvider
         )
     }
@@ -392,7 +391,6 @@ class EnrollmentPresenterImplTest {
         return listOf(
             FieldUiModelImpl(
                 uid = "uid",
-                layoutId = 0,
                 value = null,
                 programStageSection = null,
                 autocompleteList = null,
@@ -407,7 +405,6 @@ class EnrollmentPresenterImplTest {
             ),
             BiometricsAttributeUiModelImpl(
                 uid = "uid",
-                layoutId = 0,
                 value = null,
                 programStageSection = null,
                 autocompleteList = null,

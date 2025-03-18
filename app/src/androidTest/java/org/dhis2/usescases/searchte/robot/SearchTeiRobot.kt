@@ -1,12 +1,16 @@
 package org.dhis2.usescases.searchte.robot
 
+import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasAnySibling
 import androidx.compose.ui.test.hasParent
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onLast
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -14,20 +18,17 @@ import androidx.compose.ui.test.performTextInput
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.contrib.RecyclerViewActions.actionOnItem
 import androidx.test.espresso.contrib.RecyclerViewActions.actionOnItemAtPosition
-import androidx.test.espresso.contrib.RecyclerViewActions.scrollTo
 import androidx.test.espresso.matcher.ViewMatchers.hasDescendant
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
+import androidx.test.platform.app.InstrumentationRegistry
 import org.dhis2.R
 import org.dhis2.common.BaseRobot
 import org.dhis2.common.matchers.RecyclerviewMatchers
 import org.dhis2.common.matchers.RecyclerviewMatchers.Companion.hasItem
 import org.dhis2.common.matchers.RecyclerviewMatchers.Companion.hasNoMoreResultsInProgram
 import org.dhis2.common.viewactions.openSpinnerPopup
-import org.dhis2.common.viewactions.typeChildViewWithId
-import org.dhis2.usescases.searchTrackEntity.adapters.SearchTEViewHolder
 import org.dhis2.usescases.searchTrackEntity.listView.SearchResult
 import org.dhis2.usescases.searchte.entity.DisplayListFieldsUIModel
 import org.hamcrest.CoreMatchers.allOf
@@ -46,27 +47,10 @@ fun searchTeiRobot(
 
 class SearchTeiRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
 
-    fun clickOnTEI(teiName: String, teiLastName: String) {
-        waitForView(
-            allOf(
-                withId(R.id.scrollView),
-                hasDescendant(withText(teiName)),
-                hasDescendant(withText(teiLastName))
-            )
-        ).perform(
-            scrollTo<SearchTEViewHolder>(
-                allOf(
-                    hasDescendant(withText(teiName)),
-                    hasDescendant(withText(teiLastName))
-                )
-            ),
-            actionOnItem<SearchTEViewHolder>(
-                allOf(
-                    hasDescendant(withText(teiName)),
-                    hasDescendant(withText(teiLastName))
-                ), click()
-            )
-        )
+    fun clickOnTEI(teiName: String) {
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithText("First name: $teiName", true).performClick()
+        composeTestRule.waitForIdle()
     }
 
     fun checkTEIsDelete(teiName: String, teiLastName: String) {
@@ -102,38 +86,22 @@ class SearchTeiRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
         }
     }
 
-    fun typeAttributeAtPosition(searchWord: String, position: Int) {
-        onView(withId(R.id.recyclerView))
-            .perform(
-                actionOnItemAtPosition<SearchTEViewHolder>(
-                    position,
-                    click()
-                )
-            )
-
-        onView(withId(R.id.recyclerView))
-            .perform(
-                actionOnItemAtPosition<SearchTEViewHolder>(
-                    position,
-                    typeChildViewWithId(searchWord, R.id.input_editText)
-                )
-            )
-        closeKeyboard()
-    }
-
     fun clickOnSearch() {
         closeKeyboard()
         composeTestRule.onNodeWithTag("SEARCH_BUTTON").performClick()
+        composeTestRule.waitForIdle()
     }
 
+    @OptIn(ExperimentalTestApi::class)
     fun checkListOfSearchTEI(title: String, attributes: Map<String?, String>) {
         //Checks title and all attributes are displayed
+        composeTestRule.waitUntilAtLeastOneExists(hasText(title))
         composeTestRule.onNodeWithText(title).assertIsDisplayed()
         attributes.forEach { item ->
-            item.key?.let { composeTestRule.onNodeWithText(it).assertIsDisplayed() }
+            item.key?.let { composeTestRule.onNodeWithText("$it:",true).assertIsDisplayed() }
             composeTestRule.onNode(
                 hasParent(hasTestTag("LIST_CARD_ADDITIONAL_INFO_COLUMN"))
-                        and hasText(item.value), useUnmergedTree = true
+                        and hasText(item.value,true), useUnmergedTree = true
             ).assertIsDisplayed()
         }
     }
@@ -165,35 +133,42 @@ class SearchTeiRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
         onView(withId(R.id.spinner_text)).check(matches(withText(program)))
     }
 
-
+    @OptIn(ExperimentalTestApi::class)
     fun checkFieldsFromDisplayList(
         displayListFieldsUIModel: DisplayListFieldsUIModel
     ) {
         //Given the title is the first attribute
         val title = "First name: ${displayListFieldsUIModel.name}"
         val displayedAttributes = createAttributesList(displayListFieldsUIModel)
-
+        val showMoreText = InstrumentationRegistry.getInstrumentation()
+            .targetContext.getString(R.string.show_more)
+        composeTestRule.waitForIdle()
+        composeTestRule.waitUntilAtLeastOneExists(hasText(showMoreText))
         //When we expand all attribute list
-        composeTestRule.onNodeWithText("Show more").performClick()
-
+        composeTestRule.onNodeWithText(showMoreText, true, useUnmergedTree = true).performClick()
         //Then The title and all attributes are displayed
         composeTestRule.onNodeWithText(title).assertIsDisplayed()
         displayedAttributes.forEach { item ->
-            item.key?.let { composeTestRule.onNodeWithText(it).assertIsDisplayed() }
+            item.key?.let { composeTestRule.onNodeWithText("$it:", true).assertIsDisplayed() }
             composeTestRule.onNode(
                 hasParent(hasTestTag("LIST_CARD_ADDITIONAL_INFO_COLUMN"))
-                        and hasText(item.value), useUnmergedTree = true
+                        and hasText(item.value,true), useUnmergedTree = true
             ).assertIsDisplayed()
         }
     }
 
     fun clickOnShowMap() {
-        onView(withId(R.id.navigation_map_view)).perform(click())
+        composeTestRule.onNodeWithTag("NAVIGATION_BAR_ITEM_Map").performClick()
     }
 
     fun checkCarouselTEICardInfo(firstName: String) {
-        onView(withId(R.id.map_carousel))
-            .check(matches(hasItem(hasDescendant(withText(firstName)))))
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("MAP_CAROUSEL", true)
+            .assertIsDisplayed()
+        composeTestRule.onNode(
+            hasParent(hasTestTag("LIST_CARD_ADDITIONAL_INFO_COLUMN"))
+                    and hasText(firstName, true), useUnmergedTree = true
+        ).assertIsDisplayed()
     }
 
     fun clickOnOpenSearch() {
@@ -204,21 +179,26 @@ class SearchTeiRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
         onView(withId(R.id.createButton)).perform(click())
     }
 
+    fun checkListOfSearchTEIWithAdditionalInfo(title: String, additionalText: String) {
+        composeTestRule.onNodeWithText(title).assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription(additionalText).assertIsDisplayed()
+    }
+
     private fun createAttributesList(displayListFieldsUIModel: DisplayListFieldsUIModel) = listOf(
         AdditionalInfoItem(
-            key = "Last name:",
+            key = "Last name",
             value = displayListFieldsUIModel.lastName,
         ),
         AdditionalInfoItem(
-            key = "Email:",
+            key = "Email",
             value = displayListFieldsUIModel.email,
         ),
         AdditionalInfoItem(
-            key = "Date of birth:",
+            key = "Date of birth",
             value = displayListFieldsUIModel.birthday,
         ),
         AdditionalInfoItem(
-            key = "Address:",
+            key = "Address",
             value = displayListFieldsUIModel.address,
         ),
     )

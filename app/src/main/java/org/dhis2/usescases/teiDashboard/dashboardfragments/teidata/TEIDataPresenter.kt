@@ -4,7 +4,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.annotation.VisibleForTesting
-import androidx.core.app.ActivityOptionsCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import io.reactivex.Completable
@@ -28,6 +27,8 @@ import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.resources.D2ErrorUtils
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
+import org.dhis2.commons.schedulers.SingleEventEnforcer
+import org.dhis2.commons.schedulers.get
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.biometrics.RegisterResult
 import org.dhis2.data.biometrics.SimprintsItem
@@ -38,6 +39,7 @@ import org.dhis2.form.data.OptionsRepository
 import org.dhis2.form.data.RulesUtilsProviderImpl
 import org.dhis2.form.model.EventMode
 import org.dhis2.mobileProgramRules.RuleEngineHelper
+import org.dhis2.tracker.events.CreateEventUseCase
 import org.dhis2.usescases.biometrics.biometricAttributeId
 import org.dhis2.usescases.biometrics.duplicates.LastPossibleDuplicates
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
@@ -49,18 +51,14 @@ import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioModel
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioRegistrationMapper
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioVerificationMapper
-import org.dhis2.usescases.events.ScheduledEventActivity.Companion.getIntent
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureActivity
-import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureActivity.Companion.getActivityBundleWithBiometrics
 import org.dhis2.usescases.eventsWithoutRegistration.eventInitial.EventInitialActivity
-import org.dhis2.usescases.programEventDetail.usecase.CreateEventUseCase
 import org.dhis2.usescases.programStageSelection.ProgramStageSelectionActivity
 import org.dhis2.usescases.teiDashboard.DashboardEnrollmentModel
 import org.dhis2.usescases.teiDashboard.DashboardRepository
 import org.dhis2.usescases.teiDashboard.dashboardfragments.teidata.TeiDataIdlingResourceSingleton.decrement
 import org.dhis2.usescases.teiDashboard.dashboardfragments.teidata.TeiDataIdlingResourceSingleton.increment
 import org.dhis2.usescases.teiDashboard.domain.GetNewEventCreationTypeOptions
-import org.dhis2.usescases.teiDashboard.ui.EventCreationOptions
 import org.dhis2.utils.Result
 import org.dhis2.utils.analytics.AnalyticsHelper
 import org.dhis2.utils.analytics.CREATE_EVENT_TEI
@@ -71,11 +69,13 @@ import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.event.EventStatus
 import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.android.core.program.ProgramStage
+import org.hisp.dhis.mobile.ui.designsystem.component.menu.MenuItemData
 import org.hisp.dhis.rules.models.RuleEffect
 import timber.log.Timber
 import java.util.Timer
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.schedule
+import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureActivity.Companion.getActivityBundle
 
 class TEIDataPresenter(
     private val view: TEIDataContracts.View,
@@ -112,6 +112,8 @@ class TEIDataPresenter(
 
     private val _events: MutableLiveData<List<EventViewModel>> = MutableLiveData()
     val events: LiveData<List<EventViewModel>> = _events
+
+    private val singleEventEnforcer = SingleEventEnforcer.get()
 
     private var uidForEvent: String? = null
     private var orgUnitUid: String? = null
@@ -225,8 +227,8 @@ class TEIDataPresenter(
             val enrollment = d2.enrollment(enrollmentUid)
             val showButton =
                 enrollment != null &&
-                        !isGrouping && enrollment.status() == EnrollmentStatus.ACTIVE &&
-                        canAddNewEvents()
+                    !isGrouping && enrollment.status() == EnrollmentStatus.ACTIVE &&
+                    canAddNewEvents()
             _shouldDisplayEventCreationButton.postValue(showButton)
         }
     }
@@ -273,32 +275,6 @@ class TEIDataPresenter(
         dashboardRepository.saveCatOption(eventUid, catOptionComboUid)
     }
 
-    fun areEventsCompleted() {
-        compositeDisposable.add(
-            dashboardRepository.getEnrollmentEventsWithDisplay(programUid, teiUid)
-                .flatMap { events ->
-                    if (events.isEmpty()) {
-                        dashboardRepository.getTEIEnrollmentEvents(
-                            programUid,
-                            teiUid,
-                        )
-                    } else {
-                        Observable.just(events)
-                    }
-                }
-                .map { events ->
-                    Observable.fromIterable(events)
-                        .all { event -> event.status() == EventStatus.COMPLETED }
-                }
-                .subscribeOn(schedulerProvider.io())
-                .observeOn(schedulerProvider.ui())
-                .subscribe(
-                    view.areEventsCompleted(),
-                    Timber.Forest::d,
-                ),
-        )
-    }
-
     fun displayGenerateEvent(eventUid: String?) {
         compositeDisposable.add(
             dashboardRepository.displayGenerateEvent(eventUid)
@@ -306,7 +282,11 @@ class TEIDataPresenter(
                 .observeOn(schedulerProvider.ui())
                 .subscribe({ programStage ->
                     if (programStage.displayGenerateEventBox() == true || programStage.allowGenerateNextVisit() == true) {
-                        view.displayScheduleEvent()
+                        view.displayScheduleEvent(
+                            programStage = null,
+                            showYesNoOptions = true,
+                            eventCreationType = EventCreationType.SCHEDULE,
+                        )
                     } else if (programStage.remindCompleted() == true) {
                         view.showDialogCloseProgram()
                     }
@@ -367,47 +347,46 @@ class TEIDataPresenter(
 
     fun onScheduleSelected(uid: String?, sharedView: View?) {
         uid?.let {
-            val intent =
-                getIntent(view.context, uid, dashboardModel!!.getBiometricValue(), -1, orgUnitUid!!)
-            val options = sharedView?.let { it1 ->
-                ActivityOptionsCompat.makeSceneTransitionAnimation(
-                    view.abstractActivity,
-                    it1,
-                    "shared_view",
-                )
-            } ?: ActivityOptionsCompat.makeBasic()
-            view.openEventDetails(intent, options)
+            view.displayEnterEvent(
+                eventUid = it,
+                showYesNoOptions = false,
+                eventCreationType = EventCreationType.SCHEDULE,
+            )
         }
     }
 
     fun onEventSelected(uid: String, eventStatus: EventStatus) {
-        lastVerificationResult = null
-
-        if (eventStatus == EventStatus.ACTIVE || eventStatus == EventStatus.COMPLETED) {
-            uidForEvent = uid
-
-            launchEventCapture(uid, dashboardModel?.getBiometricValue() ?: "", -1)
-        } else {
-            val event = d2.event(uid)
-            val intent = Intent(view.context, EventInitialActivity::class.java)
-            intent.putExtras(
-                EventInitialActivity.getBundleWithBiometrics(
-                    programUid,
-                    uid,
-                    EventCreationType.DEFAULT.name,
-                    teiUid,
-                    null,
-                    event?.organisationUnit(),
-                    event?.programStage(),
-                    enrollmentUid,
-                    0,
-                    teiDataRepository.getEnrollment().blockingGet()?.status(),
-                    dashboardModel?.getBiometricValue() ?: "",
-                    -1,
-                    orgUnitUid
+        when (eventStatus) {
+            EventStatus.ACTIVE, EventStatus.COMPLETED, EventStatus.SKIPPED -> {
+                val intent = Intent(view.context, EventCaptureActivity::class.java)
+                intent.putExtras(
+                    getActivityBundle(
+                        eventUid = uid,
+                        programUid = programUid ?: throw IllegalStateException(),
+                        eventMode = EventMode.CHECK,
+                    ),
                 )
-            )
-            view.openEventInitial(intent)
+                view.openEventCapture(intent)
+            }
+            else -> {
+                val event = d2.event(uid)
+                val intent = Intent(view.context, EventInitialActivity::class.java)
+                intent.putExtras(
+                    EventInitialActivity.getBundle(
+                        programUid,
+                        uid,
+                        EventCreationType.DEFAULT.name,
+                        teiUid,
+                        null,
+                        event?.organisationUnit(),
+                        event?.programStage(),
+                        enrollmentUid,
+                        0,
+                        teiDataRepository.getEnrollment().blockingGet()?.status(),
+                    ),
+                )
+                view.openEventInitial(intent)
+            }
         }
     }
 
@@ -453,22 +432,50 @@ class TEIDataPresenter(
     }
 
     fun onAddNewEventOptionSelected(eventCreationType: EventCreationType, stage: ProgramStage?) {
+        singleEventEnforcer.processEvent {
+            manageAddNewEventOptionSelected(eventCreationType, stage)
+        }
+    }
+
+    private fun manageAddNewEventOptionSelected(
+        eventCreationType: EventCreationType,
+        stage: ProgramStage?,
+    ) {
         if (stage != null) {
             when (eventCreationType) {
                 EventCreationType.ADDNEW -> programUid?.let { program ->
                     checkOrgUnitCount(program, stage.uid())
                 }
 
+                EventCreationType.SCHEDULE -> {
+                    view.displayScheduleEvent(
+                        programStage = stage,
+                        showYesNoOptions = false,
+                        eventCreationType = eventCreationType,
+                    )
+                }
+
                 else -> view.goToEventInitial(eventCreationType, stage)
             }
         } else {
-            createEventInEnrollment(eventCreationType)
+            when (eventCreationType) {
+                EventCreationType.REFERAL -> {
+                    createEventInEnrollment(eventCreationType)
+                }
+                else -> {
+                    view.displayScheduleEvent(
+                        programStage = null,
+                        showYesNoOptions = false,
+                        eventCreationType = eventCreationType,
+                    )
+                }
+            }
         }
     }
 
-    fun getNewEventOptionsByStages(stage: ProgramStage?): List<EventCreationOptions> {
+    fun getNewEventOptionsByStages(stage: ProgramStage?): List<MenuItemData<EventCreationType>> {
         val options = programUid?.let { getNewEventCreationTypeOptions(stage, it) }
-        return options?.let { eventCreationOptionsMapper.mapToEventsByStage(it) } ?: emptyList()
+        return options?.let { eventCreationOptionsMapper.mapToEventsByStage(it, stage?.displayEventLabel()) } ?: emptyList()
     }
 
     fun fetchEvents() {
@@ -485,10 +492,10 @@ class TEIDataPresenter(
             .filter { !stagesToHide.contains(it.uid()) }
             .filter { stage ->
                 stage.repeatable() == true ||
-                        events.value?.none { event ->
-                            event.stage?.uid() == stage.uid() &&
-                                    event.type == EventViewModelType.EVENT
-                        } == true
+                    events.value?.none { event ->
+                        event.stage?.uid() == stage.uid() &&
+                            event.type == EventViewModelType.EVENT
+                    } == true
             }.sortedBy { stage -> stage.sortOrder() }
 
     fun checkOrgUnitCount(programUid: String, programStageUid: String) {
@@ -524,24 +531,6 @@ class TEIDataPresenter(
                 )
             }
         }
-    }
-
-    fun launchEventCapture(uid: String, guid: String, status: Int) {
-        val finalIid = uidForEvent ?: uid
-
-        val intent = Intent(view.context, EventCaptureActivity::class.java)
-        intent.putExtras(
-            getActivityBundleWithBiometrics(
-                eventUid = finalIid,
-                programUid = programUid ?: throw IllegalStateException(),
-                eventMode = EventMode.CHECK,
-                guid = guid,
-                status = status,
-                orgUnitUid = orgUnitUid!!,
-                trackedEntityInstanceId = teiUid
-            )
-        )
-        view.openEventCapture(intent)
     }
 
     private fun verifyBiometrics() {

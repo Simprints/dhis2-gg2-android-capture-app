@@ -29,8 +29,6 @@ interface DashboardRepository {
 
     fun getEnrollment(): Observable<Enrollment>
 
-    fun getTEIEnrollmentEvents(programUid: String?, teiUid: String): Observable<List<Event>>
-
     fun getEnrollmentEventsWithDisplay(
         programUid: String?,
         teiUid: String,
@@ -107,9 +105,14 @@ interface DashboardRepository {
         teiUid: String,
     ): Observable<List<kotlin.Pair<TrackedEntityAttribute, TrackedEntityAttributeValue>>>
 
-    fun getDashboardModel(): DashboardModel
+    fun getDashboardModel(): DashboardModel?
 
     fun getGrouping(): Boolean
 
     fun setGrouping(groupEvent: Boolean)
+
+    fun transferTei(newOrgUnitId: String)
+
+    fun teiCanBeTransferred(): Boolean
+    fun enrollmentHasWriteAccess(): Boolean
 }

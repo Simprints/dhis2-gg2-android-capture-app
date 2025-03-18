@@ -1,7 +1,5 @@
 package org.dhis2.usescases.searchTrackEntity
 
-import org.dhis2.commons.data.SearchTeiModel
-
 enum class LegacyInteractionID {
     ON_ENROLL_CLICK,
     ON_ADD_RELATIONSHIP,

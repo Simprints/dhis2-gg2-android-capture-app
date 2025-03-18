@@ -1,6 +1,8 @@
 package org.dhis2.data.biometrics
 
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import org.dhis2.commons.biometrics.BiometricsIcon
 import org.dhis2.commons.biometrics.BiometricsPreference
 import org.dhis2.commons.prefs.BasicPreferenceProvider
@@ -16,60 +18,61 @@ class BiometricsConfigRepositoryImpl(
     private val biometricsConfigApi: BiometricsConfigApi
 ) : BiometricsConfigRepository {
 
-    override fun sync() {
+    override fun sync(): Flow<Unit> = flow {
         try {
-            val response = biometricsConfigApi.getData().execute()
+            val configOptions = biometricsConfigApi.getData()
 
-            val configOptions = response.body()
 
-            if (response.isSuccessful && configOptions != null) {
-                preferenceProvider.saveAsJson(BiometricsPreference.CONFIGURATIONS, configOptions)
-                Timber.d("BiometricsConfig synced!")
-                Timber.d("BiometricsConfig: $configOptions")
+            preferenceProvider.saveAsJson(BiometricsPreference.CONFIGURATIONS, configOptions)
+            Timber.d("BiometricsConfig synced!")
+            Timber.d("BiometricsConfig: $configOptions")
 
-                val userOrgUnitGroups =
-                    d2.organisationUnitModule().organisationUnits()
-                        .byOrganisationUnitScope(OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
-                        .withOrganisationUnitGroups()
-                        .blockingGet().flatMap { ou ->
-                            if (ou.organisationUnitGroups() != null) ou.organisationUnitGroups()!!
-                                .map { ouGroup -> ouGroup.uid() }
-                            else listOf()
-                        }.distinct()
+            val userOrgUnitGroups =
+                d2.organisationUnitModule().organisationUnits()
+                    .byOrganisationUnitScope(OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
+                    .withOrganisationUnitGroups()
+                    .blockingGet().flatMap { ou ->
+                        if (ou.organisationUnitGroups() != null) ou.organisationUnitGroups()!!
+                            .map { ouGroup -> ouGroup.uid() }
+                        else listOf()
+                    }.distinct()
 
-                preferenceProvider.saveAsJson(
-                    BiometricsPreference.USER_ORG_UNIT_GROUPS,
-                    userOrgUnitGroups
-                )
-            } else {
-                Timber.e(response.errorBody()?.string())
-            }
+            preferenceProvider.saveAsJson(
+                BiometricsPreference.USER_ORG_UNIT_GROUPS,
+                userOrgUnitGroups
+            )
+
+            emit(Unit)
         } catch (e: Exception) {
             Timber.e(e)
         }
     }
 
-    override fun getUserOrgUnitGroups(): List<String> {
+    override fun getUserOrgUnitGroups(): Flow<List<String>> = flow {
         val listStringType = object : TypeToken<List<String>>() {}
 
-        return preferenceProvider.getObjectFromJson(
-            BiometricsPreference.USER_ORG_UNIT_GROUPS,
-            listStringType,
-            listOf()
+        emit(
+            preferenceProvider.getObjectFromJson(
+                BiometricsPreference.USER_ORG_UNIT_GROUPS,
+                listStringType,
+                listOf()
+            )
         )
     }
 
-    override fun getBiometricsConfigs(): List<BiometricsConfig> {
+    override fun getBiometricsConfigs(): Flow<List<BiometricsConfig>> = flow {
         val biometricsConfigType = object : TypeToken<List<BiometricsConfig>>() {}
 
-        return preferenceProvider.getObjectFromJson(
-            BiometricsPreference.CONFIGURATIONS,
-            biometricsConfigType,
-            listOf()
+        emit(
+            preferenceProvider.getObjectFromJson(
+                BiometricsPreference.CONFIGURATIONS,
+                biometricsConfigType,
+                listOf()
+            )
         )
     }
 
-    override fun saveSelectedConfig(config: BiometricsConfig) {
+    override fun saveSelectedConfig(config: BiometricsConfig) : Flow<Unit> = flow {
         preferenceProvider.setValue(BiometricsPreference.ORG_UNIT_GROUP, config.orgUnitGroup)
 
         preferenceProvider.setValue(BiometricsPreference.PROGRAM, config.program)
@@ -130,6 +133,8 @@ class BiometricsConfigRepositoryImpl(
         Timber.d("ageThresholdMonths: ${config.ageThresholdMonths}")
         Timber.d("dateOfBirthAttribute: ${config.dateOfBirthAttribute}")
         Timber.d("biometricsMode: ${config.biometricsMode.name}")
+
+        emit(Unit)
     }
 
     private fun getOrgUnitLevelAsModuleId(config: BiometricsConfig): Int {

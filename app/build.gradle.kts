@@ -1,3 +1,6 @@
+
+import com.android.build.api.variant.impl.VariantOutputImpl
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.ByteArrayOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -6,11 +9,11 @@ plugins {
     id("com.android.application")
     kotlin("android")
     kotlin("kapt")
+    id("kotlin-parcelize")
     id("kotlinx-serialization")
     id("dagger.hilt.android.plugin")
+    alias(libs.plugins.kotlin.compose.compiler)
 }
-
-
 apply(from = "${project.rootDir}/jacoco/jacoco.gradle.kts")
 
 repositories {
@@ -38,10 +41,10 @@ android {
     }
 
     signingConfigs {
-        create("release"){
+        create("release") {
             keyAlias = System.getenv("SIGNING_KEY_ALIAS")
             keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
-            System.getenv("SIGNING_KEYSTORE_PATH")?.let {path->
+            System.getenv("SIGNING_KEYSTORE_PATH")?.let { path ->
                 storeFile = file(path)
             }
             storePassword = System.getenv("SIGNING_STORE_PASSWORD")
@@ -64,8 +67,6 @@ android {
         }
     }
 
-    ndkVersion = libs.versions.ndk.get()
-    compileSdk = libs.versions.sdk.get().toInt()
     namespace = "org.dhis2"
     testNamespace = "org.dhis2.test"
 
@@ -75,21 +76,18 @@ android {
 
     defaultConfig {
         applicationId = "com.dhis2"
-        minSdk = libs.versions.minSdk.get().toInt()
+        compileSdk = libs.versions.sdk.get().toInt()
         targetSdk = libs.versions.sdk.get().toInt()
+        minSdk = libs.versions.minSdk.get().toInt()
         versionCode = libs.versions.vCode.get().toInt()
         versionName = libs.versions.vName.get()
         testInstrumentationRunner = "org.dhis2.Dhis2Runner"
         vectorDrawables.useSupportLibrary = true
         multiDexEnabled = true
 
-        val defMapboxToken =
-            "pk.eyJ1IjoiZGhpczJhbmRyb2lkIiwiYSI6ImNrcWt1a2hzYzE5Ymsyb254MWtlbGt4Y28ifQ.JrP61q9BFTVEKO4SwRUwDw"
-        val mapboxAccessToken = System.getenv("MAPBOX_ACCESS_TOKEN") ?: defMapboxToken
         val bitriseSentryDSN = System.getenv("SENTRY_DSN") ?: ""
 
-        buildConfigField("String", "SDK_VERSION", "\"" + "1.10.1-eyeseetea-fork-1" + "\"")
-        buildConfigField("String", "MAPBOX_ACCESS_TOKEN", "\"" + mapboxAccessToken + "\"")
+        buildConfigField("String", "SDK_VERSION", "\"" + libs.versions.dhis2sdk.get() + "\"")
         buildConfigField("String", "MATOMO_URL", "\"https://usage.analytics.dhis2.org/matomo.php\"")
         buildConfigField("long", "VERSION_CODE", "${defaultConfig.versionCode}")
         buildConfigField("String", "VERSION_NAME", "\"${defaultConfig.versionName}\"")
@@ -127,12 +125,6 @@ android {
                     "META-INF/gradle/incremental.annotation.processors"
                 )
             )
-        }
-    }
-
-    testOptions {
-        unitTests {
-            isReturnDefaultValues = true
         }
     }
 
@@ -189,14 +181,14 @@ android {
             applicationId = "com.eyeseetea.widp"
             dimension = "default"
             versionCode = libs.versions.vCode.get().toInt()
-            versionName = "3.0.0-widp-fork-1"
+            versionName = libs.versions.vName.get()
         }
 
         create("psi") {
             applicationId = "org.dhis2.psi"
             dimension = "default"
             versionCode = libs.versions.vCode.get().toInt()
-            versionName = "3.0.0-psi-fork-2"
+            versionName = libs.versions.vName.get()
         }
 
         create("simprints") {
@@ -238,16 +230,34 @@ android {
         }
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
-    }
-
-    composeOptions {
-        kotlinCompilerExtensionVersion = libs.versions.kotlinCompilerExtensionVersion.get()
-    }
     lint {
         abortOnError = false
         checkReleaseBuilds = false
+    }
+
+    androidComponents {
+        onVariants { variant ->
+            val buildType = variant.buildType
+            val flavorName = variant.flavorName
+            variant.outputs.forEach { output ->
+                if (output is VariantOutputImpl) {
+                    val suffix = when {
+                        buildType == "debug" && flavorName == "dhis" -> "-training"
+                        buildType == "release" && flavorName == "dhisPlayServices" -> "-googlePlay"
+                        else -> ""
+                    }
+
+                    output.outputFileName = "dhis2-v${libs.versions.vName.get()}$suffix.apk"
+                }
+            }
+
+        }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
@@ -261,6 +271,7 @@ dependencies {
     implementation(project(":compose-table"))
     implementation(project(":stock-usecase"))
     implementation(project(":dhis2-mobile-program-rules"))
+    implementation(project(":tracker"))
 
     implementation(libs.security.conscrypt)
     implementation(libs.security.rootbeer)
@@ -275,14 +286,13 @@ dependencies {
     implementation(libs.androidx.work)
     implementation(libs.androidx.workrx)
     implementation(libs.androidx.exifinterface)
-    implementation(libs.google.flexbox)
+    implementation(libs.androidx.biometric)
+    implementation(libs.androidx.material3)
     implementation(libs.google.guava)
     implementation(libs.github.pinlock)
     implementation(libs.github.fancyshowcase)
     implementation(libs.lottie)
     implementation(libs.dagger.hilt.android)
-    implementation(libs.rx.kotlin)
-    implementation(libs.network.gsonconverter)
     implementation(libs.network.okhttp)
     implementation(libs.dates.jodatime)
     implementation(libs.analytics.matomo)
@@ -298,7 +308,6 @@ dependencies {
     debugImplementation(libs.analytics.flipper.network)
     debugImplementation(libs.analytics.flipper.leak)
     debugImplementation(libs.analytics.leakcanary)
-    debugImplementation(libs.test.ui.test.manifest)
 
     releaseImplementation(libs.analytics.leakcanary.noop)
     releaseImplementation(libs.analytics.flipper.noop)
@@ -308,7 +317,6 @@ dependencies {
 
     kapt(libs.dagger.compiler)
     kapt(libs.dagger.hilt.android.compiler)
-    kapt(libs.dagger.hilt.compiler)
     kapt(libs.deprecated.autoValueParcel)
 
     testImplementation(libs.test.archCoreTesting)
@@ -325,12 +333,9 @@ dependencies {
     androidTestImplementation(libs.test.testRunner)
     androidTestImplementation(libs.test.espresso.intents)
     androidTestImplementation(libs.test.espresso.contrib)
-    androidTestImplementation(libs.test.espresso.accessibility)
-    androidTestImplementation(libs.test.espresso.web)
     androidTestImplementation(libs.test.uiautomator)
     androidTestImplementation(libs.test.testCore)
     androidTestImplementation(libs.test.rules)
-    androidTestImplementation(libs.test.coreKtx)
     androidTestImplementation(libs.test.junitKtx)
     androidTestImplementation(libs.test.mockitoCore)
     androidTestImplementation(libs.test.dexmaker.mockitoInline)
@@ -341,7 +346,6 @@ dependencies {
     androidTestImplementation(libs.test.compose.ui.test)
     androidTestImplementation(libs.test.hamcrest)
     androidTestImplementation(libs.dispatcher.dispatchEspresso)
-
 
     //Eyeseetea
     implementation(libs.eyeseetea.atv)
