@@ -2,6 +2,7 @@ package org.dhis2.form.ui.provider.inputfield
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -10,6 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.dhis2.form.extensions.autocompleteList
 import org.dhis2.form.extensions.inputState
 import org.dhis2.form.extensions.legend
@@ -146,6 +149,21 @@ private fun ProvideDefaultTextInput(
     var value by remember(fieldUiModel.value) {
         mutableStateOf(TextFieldValue(fieldUiModel.value ?: "", textSelection))
     }
+
+    // EyeSeeTea customization, force save method to change text with debounce
+    var isFirstLoad by remember { mutableStateOf(true) }
+
+    LaunchedEffect(value.text) {
+        if (!isFirstLoad) {
+            launch {
+                delay(300)
+                fieldUiModel.onSave(value.text)
+            }
+        } else {
+            isFirstLoad = false
+        }
+    }
+
     InputText(
         modifier = modifier.fillMaxWidth(),
         title = fieldUiModel.label,
@@ -165,9 +183,6 @@ private fun ProvideDefaultTextInput(
                     fieldUiModel.valueType,
                 ),
             )
-
-            // EyeSeeTea customization, force save method to change date
-            fieldUiModel.onSave(value.text)
         },
         autoCompleteList = fieldUiModel.autocompleteList(),
         onAutoCompleteItemSelected = {
