@@ -26,7 +26,6 @@ import androidx.databinding.DataBindingUtil
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModelProvider
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
 import org.dhis2.App
 import org.dhis2.R
@@ -44,7 +43,6 @@ import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.sync.OnDismissListener
 import org.dhis2.commons.sync.SyncContext
 import org.dhis2.databinding.ActivityDashboardMobileBinding
-import org.dhis2.form.model.EnrollmentMode
 import org.dhis2.form.ui.provider.FormResultDialogProvider
 import org.dhis2.tracker.TEIDashboardItems
 import org.dhis2.tracker.relationships.model.RelationshipTopBarIconState
@@ -53,8 +51,6 @@ import org.dhis2.ui.dialogs.bottomsheet.DeleteBottomSheetDialog
 import org.dhis2.usescases.enrollment.DateEditionWarningHandler
 import org.dhis2.usescases.enrollment.EnrollmentActivity
 import org.dhis2.usescases.enrollment.EnrollmentActivity.Companion.getIntent
-import org.dhis2.usescases.enrollment.EnrollmentFormBuilderConfig
-import org.dhis2.usescases.enrollment.buildEnrollmentForm
 import org.dhis2.usescases.general.ActivityGlobalAbstract
 import org.dhis2.usescases.notes.NotesFragment
 import org.dhis2.usescases.qrCodes.QrActivity
@@ -295,7 +291,15 @@ class TeiDashboardMobileActivity :
     }
 
     private fun setFormViewForLandScape() {
+        //EyeSeeTea customization
+        // form contain a lot of biometrics customizations in enrollment presenter
+        // To avoid duplicate logic, here hide form in landscape mode. It will be shown only in EnrollmentActivity
         if (isLandscape() && enrollmentUid != null) {
+            val form = findViewById<View>(R.id.tei_form_view)
+            form.visibility = View.GONE
+        }
+
+       /* if (isLandscape() && enrollmentUid != null) {
             val saveButton = findViewById<View>(R.id.saveLand) as FloatingActionButton
             buildEnrollmentForm(
                 config = EnrollmentFormBuilderConfig(
@@ -316,7 +320,7 @@ class TeiDashboardMobileActivity :
             ) {
                 dashboardViewModel.updateDashboard()
             }
-        }
+        }*/
     }
 
     private fun setEditButton() {
