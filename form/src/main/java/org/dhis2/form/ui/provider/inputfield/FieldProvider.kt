@@ -35,7 +35,6 @@ import org.dhis2.form.extensions.supportingText
 import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.UiRenderType
 import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
-import org.dhis2.form.model.biometrics.BiometricsDataElementUiModelImpl
 import org.dhis2.form.ui.event.RecyclerViewUiEvents
 import org.dhis2.form.ui.intent.FormIntent
 import org.dhis2.form.ui.keyboard.keyboardAsState
@@ -107,10 +106,6 @@ fun FieldProvider(
 
     if (fieldUiModel is BiometricsAttributeUiModelImpl) {
         ProvideBiometricsAttribute(
-            fieldUiModel = fieldUiModel
-        )
-    } else if (fieldUiModel is BiometricsDataElementUiModelImpl) {
-        ProvideBiometricsDataElement(
             fieldUiModel = fieldUiModel
         )
     } else {
