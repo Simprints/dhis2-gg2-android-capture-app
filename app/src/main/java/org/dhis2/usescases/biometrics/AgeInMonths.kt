@@ -72,8 +72,16 @@ fun getAgeInMonthsByAttributes(
 
 fun calculateAgeInMonths(value: String, now: DateTime): Long {
     return try {
-        val formatter = DateTimeFormat.forPattern(DateUtils.SIMPLE_DATE_FORMAT)
-        val dateValue = formatter.parseDateTime(value)
+
+        val formatter1 = DateTimeFormat.forPattern(DateUtils.SIMPLE_DATE_FORMAT)
+        val formatter2 = DateTimeFormat.forPattern(DateUtils.DATE_FORMAT_EXPRESSION)
+
+        val dateValue = try {
+            formatter1.parseDateTime(value)
+        } catch (e: Exception) {
+            formatter2.parseDateTime(value)
+        }
+
         val months = Days.daysBetween(dateValue, now).days.toDouble() / 30
 
         val ageInMonths = months.toLong()
