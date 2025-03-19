@@ -153,4 +153,12 @@ data class BiometricsAttributeUiModelImpl(
     fun setRegisterLastAndSave(listener: (String) -> Unit) {
         this.registerLastAndSave = listener
     }
+
+    fun onTextChange(value: CharSequence?) {
+        val text = when {
+            value?.isEmpty() == true -> null
+            else -> value?.toString()
+        }
+        callback?.intent(FormIntent.OnTextChange(uid, text, valueType))
+    }
 }

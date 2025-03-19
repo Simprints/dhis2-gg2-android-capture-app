@@ -334,8 +334,7 @@ class EnrollmentPresenterImpl(
     }
 
     private fun saveBiometricValue(value: String?) {
-        // TODO: Review this
-        //biometricsUiModel!!.onTextChange(value)
+        biometricsUiModel!!.onTextChange(value)
         biometricsUiModel!!.onSave(value)
 
         if (pendingSave) {
