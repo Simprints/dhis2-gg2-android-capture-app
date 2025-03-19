@@ -484,10 +484,13 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
             performSaveClick()
         }
 
-        dialog.show(
-            supportFragmentManager,
-            BiometricsDuplicatesDialog.TAG
-        )
+        if (!supportFragmentManager.isStateSaved) {
+            dialog.show(supportFragmentManager, BiometricsDuplicatesDialog.TAG)
+        } else {
+            supportFragmentManager.beginTransaction()
+                .add(dialog, BiometricsDuplicatesDialog.TAG)
+                .commitAllowingStateLoss()
+        }
     }
 
     override fun registerLast(sessionId: String,
