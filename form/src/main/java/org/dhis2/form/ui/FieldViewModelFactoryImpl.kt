@@ -10,8 +10,6 @@ import org.dhis2.form.model.OptionSetConfiguration
 import org.dhis2.form.model.PeriodSelector
 import org.dhis2.form.model.SectionUiModelImpl
 import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
-import org.dhis2.form.model.biometrics.BiometricsDataElementStatus
-import org.dhis2.form.model.biometrics.BiometricsDataElementUiModelImpl
 import org.dhis2.form.ui.event.UiEventFactoryImpl
 import org.dhis2.form.ui.provider.AutoCompleteProvider
 import org.dhis2.form.ui.provider.DisplayNameProvider
@@ -230,25 +228,6 @@ class FieldViewModelFactoryImpl(
             null,
             null,
             null
-        )
-    }
-
-    override fun createBiometricsVerification(
-        id: String,
-        value: String,
-        programStageSection: String?
-    ): FieldUiModel {
-        return BiometricsDataElementUiModelImpl(
-            id,
-            value,
-            programStageSection,
-            BiometricsDataElementStatus.NOT_DONE,
-            null,
-            null,
-            null,
-            null,
-            null,
-            null,
         )
     }
 }
