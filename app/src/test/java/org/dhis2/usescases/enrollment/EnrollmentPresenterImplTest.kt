@@ -1,5 +1,6 @@
 package org.dhis2.usescases.enrollment
 
+import com.google.gson.reflect.TypeToken
 import io.reactivex.Single
 import io.reactivex.processors.PublishProcessor
 import junit.framework.TestCase.assertNotNull
@@ -12,6 +13,7 @@ import org.dhis2.data.schedulers.TrampolineSchedulerProvider
 import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.FieldUiModelImpl
 import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
+import org.dhis2.usescases.biometrics.entities.BiometricsConfig
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.enrollment.EnrollmentActivity.EnrollmentMode.CHECK
@@ -26,18 +28,22 @@ import org.hisp.dhis.android.core.common.FeatureType
 import org.hisp.dhis.android.core.common.Geometry
 import org.hisp.dhis.android.core.common.State
 import org.hisp.dhis.android.core.common.ValueType
+import org.hisp.dhis.android.core.enrollment.Enrollment
 import org.hisp.dhis.android.core.enrollment.EnrollmentAccess
 import org.hisp.dhis.android.core.enrollment.EnrollmentObjectRepository
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.event.Event
 import org.hisp.dhis.android.core.event.EventCollectionRepository
 import org.hisp.dhis.android.core.event.EventStatus
+import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
+import org.hisp.dhis.android.core.organisationunit.OrganisationUnitCollectionRepository
 import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceObjectRepository
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito
+import org.mockito.kotlin.any
 import org.mockito.kotlin.atLeastOnce
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
@@ -153,6 +159,8 @@ class EnrollmentPresenterImplTest {
 
     @Test
     fun `Should show save button when the enrollment is editable and biometrics not available`() {
+        givenAData()
+        
         setupEnrollmentAccess(EnrollmentAccess.WRITE_ACCESS)
         val nonBiometricsFieldUiModel = mock<FieldUiModel>()
         val fields = listOf(nonBiometricsFieldUiModel)
@@ -174,6 +182,8 @@ class EnrollmentPresenterImplTest {
 
     @Test
     fun `Should hide save button when biometrics is available`() {
+        givenAData()
+
         setupEnrollmentAccess(EnrollmentAccess.WRITE_ACCESS)
         val biometricsFieldUiModel = mock<BiometricsAttributeUiModelImpl>()
         val fields = listOf(biometricsFieldUiModel)
@@ -183,6 +193,32 @@ class EnrollmentPresenterImplTest {
 
         verify(enrollmentView, atLeastOnce()).setSaveButtonVisible(false)
         verify(enrollmentView, never()).setSaveButtonVisible(true)
+    }
+
+    private fun givenAData() {
+        val orgUnit =  OrganisationUnit.builder()
+            .uid("orgUnit4")
+            .name("org unit 4")
+            .path("/orgUnit1/orgUnit2/orgUnit3/orgUnit4")
+            .level(4)
+            .build()
+
+        whenever(enrollmentRepository.blockingGet()).thenReturn(
+            Enrollment.builder()
+                .uid("uid")
+                .organisationUnit(orgUnit.uid())
+                .build())
+
+        whenever(orgUnitRepository.getByUid(orgUnit.uid())).thenReturn(orgUnit)
+        whenever(orgUnitRepository.getUserOrgUnits(any())).thenReturn(listOf(orgUnit))
+
+        val organisationUnitCollectionRepository = mock<OrganisationUnitCollectionRepository>()
+        whenever(d2.organisationUnitModule().organisationUnits()).thenReturn(organisationUnitCollectionRepository)
+
+        val readOnlyRepository  = mock<ReadOnlyOneObjectRepositoryFinalImpl<OrganisationUnit>>()
+        whenever(readOnlyRepository.blockingGet()).thenReturn(orgUnit)
+
+        whenever(organisationUnitCollectionRepository.uid(orgUnit.uid())).thenReturn(readOnlyRepository)
     }
 
     @Test
@@ -362,12 +398,31 @@ class EnrollmentPresenterImplTest {
     }
 
     private fun givenABiometricsMode(biometricsMode: BiometricsMode): EnrollmentPresenterImpl {
+        val program = "program1"
+        val biometricsConfigType = object : TypeToken<List<BiometricsConfig>>() {}
+
         whenever(
-            basicPreferenceProvider.getString(
-                BiometricsPreference.BIOMETRICS_MODE,
-                BiometricsMode.full.name
+            basicPreferenceProvider.getObjectFromJson(
+                BiometricsPreference.CONFIGURATIONS,
+                biometricsConfigType,
+                listOf()
             )
-        ).thenReturn(biometricsMode.name)
+        ).thenReturn(listOf(
+            BiometricsConfig(
+                biometricsMode = biometricsMode,
+                program = program,
+                icon = "fingerprint",
+                orgUnitGroup = "default",
+                projectId = "jVIWpXqmw6i0QqcY1lPJ",
+                confidenceScoreFilter = 55,
+                lastVerificationDuration = 5,
+                lastDeclinedEnrolDuration = 0,
+                orgUnitLevelAsModuleId = 0,
+                dateOfBirthAttribute = "S4eTdBrXPpj",
+                ageThresholdMonths = 6
+                )))
+
+        whenever(programRepository.blockingGet()).thenReturn(Program.builder().uid(program).build())
 
         return EnrollmentPresenterImpl(
             enrollmentView,
