@@ -1,7 +1,6 @@
 package org.dhis2.usescases.searchTrackEntity;
 
 import static android.app.Activity.RESULT_OK;
-import static org.dhis2.commons.biometrics.BiometricConstantsKt.BIOMETRICS_SEARCH_PATTERN;
 import static org.dhis2.commons.matomo.Actions.MAP_VISUALIZATION;
 import static org.dhis2.commons.matomo.Actions.OPEN_ANALYTICS;
 import static org.dhis2.commons.matomo.Actions.SYNC_TEI;

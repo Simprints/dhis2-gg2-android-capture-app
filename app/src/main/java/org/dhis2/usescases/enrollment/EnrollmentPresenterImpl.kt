@@ -22,9 +22,7 @@ import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.defaultSubscribe
 import org.dhis2.data.biometrics.SimprintsItem
 import org.dhis2.data.biometrics.getBiometricsConfigByProgram
-import org.dhis2.data.biometrics.utils.getBiometricsTrackedEntityAttribute
 import org.dhis2.data.biometrics.utils.getTeiByUid
-import org.dhis2.data.biometrics.utils.getTrackedEntityAttributeValueByAttribute
 import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.RowAction
 import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
@@ -534,21 +532,6 @@ class EnrollmentPresenterImpl(
                 it
             }
         } as MutableList<FieldUiModel>
-    }
-
-    fun getBiometricsGuid(): String? {
-        val teiUid = teiRepository.blockingGet()?.uid() ?: return null
-
-        val teiValues = getTeiByUid(d2, teiUid)?.trackedEntityAttributeValues() ?: return null
-
-        val biometricsAttribute = getBiometricsTrackedEntityAttribute(d2) ?: return null
-
-        val attValue = getTrackedEntityAttributeValueByAttribute(
-            biometricsAttribute,
-            teiValues
-        )
-
-        return attValue?.value()
     }
 
     fun registerLastFailure() {
