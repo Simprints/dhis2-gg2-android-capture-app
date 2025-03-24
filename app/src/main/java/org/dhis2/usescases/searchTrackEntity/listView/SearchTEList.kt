@@ -7,8 +7,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.lifecycle.Lifecycle
-import timber.log.Timber
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
@@ -20,6 +18,7 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import androidx.paging.LoadState
@@ -47,6 +46,7 @@ import org.dhis2.usescases.searchTrackEntity.ui.CreateNewButton
 import org.dhis2.usescases.searchTrackEntity.ui.FullSearchButtonAndWorkingList
 import org.dhis2.usescases.searchTrackEntity.ui.mapper.TEICardMapper
 import org.dhis2.utils.isLandscape
+import timber.log.Timber
 import javax.inject.Inject
 
 const val ARG_FROM_RELATIONSHIP = "ARG_FROM_RELATIONSHIP"
@@ -175,6 +175,9 @@ class SearchTEList : FragmentGlobalAbstract() {
         val layoutManager = scrollView.layoutManager as? LinearLayoutManager
         scrollView.apply {
             adapter = listAdapter
+            // Deactivate ItemAnimator to avoid crash:
+            // java.lang.IllegalArgumentException: Tmp detached view should be removed from RecyclerView before it can be recycled
+            itemAnimator = null
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                     super.onScrollStateChanged(recyclerView, newState)

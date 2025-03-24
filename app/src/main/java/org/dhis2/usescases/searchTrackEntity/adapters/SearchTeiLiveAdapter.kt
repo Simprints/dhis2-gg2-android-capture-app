@@ -45,6 +45,13 @@ class SearchTeiLiveAdapter(
         ONLINE_ERROR,
     }
 
+    // Clear animation when view is detached from window to avoid crash:
+    // java.lang.IllegalArgumentException: Tmp detached view should be removed from RecyclerView before it can be recycled
+    override fun onViewDetachedFromWindow(holder: RecyclerView.ViewHolder) {
+        super.onViewDetachedFromWindow(holder)
+        holder.itemView.clearAnimation()
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         return when (SearchItem.entries[viewType]) {
