@@ -165,7 +165,10 @@ class SearchTEIViewModelTest {
 
         val screenState = viewModel.screenState.value
         assertTrue(screenState is SearchList)
-        assertTrue((screenState as SearchList).searchForm.isOpened)
+
+        // EyeSeeTea customization - show helper screen
+        //assertTrue((screenState as SearchList).searchForm.isOpened)
+        assertTrue((screenState as SearchList).searchHelper.isOpened)
     }
 
     @Test
@@ -436,7 +439,8 @@ class SearchTEIViewModelTest {
         viewModel.onDataLoaded(2)
         viewModel.dataResult.value?.apply {
             assertTrue(isNotEmpty())
-            assertTrue(size == 1)
+            //assertTrue(size == 1)
+            assertTrue(size == 2) // EyeSeeTea customization include sequential search message
             assertTrue(first().type == SearchResultType.TOO_MANY_RESULTS)
         }
     }
@@ -454,8 +458,12 @@ class SearchTEIViewModelTest {
         viewModel.onDataLoaded(1)
         viewModel.dataResult.value?.apply {
             assertTrue(isNotEmpty())
-            assertTrue(size == 1)
-            assertTrue(first().type == SearchResultType.SEARCH_OUTSIDE)
+
+            // EyeSeeTea customization - Avoid show search outside
+            //assertTrue(size == 1)
+            //assertTrue(first().type == SearchResultType.SEARCH_OUTSIDE)
+            assertTrue(size == 2)
+            assertTrue(first().type == SearchResultType.NO_MORE_RESULTS)
         }
     }
 
@@ -470,7 +478,8 @@ class SearchTEIViewModelTest {
         viewModel.onDataLoaded(1)
         viewModel.dataResult.value?.apply {
             assertTrue(isNotEmpty())
-            assertTrue(size == 1)
+            //assertTrue(size == 1)
+            assertTrue(size == 2) // EyeSeeTea customization include sequential search message
             assertTrue(first().type == SearchResultType.UNABLE_SEARCH_OUTSIDE)
         }
     }
@@ -483,7 +492,8 @@ class SearchTEIViewModelTest {
         viewModel.onDataLoaded(1, 1)
         viewModel.dataResult.value?.apply {
             assertTrue(isNotEmpty())
-            assertTrue(size == 1)
+            //assertTrue(size == 1)
+            assertTrue(size == 2) // EyeSeeTea customization include sequential search message
             assertTrue(first().type == SearchResultType.NO_MORE_RESULTS)
         }
     }
@@ -497,7 +507,9 @@ class SearchTEIViewModelTest {
         viewModel.dataResult.value?.apply {
             assertTrue(isNotEmpty())
             assertTrue(size == 1)
-            assertTrue(first().type == SearchResultType.NO_RESULTS)
+            // EyeSeeTea customization include sequential search message
+            // assertTrue(first().type == SearchResultType.NO_RESULTS)
+            assertTrue(first().type == SearchResultType.SEQUENTIAL_SEARCH)
         }
     }
 
@@ -522,7 +534,8 @@ class SearchTEIViewModelTest {
         viewModel.onDataLoaded(1, 1)
         viewModel.dataResult.value?.apply {
             assertTrue(isNotEmpty())
-            assertTrue(size == 1)
+            //assertTrue(size == 1)
+            assertTrue(size == 2) // EyeSeeTea customization include sequential search message
             assertTrue(first().type == SearchResultType.NO_MORE_RESULTS)
         }
     }
