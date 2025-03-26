@@ -40,6 +40,7 @@ import org.dhis2.usescases.biometrics.ui.SequentialSearch
 import org.dhis2.usescases.general.FragmentGlobalAbstract
 import org.dhis2.usescases.searchTrackEntity.SearchTEActivity
 import org.dhis2.usescases.searchTrackEntity.SearchTEIViewModel
+import org.dhis2.usescases.searchTrackEntity.SearchTeiModel
 import org.dhis2.usescases.searchTrackEntity.SearchTeiViewModelFactory
 import org.dhis2.usescases.searchTrackEntity.adapters.SearchTeiLiveAdapter
 import org.dhis2.usescases.searchTrackEntity.ui.CreateNewButton
@@ -71,6 +72,7 @@ class SearchTEList : FragmentGlobalAbstract() {
     private val workingListViewModel by viewModels<WorkingListViewModel> { workingListViewModelFactory }
 
     private val KEY_SCROLL_POSITION = "scroll_position"
+    private val KEY_LAST_CLICKED_TEI_UID = "last_clicked_tei_uid"
 
     private val initialLoadingAdapter by lazy {
         SearchListResultAdapter { }
@@ -88,9 +90,10 @@ class SearchTEList : FragmentGlobalAbstract() {
             onDownloadTei = viewModel::onDownloadTei,
             onTeiClick = viewModel::onTeiClick,
             onImageClick = ::displayImageDetail,
-            onSearchTeiModelClick = viewModel::onSearchTeiModelClick,
+            onSearchTeiModelClick = ::onSearchTeiModelClick,
         )
     }
+
 
     private val globalAdapter by lazy {
         SearchTeiLiveAdapter(
@@ -120,6 +123,8 @@ class SearchTEList : FragmentGlobalAbstract() {
         arguments?.getBoolean(ARG_FROM_RELATIONSHIP) ?: false
     }
 
+    private var currentLastClickedTeiUid: String? = null
+
     companion object {
         fun get(fromRelationships: Boolean): SearchTEList {
             return SearchTEList().apply {
@@ -148,7 +153,10 @@ class SearchTEList : FragmentGlobalAbstract() {
         savedInstanceState: Bundle?,
     ): View {
         return FragmentSearchListBinding.inflate(inflater, container, false).apply {
-            configureList(scrollView, savedInstanceState?.getInt(KEY_SCROLL_POSITION))
+            configureList(scrollView,
+                savedInstanceState?.getInt(KEY_SCROLL_POSITION),
+                savedInstanceState?.getString(KEY_LAST_CLICKED_TEI_UID))
+
             configureOpenSearchButton(openSearchButton)
 
             //EyeSeeTea customization
@@ -161,17 +169,25 @@ class SearchTEList : FragmentGlobalAbstract() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
+
         val layoutManager = recycler.layoutManager as? LinearLayoutManager
         layoutManager?.let {
             outState.putInt(KEY_SCROLL_POSITION, it.findFirstCompletelyVisibleItemPosition())
+        }
+
+        if (currentLastClickedTeiUid != null) {
+            outState.putString(KEY_LAST_CLICKED_TEI_UID, currentLastClickedTeiUid)
         }
     }
 
     private fun configureList(
         scrollView: RecyclerView,
         currentVisiblePosition: Int?,
+        lastClickedTeiUid: String?,
     ) {
         var currentPosition = currentVisiblePosition
+        currentLastClickedTeiUid = lastClickedTeiUid
+
         val layoutManager = scrollView.layoutManager as? LinearLayoutManager
         scrollView.apply {
             adapter = listAdapter
@@ -204,16 +220,16 @@ class SearchTEList : FragmentGlobalAbstract() {
             })
             lifecycleScope.launch {
                 liveAdapter.loadStateFlow.collectLatest {
-                    scrollToPosition(currentPosition ?: 0)
-                }
-            }
-            liveAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
-                override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-                    if (positionStart == 0) {
-                        scrollToPosition(0)
+                    if (currentLastClickedTeiUid != null) {
+                        val position = liveAdapter.snapshot().items.indexOfFirst { it.tei.uid() == currentLastClickedTeiUid }
+                        if (position != -1) {
+                            layoutManager?.scrollToPositionWithOffset(position, 0)
+                        }
+                    } else {
+                        scrollToPosition(currentPosition ?: 0)
                     }
                 }
-            })
+            }
         }.also {
             recycler = it
         }
@@ -388,13 +404,12 @@ class SearchTEList : FragmentGlobalAbstract() {
                     }
 
                     val pagingData = it.map { searchResult ->
-                        searchResult.setBiometricsSearchStatus(viewModel.getBiometricsSearchStatus())
+                        Timber.d("SearchResult: $searchResult")
 
                         searchResult
                     }
 
                     liveAdapter.submitData(lifecycle, pagingData)
-
                 } ?: onInitDataLoaded()
             }
         }
@@ -502,4 +517,9 @@ class SearchTEList : FragmentGlobalAbstract() {
         }
     }
 
+    private fun onSearchTeiModelClick(item: SearchTeiModel) {
+        currentLastClickedTeiUid =  item.tei.uid()
+
+        viewModel.onSearchTeiModelClick(item)
+    }
 }
