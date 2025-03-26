@@ -56,8 +56,6 @@ public class SearchTeiModel implements CarouselItemModel {
     @Nullable
     public D2ErrorCode onlineErrorCode;
 
-    private boolean biometricsSearchInProgress;
-
     public SearchTeiModel() {
         this.tei = null;
         this.selectedEnrollment = null;
@@ -293,14 +291,6 @@ public class SearchTeiModel implements CarouselItemModel {
 
     public boolean shouldShowNavigationButton() {
         return showNavigationButton;
-    }
-
-    public void setBiometricsSearchStatus(boolean value) {
-        this.biometricsSearchInProgress = value;
-    }
-
-    public boolean isBiometricsSearchInProgress() {
-        return biometricsSearchInProgress;
     }
 
     public LinkedHashMap<String, TrackedEntityAttributeValue> getAllAttributeValues() {
