@@ -78,6 +78,8 @@ class LoginViewModelTest {
     private val openidconfig: OpenIDConnectConfig = mock()
     private val resourceManager: ResourceManager = mock()
     private val testingDispatcher = StandardTestDispatcher()
+    private val synBiometricsConfig: SyncBiometricsConfig = mock()
+
     private val dispatcherProvider = object : DispatcherProvider {
         override fun io(): CoroutineDispatcher {
             return testingDispatcher
@@ -104,6 +106,7 @@ class LoginViewModelTest {
             crashReportController,
             network,
             userManager,
+            synBiometricsConfig
         )
     }
 
@@ -119,6 +122,7 @@ class LoginViewModelTest {
             crashReportController,
             network,
             null,
+            synBiometricsConfig
         )
     }
 

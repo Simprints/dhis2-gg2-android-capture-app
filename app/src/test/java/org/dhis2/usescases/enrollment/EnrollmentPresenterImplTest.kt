@@ -160,7 +160,7 @@ class EnrollmentPresenterImplTest {
     @Test
     fun `Should show save button when the enrollment is editable and biometrics not available`() {
         givenAData()
-        
+
         setupEnrollmentAccess(EnrollmentAccess.WRITE_ACCESS)
         val nonBiometricsFieldUiModel = mock<FieldUiModel>()
         val fields = listOf(nonBiometricsFieldUiModel)

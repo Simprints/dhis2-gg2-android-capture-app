@@ -98,7 +98,7 @@ class TeiDashboardCardMapper(
         }*/
 
         return if (item.trackedEntityAttributeValues.isEmpty()) {
-            "-"
+            item.teiHeader ?: "-"
         } else {
             val firsNameValue =
                 item.trackedEntityAttributeValues.firstOrNull { it.trackedEntityAttribute() == firstNameAttrUid }
