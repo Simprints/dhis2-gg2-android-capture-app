@@ -18,7 +18,6 @@ import org.dhis2.commons.bindings.canCreateEventInEnrollment
 import org.dhis2.commons.bindings.enrollment
 import org.dhis2.commons.bindings.event
 import org.dhis2.commons.bindings.program
-import org.dhis2.commons.biometrics.BiometricsPreference
 import org.dhis2.commons.data.EventCreationType
 import org.dhis2.commons.data.EventViewModel
 import org.dhis2.commons.data.EventViewModelType
@@ -52,6 +51,7 @@ import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioM
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioRegistrationMapper
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioVerificationMapper
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureActivity
+import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureActivity.Companion.getActivityBundle
 import org.dhis2.usescases.eventsWithoutRegistration.eventInitial.EventInitialActivity
 import org.dhis2.usescases.programStageSelection.ProgramStageSelectionActivity
 import org.dhis2.usescases.teiDashboard.DashboardEnrollmentModel
@@ -75,7 +75,6 @@ import timber.log.Timber
 import java.util.Timer
 import java.util.concurrent.TimeUnit
 import kotlin.concurrent.schedule
-import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureActivity.Companion.getActivityBundle
 
 class TEIDataPresenter(
     private val view: TEIDataContracts.View,
@@ -115,17 +114,12 @@ class TEIDataPresenter(
 
     private val singleEventEnforcer = SingleEventEnforcer.get()
 
-    private var uidForEvent: String? = null
     private var orgUnitUid: String? = null
 
     private var lastVerificationResult: VerifyResult? = null
     private var lastRegisterResult: RegisterResult? = null
-    private val lastBiometricsVerificationDuration = basicPreferenceProvider.getInt(
-        BiometricsPreference.LAST_VERIFICATION_DURATION, 0
-    )
-    private val lastDeclinedEnrolDuration = basicPreferenceProvider.getInt(
-        BiometricsPreference.LAST_DECLINED_ENROL_DURATION, 0
-    )
+
+    private val biometricsConfig = getBiometricsConfig(basicPreferenceProvider)
 
     private var lastPossibleDuplicates: LastPossibleDuplicates? = null
 
@@ -636,9 +630,9 @@ class TEIDataPresenter(
             }
 
             is RegisterResult.Failure -> {
-                if (lastDeclinedEnrolDuration > 0) {
+                if (biometricsConfig.lastDeclinedEnrolDuration!! > 0) {
                     val lastDeclinedEnrolDurationInMillis =
-                        TimeUnit.MINUTES.toMillis(lastDeclinedEnrolDuration.toLong())
+                        TimeUnit.MINUTES.toMillis(biometricsConfig.lastDeclinedEnrolDuration.toLong())
                     Timer().schedule(lastDeclinedEnrolDurationInMillis) {
                         lastRegisterResult = null
                     }
@@ -674,7 +668,7 @@ class TEIDataPresenter(
 
             if (!isLastVerificationValid(
                     value?.lastUpdated(),
-                    lastBiometricsVerificationDuration,
+                    biometricsConfig.lastVerificationDuration ?: 0,
                     false
                 )
             ) {
