@@ -15,5 +15,7 @@ class BiometricsPreference {
         const val AGE_THRESHOLD_MONTHS = "AGE_THRESHOLD_MONTHS"
         const val DATE_OF_BIRTH_ATTRIBUTE = "DATE_OF_BIRTH_ATTRIBUTE"
         const val BIOMETRICS_MODE = "BIOMETRICS_MODE"
+
+        const val BIOMETRICS_VERIFICATIONS = "BIOMETRICS_VERIFICATIONS"
     }
 }

@@ -93,7 +93,8 @@ class BiometricsDuplicatesDialogModule(
         networkUtils: NetworkUtils?,
         searchTEIRepository: SearchTEIRepository?,
         themeManager: ThemeManager?,
-        metadataIconProvider: MetadataIconProvider
+        metadataIconProvider: MetadataIconProvider,
+        basicPreferenceProvider: BasicPreferenceProvider
     ): SearchRepository {
         return SearchRepositoryImpl(
             teiType,
@@ -108,7 +109,8 @@ class BiometricsDuplicatesDialogModule(
             networkUtils,
             searchTEIRepository,
             themeManager,
-            metadataIconProvider
+            metadataIconProvider,
+            basicPreferenceProvider
         )
     }
 

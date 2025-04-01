@@ -33,6 +33,7 @@ import org.dhis2.data.biometrics.RegisterResult
 import org.dhis2.data.biometrics.SimprintsItem
 import org.dhis2.data.biometrics.VerifyResult
 import org.dhis2.data.biometrics.getBiometricsConfig
+import org.dhis2.data.biometrics.utils.getVerification
 import org.dhis2.form.data.FormValueStore
 import org.dhis2.form.data.OptionsRepository
 import org.dhis2.form.data.RulesUtilsProviderImpl
@@ -659,15 +660,10 @@ class TEIDataPresenter(
 
     private fun refreshVerificationStatus() {
         if ((lastVerificationResult == null || lastVerificationResult == VerifyResult.Match) && dashboardModel != null && dashboardModel!!.isBiometricsEnabled()) {
-            val values =
-                dashboardRepository.getTEIAttributeValues(programUid, teiUid).blockingSingle()
-
-            val value =
-                values.firstOrNull { it.trackedEntityAttribute() == dashboardModel!!.getBiometricsAttributeUid() }
-
+            val lastVerification = getVerification(basicPreferenceProvider, teiUid)
 
             if (!isLastVerificationValid(
-                    value?.lastUpdated(),
+                    lastVerification?.date,
                     biometricsConfig.lastVerificationDuration ?: 0,
                     false
                 )

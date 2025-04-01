@@ -109,6 +109,7 @@ class TEIDataModule(
         d2: D2,
         periodUtils: DhisPeriodUtils,
         metadataIconProvider: MetadataIconProvider,
+        basicPreferenceProvider: BasicPreferenceProvider
     ): TeiDataRepository {
         return TeiDataRepositoryImpl(
             d2,
@@ -117,6 +118,7 @@ class TEIDataModule(
             enrollmentUid,
             periodUtils,
             metadataIconProvider,
+            basicPreferenceProvider
         )
     }
 
