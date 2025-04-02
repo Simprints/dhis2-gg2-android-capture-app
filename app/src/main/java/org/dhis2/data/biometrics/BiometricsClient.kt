@@ -57,7 +57,8 @@ sealed class VerifyResult {
 class BiometricsClient(
     projectId: String,
     user: String,
-    private val confidenceScoreFilter: Int
+    private val confidenceScoreFilter: Int,
+    private val forkVersion: String
 ) {
 
     init {
@@ -328,11 +329,12 @@ class BiometricsClient(
         Timber.d("guid: $guid")
         Timber.d(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId)
 
-        val metadata = Metadata()
+        val metadata = Metadata().put(SIMPRINTS_FORK_VERSION, forkVersion)
             .put(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId)
 
         val intent = simHelper.confirmIdentity(sessionId, guid).putExtra(
-            Constants.SIMPRINTS_METADATA, metadata.toString())
+            Constants.SIMPRINTS_METADATA, metadata.toString()
+        )
 
         launchSimprintsAppFromActivity(activity, intent, BIOMETRICS_CONFIRM_IDENTITY_REQUEST)
     }
@@ -348,11 +350,12 @@ class BiometricsClient(
         Timber.d("guid: $guid")
         Timber.d(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId)
 
-        val metadata = Metadata()
+        val metadata = Metadata().put(SIMPRINTS_FORK_VERSION, forkVersion)
             .put(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId)
 
         val intent = simHelper.confirmIdentity(sessionId, guid).putExtra(
-            Constants.SIMPRINTS_METADATA, metadata.toString())
+            Constants.SIMPRINTS_METADATA, metadata.toString()
+        )
 
         launchSimprintsAppFromFragment(fragment, intent, BIOMETRICS_CONFIRM_IDENTITY_REQUEST)
     }
@@ -520,10 +523,11 @@ class BiometricsClient(
         enrollingOrgUnitId: String?,
         enrollingOrgUnitName: String?,
         userOrgUnits: List<String>,
-        ageInMonths: Long?
-    ): Metadata {
+        ageInMonths: Long?,
 
-        val metadata = Metadata()
+        ): Metadata {
+
+        val metadata = Metadata().put(SIMPRINTS_FORK_VERSION, forkVersion)
 
         val metadataWithTei = if (trackedEntityInstanceUId != null) {
             metadata.put(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId)
@@ -572,6 +576,7 @@ class BiometricsClient(
         const val SIMPRINTS_ENROLLING_ORG_UNIT_NAME = "enrollingOrgUnitName"
         const val SIMPRINTS_USER_UNITS = "userOrgUnits"
         const val SIMPRINTS_SUBJECT_AGE = "subjectAge"
+        const val SIMPRINTS_FORK_VERSION = "forkVersion"
     }
 }
 
