@@ -23,6 +23,7 @@ import org.dhis2.commons.schedulers.defaultSubscribe
 import org.dhis2.data.biometrics.SimprintsItem
 import org.dhis2.data.biometrics.getBiometricsConfigByProgram
 import org.dhis2.data.biometrics.utils.getTeiByUid
+import org.dhis2.data.biometrics.utils.updateVerification
 import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.RowAction
 import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
@@ -243,7 +244,7 @@ class EnrollmentPresenterImpl(
             )
         }
 
-        if (teiRepository.blockingGet()?.syncState() == State.TO_POST  && isTeiInNoOtherProgram) {
+        if (teiRepository.blockingGet()?.syncState() == State.TO_POST && isTeiInNoOtherProgram) {
             teiRepository.blockingDelete()
         } else {
             enrollmentObjectRepository.blockingDelete()
@@ -290,10 +291,12 @@ class EnrollmentPresenterImpl(
     fun suggestedReportDateIsNotFutureDate(eventUid: String): Boolean {
         return try {
             val event = eventCollectionRepository.uid(eventUid).blockingGet()
-            val programStage = d2.programModule().programStages().uid(event?.programStage()).blockingGet()
+            val programStage =
+                d2.programModule().programStages().uid(event?.programStage()).blockingGet()
             val enrollment = enrollmentObjectRepository.blockingGet()
             val generatedByEnrollment = programStage?.generatedByEnrollmentDate() ?: false
-            val startDate = if (generatedByEnrollment) enrollment?.enrollmentDate() else enrollment?.incidentDate()
+            val startDate =
+                if (generatedByEnrollment) enrollment?.enrollmentDate() else enrollment?.incidentDate()
             val calendar = DateUtils.getInstance().getCalendarByDate(startDate)
             calendar.add(DAY_OF_YEAR, programStage?.minDaysFromStart() ?: 0)
             val minStartReportEventDate = calendar.time
@@ -334,6 +337,12 @@ class EnrollmentPresenterImpl(
     private fun saveBiometricValue(value: String?) {
         biometricsUiModel!!.onTextChange(value)
         biometricsUiModel!!.onSave(value)
+
+        if (value != null) {
+            val teiUid = teiRepository.blockingGet()?.uid() ?: ""
+
+            updateVerification(basicPreferenceProvider, teiUid)
+        }
 
         if (pendingSave) {
             pendingSave = false

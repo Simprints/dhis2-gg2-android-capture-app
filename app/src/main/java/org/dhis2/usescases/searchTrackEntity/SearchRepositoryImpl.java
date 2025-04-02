@@ -19,6 +19,7 @@ import org.dhis2.commons.filters.FilterManager;
 import org.dhis2.commons.filters.data.FilterPresenter;
 import org.dhis2.commons.filters.sorting.SortingItem;
 import org.dhis2.commons.network.NetworkUtils;
+import org.dhis2.commons.prefs.BasicPreferenceProvider;
 import org.dhis2.commons.reporting.CrashReportController;
 import org.dhis2.commons.resources.DhisPeriodUtils;
 import org.dhis2.commons.resources.MetadataIconProvider;
@@ -39,6 +40,7 @@ import org.dhis2.tracker.relationships.model.RelationshipOwnerType;
 import org.dhis2.ui.ThemeManager;
 import org.dhis2.usescases.teiDownload.TeiDownloader;
 
+import static org.dhis2.data.biometrics.utils.VerificationKt.updateBiometricsAttributeValue;
 import static org.dhis2.usescases.biometrics.BiometricConstantsKt.BIOMETRICS_ENABLED;
 import static org.dhis2.commons.biometrics.ExtensionsKt.isBiometricAttribute;
 
@@ -70,7 +72,6 @@ import org.hisp.dhis.android.core.settings.AnalyticsDhisVisualizationsGroup;
 import org.hisp.dhis.android.core.settings.ProgramConfigurationSetting;
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityAttribute;
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityAttributeValue;
-import org.hisp.dhis.android.core.trackedentity.TrackedEntityAttributeValueObjectRepository;
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance;
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceCreateProjection;
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityType;
@@ -95,7 +96,6 @@ import dhis2.org.analytics.charts.Charts;
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import kotlin.Unit;
 
 public class SearchRepositoryImpl implements SearchRepository {
 
@@ -128,6 +128,8 @@ public class SearchRepositoryImpl implements SearchRepository {
 
     private final MetadataIconProvider metadataIconProvider;
 
+    private final BasicPreferenceProvider preferenceProvider;
+
     public SearchRepositoryImpl(String teiType,
                                 @Nullable String initialProgram,
                                 D2 d2,
@@ -140,8 +142,8 @@ public class SearchRepositoryImpl implements SearchRepository {
                                 NetworkUtils networkUtils,
                                 SearchTEIRepository searchTEIRepository,
                                 ThemeManager themeManager,
-                                MetadataIconProvider metadataIconProvider
-    ) {
+                                MetadataIconProvider metadataIconProvider,
+                                BasicPreferenceProvider preferenceProvider) {
         this.teiType = teiType;
         this.d2 = d2;
         this.resources = resources;
@@ -161,6 +163,7 @@ public class SearchRepositoryImpl implements SearchRepository {
                 currentProgram,
                 resources);
         this.metadataIconProvider = metadataIconProvider;
+        this.preferenceProvider = preferenceProvider;
     }
 
 
@@ -1020,18 +1023,7 @@ public class SearchRepositoryImpl implements SearchRepository {
 
     @Override
     public void updateAttributeValue(String teiUid, String biometricUid, String guid) {
-        TrackedEntityAttributeValueObjectRepository valueRepository =
-                d2.trackedEntityModule().trackedEntityAttributeValues()
-                        .value(biometricUid, teiUid);
-
-        valueRepository.delete().blockingGet();
-        ValueExtensionsKt.blockingSetCheck(valueRepository, d2, biometricUid, guid, (_at, _atr) -> {
-            crashReportController.addBreadCrumb(
-                    "blockingSetCheck Crash",
-                    "Attribute: $_attrUid," +
-                            "" + " value: $_value");
-            return Unit.INSTANCE;
-        });
+        updateBiometricsAttributeValue(d2, preferenceProvider, teiUid, guid);
     }
 
     @Override
