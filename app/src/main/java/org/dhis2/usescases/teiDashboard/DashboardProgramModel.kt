@@ -5,7 +5,6 @@ import org.dhis2.ui.MetadataIconData
 import org.dhis2.usescases.biometrics.BIOMETRICS_ENABLED
 import org.hisp.dhis.android.core.enrollment.Enrollment
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
-import org.hisp.dhis.android.core.event.Event
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.android.core.program.ProgramStage
@@ -20,6 +19,7 @@ sealed class DashboardModel(
     open val orgUnits: List<OrganisationUnit>,
     open val teiHeader: String?,
     open val avatarPath: String?,
+    open val ownerOrgUnit: OrganisationUnit?,
 ) {
     open fun getTrackedEntityAttributeValueBySortOrder(sortOrder: Int): String? {
         return if (sortOrder <= trackedEntityAttributeValues.size) {
@@ -33,7 +33,6 @@ sealed class DashboardModel(
 data class DashboardEnrollmentModel(
     val currentEnrollment: Enrollment,
     val programStages: List<ProgramStage>,
-    val eventModels: List<Event>,
     override val trackedEntityInstance: TrackedEntityInstance,
     val trackedEntityAttributes: List<Pair<TrackedEntityAttribute, TrackedEntityAttributeValue>>,
     override val trackedEntityAttributeValues: List<TrackedEntityAttributeValue>,
@@ -41,6 +40,7 @@ data class DashboardEnrollmentModel(
     override val orgUnits: List<OrganisationUnit>,
     override val teiHeader: String?,
     override val avatarPath: String?,
+    override val ownerOrgUnit: OrganisationUnit?,
 ) : DashboardModel(
     trackedEntityInstance,
     trackedEntityAttributeValues,
@@ -48,6 +48,7 @@ data class DashboardEnrollmentModel(
     orgUnits,
     teiHeader,
     avatarPath,
+    ownerOrgUnit,
 ) {
     fun currentProgram(): Program {
         return enrollmentPrograms.first { it.first.uid() == currentEnrollment.program() }.first
@@ -97,6 +98,7 @@ data class DashboardTEIModel(
     override val orgUnits: List<OrganisationUnit>,
     override val teiHeader: String?,
     override val avatarPath: String?,
+    override val ownerOrgUnit: OrganisationUnit?,
 ) : DashboardModel(
     trackedEntityInstance,
     trackedEntityAttributeValues,
@@ -104,6 +106,7 @@ data class DashboardTEIModel(
     orgUnits,
     teiHeader,
     avatarPath,
+    ownerOrgUnit,
 ) {
     fun getProgramsWithActiveEnrollment(): List<Program>? {
         return enrollmentPrograms.sortedBy { it.first.displayName()?.lowercase() }

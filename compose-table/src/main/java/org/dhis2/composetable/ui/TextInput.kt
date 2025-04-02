@@ -18,7 +18,6 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -33,6 +32,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
@@ -57,6 +57,7 @@ import org.dhis2.composetable.actions.TextInputInteractions
 import org.dhis2.composetable.model.TextInputModel
 import org.dhis2.composetable.model.extensions.keyboardCapitalization
 import org.dhis2.composetable.model.extensions.toKeyboardType
+import org.hisp.dhis.mobile.ui.designsystem.component.IconButton
 
 @Composable
 fun TextInput(
@@ -64,9 +65,11 @@ fun TextInput(
     textInputInteractions: TextInputInteractions,
     focusRequester: FocusRequester,
 ) {
+    val tableDimensions = LocalTableDimensions.current
     Column(
         modifier = Modifier
             .testTag(INPUT_TEST_TAG)
+            .onSizeChanged { tableDimensions.textInputHeight = it.height }
             .fillMaxWidth()
             .background(
                 color = Color.White,
@@ -298,13 +301,14 @@ private fun TextInputContentActionIcon(
                     drawableId = icon
                 },
             onClick = onActionIconClick,
-        ) {
-            Icon(
-                painter = painterResource(id = icon),
-                tint = LocalTableColors.current.primary,
-                contentDescription = "",
-            )
-        }
+            icon = {
+                Icon(
+                    painter = painterResource(id = icon),
+                    tint = LocalTableColors.current.primary,
+                    contentDescription = "",
+                )
+            },
+        )
     }
 }
 

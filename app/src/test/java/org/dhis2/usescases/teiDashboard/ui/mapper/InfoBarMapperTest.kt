@@ -8,7 +8,6 @@ import org.dhis2.usescases.teiDashboard.ui.model.InfoBarType
 import org.hisp.dhis.android.core.common.State
 import org.hisp.dhis.android.core.enrollment.Enrollment
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
-import org.hisp.dhis.android.core.event.Event
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.android.core.program.ProgramStage
@@ -108,12 +107,12 @@ class InfoBarMapperTest {
         val model = DashboardEnrollmentModel(
             setEnrollment(state, status, followup),
             emptyList<ProgramStage>(),
-            emptyList<Event>(),
             setTei(state),
             attributeValues,
             emptyList<TrackedEntityAttributeValue>(),
             setPrograms(),
             emptyList<OrganisationUnit>(),
+            null,
             null,
             null,
         )
@@ -151,7 +150,7 @@ class InfoBarMapperTest {
         .program("Program1Uid")
         .build()
 
-    private fun setPrograms() = listOf<kotlin.Pair<Program, MetadataIconData>>(
+    private fun setPrograms() = listOf<Pair<Program, MetadataIconData>>(
         Pair(
             Program.builder()
                 .uid("Program1Uid")

@@ -5,9 +5,12 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 
 import org.dhis2.R;
-import org.dhis2.animations.CarouselViewAnimations;
+import org.dhis2.commons.data.ProgramConfigurationRepository;
+import org.dhis2.commons.date.DateLabelProvider;
+import org.dhis2.commons.date.DateUtils;
 import org.dhis2.commons.di.dagger.PerActivity;
 import org.dhis2.commons.filters.DisableHomeFiltersFromSettingsApp;
+import org.dhis2.commons.filters.FilterManager;
 import org.dhis2.commons.filters.FiltersAdapter;
 import org.dhis2.commons.filters.data.FilterPresenter;
 import org.dhis2.commons.filters.data.FilterRepository;
@@ -20,8 +23,8 @@ import org.dhis2.commons.prefs.PreferenceProviderImpl;
 import org.dhis2.commons.reporting.CrashReportController;
 import org.dhis2.commons.reporting.CrashReportControllerImpl;
 import org.dhis2.commons.resources.ColorUtils;
-import org.dhis2.commons.resources.MetadataIconProvider;
 import org.dhis2.commons.resources.DhisPeriodUtils;
+import org.dhis2.commons.resources.MetadataIconProvider;
 import org.dhis2.commons.resources.ResourceManager;
 import org.dhis2.commons.schedulers.SchedulerProvider;
 import org.dhis2.commons.viewmodel.DispatcherProvider;
@@ -36,7 +39,6 @@ import org.dhis2.form.data.metadata.OptionSetConfiguration;
 import org.dhis2.form.data.metadata.OrgUnitConfiguration;
 import org.dhis2.form.ui.FieldViewModelFactory;
 import org.dhis2.form.ui.FieldViewModelFactoryImpl;
-import org.dhis2.form.ui.LayoutProviderImpl;
 import org.dhis2.form.ui.provider.AutoCompleteProviderImpl;
 import org.dhis2.form.ui.provider.DisplayNameProvider;
 import org.dhis2.form.ui.provider.DisplayNameProviderImpl;
@@ -44,9 +46,6 @@ import org.dhis2.form.ui.provider.HintProviderImpl;
 import org.dhis2.form.ui.provider.KeyboardActionProviderImpl;
 import org.dhis2.form.ui.provider.LegendValueProviderImpl;
 import org.dhis2.form.ui.provider.UiEventTypesProviderImpl;
-import org.dhis2.form.ui.provider.UiStyleProviderImpl;
-import org.dhis2.form.ui.style.FormUiModelColorFactoryImpl;
-import org.dhis2.form.ui.style.LongTextUiColorFactoryImpl;
 import org.dhis2.maps.geometry.bound.BoundsGeometry;
 import org.dhis2.maps.geometry.bound.GetBoundingBox;
 import org.dhis2.maps.geometry.line.MapLineRelationshipToFeature;
@@ -61,13 +60,13 @@ import org.dhis2.maps.geometry.mapper.featurecollection.MapTeisToFeatureCollecti
 import org.dhis2.maps.geometry.point.MapPointToFeature;
 import org.dhis2.maps.geometry.polygon.MapPolygonPointToFeature;
 import org.dhis2.maps.geometry.polygon.MapPolygonToFeature;
-import org.dhis2.maps.mapper.EventToEventUiComponent;
-import org.dhis2.maps.mapper.MapRelationshipToRelationshipMapModel;
 import org.dhis2.maps.usecases.MapStyleConfiguration;
 import org.dhis2.maps.utils.DhisMapUtils;
+import org.dhis2.tracker.data.ProfilePictureProvider;
 import org.dhis2.ui.ThemeManager;
+import org.dhis2.usescases.events.EventInfoProvider;
 import org.dhis2.usescases.searchTrackEntity.ui.mapper.TEICardMapper;
-import org.dhis2.utils.DateUtils;
+import org.dhis2.usescases.tracker.TrackedEntityInstanceInfoProvider;
 import org.dhis2.utils.analytics.AnalyticsHelper;
 import org.hisp.dhis.android.core.D2;
 
@@ -130,7 +129,6 @@ public class SearchTEModule {
     MapTeisToFeatureCollection provideMapTeisToFeatureCollection() {
         return new MapTeisToFeatureCollection(new BoundsGeometry(),
                 new MapPointToFeature(), new MapPolygonToFeature(), new MapPolygonPointToFeature(),
-                new MapRelationshipToRelationshipMapModel(),
                 new MapRelationshipsToFeatureCollection(
                         new MapLineRelationshipToFeature(),
                         new MapPointToFeature(),
@@ -183,14 +181,32 @@ public class SearchTEModule {
             D2 d2,
             DispatcherProvider dispatcherProvider,
             FieldViewModelFactory fieldViewModelFactory,
-            MetadataIconProvider metadataIconProvider
+            MetadataIconProvider metadataIconProvider,
+            ColorUtils colorUtils
     ) {
+        ResourceManager resourceManager = new ResourceManager(moduleContext, colorUtils);
+        DateLabelProvider dateLabelProvider = new DateLabelProvider(moduleContext, new ResourceManager(moduleContext, colorUtils));
+        ProfilePictureProvider profilePictureProvider = new ProfilePictureProvider(d2);
+
         return new SearchRepositoryImplKt(
                 searchRepository,
                 d2,
                 dispatcherProvider,
                 fieldViewModelFactory,
-                metadataIconProvider
+                metadataIconProvider,
+                new TrackedEntityInstanceInfoProvider(
+                        d2,
+                        profilePictureProvider,
+                        dateLabelProvider,
+                        metadataIconProvider
+                ),
+                new EventInfoProvider(
+                        d2,
+                        resourceManager,
+                        dateLabelProvider,
+                        metadataIconProvider,
+                        profilePictureProvider
+                )
         );
     }
 
@@ -206,16 +222,9 @@ public class SearchTEModule {
             Context context,
             D2 d2,
             ResourceManager resourceManager,
-            ColorUtils colorUtils,
             DhisPeriodUtils periodUtils
     ) {
         return new FieldViewModelFactoryImpl(
-                new UiStyleProviderImpl(
-                        new FormUiModelColorFactoryImpl(moduleContext, colorUtils),
-                        new LongTextUiColorFactoryImpl(moduleContext, colorUtils),
-                        false
-                ),
-                new LayoutProviderImpl(),
                 new HintProviderImpl(context),
                 new DisplayNameProviderImpl(
                         new OptionSetConfiguration(d2),
@@ -285,12 +294,6 @@ public class SearchTEModule {
 
     @Provides
     @PerActivity
-    CarouselViewAnimations animations() {
-        return new CarouselViewAnimations();
-    }
-
-    @Provides
-    @PerActivity
     FiltersAdapter provideNewFiltersAdapter() {
         return new FiltersAdapter();
     }
@@ -306,7 +309,8 @@ public class SearchTEModule {
             D2 d2,
             ResourceManager resourceManager,
             DisplayNameProvider displayNameProvider,
-            FilterRepository filterRepository,
+            FilterManager filterManager,
+            ProgramConfigurationRepository programConfigurationRepository,
             BasicPreferenceProvider basicPreferenceProvider) {
         return new SearchTeiViewModelFactory(
                 presenter,
@@ -318,11 +322,20 @@ public class SearchTEModule {
                 mapDataRepository,
                 networkUtils,
                 new SearchDispatchers(),
-                new MapStyleConfiguration(d2),
+                new MapStyleConfiguration(d2, initialProgram, programConfigurationRepository),
                 resourceManager,
                 displayNameProvider,
+                filterManager,
                 basicPreferenceProvider
         );
+    }
+
+    @Provides
+    @PerActivity
+    ProgramConfigurationRepository provideProgramConfigurationRepository(
+            D2 d2
+    ) {
+        return new ProgramConfigurationRepository(d2);
     }
 
     @Provides
@@ -342,18 +355,17 @@ public class SearchTEModule {
     @Provides
     @PerActivity
     MapDataRepository mapDataRepository(
-            SearchRepository searchRepository,
+            SearchRepositoryKt searchRepositoryKt,
             MapTeisToFeatureCollection mapTeisToFeatureCollection,
             MapTeiEventsToFeatureCollection mapTeiEventsToFeatureCollection,
             MapCoordinateFieldToFeatureCollection mapCoordinateFieldToFeatureCollection,
             DhisMapUtils mapUtils
     ) {
         return new MapDataRepository(
-                searchRepository,
+                searchRepositoryKt,
                 mapTeisToFeatureCollection,
                 mapTeiEventsToFeatureCollection,
                 mapCoordinateFieldToFeatureCollection,
-                new EventToEventUiComponent(),
                 mapUtils);
     }
 

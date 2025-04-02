@@ -13,9 +13,9 @@ import androidx.databinding.DataBindingUtil
 import androidx.paging.PagingDataAdapter
 import com.google.android.material.card.MaterialCardView
 import org.dhis2.R
-import org.dhis2.commons.data.SearchTeiModel
 import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.databinding.ItemSearchTrackedEntityBinding
+import org.dhis2.usescases.searchTrackEntity.SearchTeiModel
 import org.dhis2.usescases.searchTrackEntity.adapters.SearchAdapterDiffCallback
 import org.dhis2.usescases.searchTrackEntity.ui.mapper.TEICardMapper
 import org.hisp.dhis.mobile.ui.designsystem.component.ListCard

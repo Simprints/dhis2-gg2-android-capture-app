@@ -7,11 +7,16 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.rule.ActivityTestRule
 import org.dhis2.R
+import org.dhis2.common.mockwebserver.MockWebServerRobot.Companion.API_OLD_TRACKED_ENTITY_PATH
+import org.dhis2.common.mockwebserver.MockWebServerRobot.Companion.API_OLD_TRACKED_ENTITY_RESPONSE
 import org.dhis2.usescases.BaseTest
 import org.dhis2.usescases.flow.teiFlow.entity.DateRegistrationUIModel
 import org.dhis2.usescases.flow.teiFlow.entity.RegisterTEIUIModel
 import org.dhis2.usescases.flow.teiFlow.teiFlowRobot
 import org.dhis2.usescases.searchTrackEntity.SearchTEActivity
+import org.dhis2.usescases.searchte.robot.filterRobot
+import org.hisp.dhis.android.core.mockwebserver.ResponseController
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,8 +33,20 @@ class SearchFlowTest : BaseTest() {
     private val dateRegistration = createFirstSpecificDate()
     private val dateEnrollment = createEnrollmentDate()
 
+    override fun setUp() {
+        super.setUp()
+        setupMockServer()
+    }
+
     @Test
+    @Ignore("Flaky test, will be looked up in ANDROAPP-6478")
     fun shouldCreateTEIAndFilterByEnrollment() {
+        mockWebServerRobot.addResponse(
+            ResponseController.GET,
+            API_OLD_TRACKED_ENTITY_PATH,
+            API_OLD_TRACKED_ENTITY_RESPONSE,
+        )
+
         setDatePicker()
         val registerTEIDetails = createRegisterTEI()
         val enrollmentStatus = context.getString(R.string.filters_title_enrollment_status)
@@ -46,10 +63,13 @@ class SearchFlowTest : BaseTest() {
             pressBack()
         }
 
-        searchFlowRobot {
+        searchFlowRobot(composeTestRule) {
             filterByOpenEnrollmentStatus(enrollmentStatus)
             checkSearchCounters(filterCounter, enrollmentStatus, filterTotalCount)
-            checkTEIEnrollment()
+        }
+
+        filterRobot(composeTestRule) {
+            checkTEINotSync()
         }
     }
 

@@ -38,13 +38,13 @@ import kotlinx.coroutines.launch
 import org.dhis2.R
 import org.dhis2.bindings.app
 import org.dhis2.commons.biometrics.BIOMETRICS_CONFIRM_IDENTITY_REQUEST
-import org.dhis2.commons.data.SearchTeiModel
 import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.data.biometrics.BiometricsClientFactory.get
 import org.dhis2.data.biometrics.SimprintsItem
 import org.dhis2.databinding.DialogBiometricsDuplicatesBinding
 import org.dhis2.usescases.biometrics.ui.buttons.TealBorderButton
 import org.dhis2.usescases.biometrics.ui.buttons.TealGradientButton
+import org.dhis2.usescases.searchTrackEntity.SearchTeiModel
 import org.dhis2.usescases.searchTrackEntity.ui.mapper.TEICardMapper
 import org.dhis2.utils.LastSelection
 import org.hisp.dhis.android.core.arch.call.D2Progress

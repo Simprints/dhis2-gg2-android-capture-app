@@ -4,10 +4,10 @@ import android.content.Context
 import android.content.SharedPreferences
 import org.dhis2.R
 import org.dhis2.commons.biometrics.BiometricsPreference
-import org.dhis2.commons.data.SearchTeiModel
 import org.dhis2.commons.date.toDateSpan
 import org.dhis2.commons.date.toOverdueOrScheduledUiText
 import org.dhis2.commons.resources.ResourceManager
+import org.dhis2.usescases.searchTrackEntity.SearchTeiModel
 import org.dhis2.commons.ui.model.ListCardUiModel
 import org.dhis2.usescases.teiDashboard.ui.mapper.firstNameAttrUid
 import org.dhis2.usescases.teiDashboard.ui.mapper.lastNameAttrUid

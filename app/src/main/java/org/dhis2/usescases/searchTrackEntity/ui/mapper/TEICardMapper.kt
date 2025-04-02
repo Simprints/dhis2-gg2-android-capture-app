@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import org.dhis2.R
 import org.dhis2.bindings.hasFollowUp
-import org.dhis2.commons.data.SearchTeiModel
 import org.dhis2.commons.date.toDateSpan
 import org.dhis2.commons.date.toOverdueOrScheduledUiText
 import org.dhis2.commons.date.toUi
@@ -28,6 +27,7 @@ import org.dhis2.commons.ui.model.ListCardUiModel
 import org.dhis2.form.extensions.isNotBiometricText
 import org.dhis2.usescases.biometrics.addAttrBiometricsEmojiIfRequired
 import org.dhis2.usescases.biometrics.isUnderAgeThreshold
+import org.dhis2.usescases.searchTrackEntity.SearchTeiModel
 import org.hisp.dhis.android.core.common.State
 import org.hisp.dhis.android.core.enrollment.Enrollment
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
@@ -35,9 +35,10 @@ import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.mobile.ui.designsystem.component.AdditionalInfoItem
 import org.hisp.dhis.mobile.ui.designsystem.component.AdditionalInfoItemColor
 import org.hisp.dhis.mobile.ui.designsystem.component.Avatar
-import org.hisp.dhis.mobile.ui.designsystem.component.AvatarStyle
+import org.hisp.dhis.mobile.ui.designsystem.component.AvatarStyleData
 import org.hisp.dhis.mobile.ui.designsystem.component.Button
 import org.hisp.dhis.mobile.ui.designsystem.component.ButtonStyle
+import org.hisp.dhis.mobile.ui.designsystem.component.MetadataAvatarSize
 import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
 import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
 import java.io.File
@@ -73,20 +74,32 @@ class TEICardMapper(
 
     @Composable
     private fun ProvideAvatar(item: SearchTeiModel, onImageClick: ((String) -> Unit)) {
+        val programUid: String? = if (item.selectedEnrollment != null) {
+            item.selectedEnrollment.program().toString()
+        } else {
+            null
+        }
+
         if (item.profilePicturePath.isNotEmpty()) {
             val file = File(item.profilePicturePath)
             val bitmap = BitmapFactory.decodeFile(file.absolutePath).asImageBitmap()
             val painter = BitmapPainter(bitmap)
 
             Avatar(
-                imagePainter = painter,
-                style = AvatarStyle.IMAGE,
+                style = AvatarStyleData.Image(painter),
                 onImageClick = { onImageClick(item.profilePicturePath) },
+            )
+        } else if (item.isMetadataIconDataAvailable(programUid)) {
+            Avatar(
+                style = AvatarStyleData.Metadata(
+                    imageCardData = item.getMetadataIconData(programUid).imageCardData,
+                    avatarSize = MetadataAvatarSize.S(),
+                    tintColor = item.getMetadataIconData(programUid).color,
+                ),
             )
         } else {
             Avatar(
-                textAvatar = getTitleFirstLetter(item),
-                style = AvatarStyle.TEXT,
+                style = AvatarStyleData.Text(getTitleFirstLetter(item)),
             )
         }
     }
@@ -113,13 +126,9 @@ class TEICardMapper(
     }
 
     private fun getTitle(item: SearchTeiModel): String {
-        return if (item.header != null) {
-            item.header!!
-        } else if (item.attributeValues.isEmpty()) {
-            "-"
-        } else {
-            val key = item.attributeValues.keys.firstOrNull()
-            val value = item.attributeValues.values.firstOrNull()?.value()
+        return item.header ?: run {
+            val key = item.attributeValues.keys.firstOrNull() ?: "-"
+            val value = item.attributeValues.values.firstOrNull()?.value() ?: "-"
             "$key: $value"
         }
     }
@@ -127,8 +136,8 @@ class TEICardMapper(
     private fun getAdditionalInfoList(searchTEIModel: SearchTeiModel): List<AdditionalInfoItem> {
         val attributeList = searchTEIModel.attributeValues.map {
             AdditionalInfoItem(
-                key = "${it.key}:",
-                value = it.value.value() ?: "",
+                key = it.key,
+                value = it.value.value() ?: "-",
             )
         }.toMutableList()
 
@@ -189,7 +198,6 @@ class TEICardMapper(
             )
         }
     }
-
 
     private fun checkFollowUp(
         list: MutableList<AdditionalInfoItem>,
