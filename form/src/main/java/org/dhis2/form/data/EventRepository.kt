@@ -6,11 +6,11 @@ import io.reactivex.Single
 import org.dhis2.commons.bindings.blockingGetValueCheck
 import org.dhis2.commons.bindings.program
 import org.dhis2.commons.bindings.userFriendlyValue
-import org.dhis2.commons.biometrics.isBiometricsVerificationText
 import org.dhis2.commons.date.DateUtils
 import org.dhis2.commons.extensions.inDateRange
 import org.dhis2.commons.extensions.inOrgUnit
 import org.dhis2.commons.orgunitselector.OrgUnitSelectorScope
+import org.dhis2.commons.resources.EventResourcesProvider
 import org.dhis2.commons.resources.MetadataIconProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.form.R
@@ -30,6 +30,7 @@ import org.hisp.dhis.android.core.category.CategoryCombo
 import org.hisp.dhis.android.core.category.CategoryOption
 import org.hisp.dhis.android.core.common.FeatureType
 import org.hisp.dhis.android.core.common.ObjectStyle
+import org.hisp.dhis.android.core.common.ValidationStrategy
 import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.dataelement.DataElement
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
@@ -38,6 +39,7 @@ import org.hisp.dhis.android.core.imports.ImportStatus
 import org.hisp.dhis.android.core.option.Option
 import org.hisp.dhis.android.core.period.PeriodType
 import org.hisp.dhis.android.core.program.Program
+import org.hisp.dhis.android.core.program.ProgramStage
 import org.hisp.dhis.android.core.program.ProgramStageDataElement
 import org.hisp.dhis.android.core.program.ProgramStageSection
 import org.hisp.dhis.android.core.program.SectionRenderingType
@@ -48,16 +50,14 @@ class EventRepository(
     private val fieldFactory: FieldViewModelFactory,
     private val eventUid: String,
     private val d2: D2,
-    private val metadataIconProvider: MetadataIconProvider,
+    metadataIconProvider: MetadataIconProvider,
     private val resources: ResourceManager,
+    private val eventResourcesProvider: EventResourcesProvider,
     private val dateUtils: DateUtils,
     private val eventMode: EventMode,
-) : DataEntryBaseRepository(FormBaseConfiguration(d2), fieldFactory) {
+) : DataEntryBaseRepository(FormBaseConfiguration(d2), fieldFactory, metadataIconProvider) {
 
-    private val event by lazy {
-        d2.eventModule().events().uid(eventUid)
-            .blockingGet()
-    }
+    private var event = d2.eventModule().events().uid(eventUid).blockingGet()
 
     private val programStage by lazy {
         d2.programModule()
@@ -66,7 +66,7 @@ class EventRepository(
             .blockingGet()
     }
 
-    private val defaultStyleColor by lazy {
+    override val defaultStyleColor by lazy {
         programStage?.program()?.uid()?.let {
             d2.program(it)?.style()?.color()?.toColor()
         } ?: SurfaceColor.Primary
@@ -93,7 +93,7 @@ class EventRepository(
 
             else -> sectionUids().blockingFirst().firstOrNull { sectionUid ->
                 sectionUid != EVENT_DETAILS_SECTION_UID &&
-                        sectionUid != EVENT_CATEGORY_COMBO_SECTION_UID
+                    sectionUid != EVENT_CATEGORY_COMBO_SECTION_UID
             }
         }
     }
@@ -141,7 +141,7 @@ class EventRepository(
 
     override fun list(): Flowable<List<FieldUiModel>> {
         return d2.programModule().programStageSections()
-            .byProgramStageUid().eq(event?.programStage())
+            .byProgramStageUid().eq(programStage?.uid())
             .withDataElements()
             .get()
             .flatMap { programStageSection ->
@@ -167,9 +167,10 @@ class EventRepository(
         return mutableListOf(
             fieldFactory.createSection(
                 sectionUid = EVENT_DATA_SECTION_UID,
-                sectionName = resources.formatWithEventLabel(
+                sectionName = eventResourcesProvider.formatWithProgramStageEventLabel(
                     stringResource = R.string.event_data_section_title,
-                    programStageUid = event?.programStage(),
+                    programStageUid = programStage?.uid(),
+                    programUid = programUid,
                 ),
                 description = null,
                 isOpen = true,
@@ -184,7 +185,17 @@ class EventRepository(
         return true
     }
 
+    override fun eventMode(): EventMode? {
+        return eventMode
+    }
+
+    override fun validationStrategy(): ValidationStrategy? {
+        return d2.programModule().programStages().uid(programStage?.uid()).blockingGet()
+            ?.validationStrategy()
+    }
+
     private fun getEventDetails(): MutableList<FieldUiModel> {
+        event = d2.eventModule().events().uid(eventUid).blockingGet()
         val eventDataItems = mutableListOf<FieldUiModel>()
         eventDataItems.apply {
             add(createEventDetailsSection())
@@ -397,10 +408,12 @@ class EventRepository(
 
         return fieldFactory.create(
             id = EVENT_REPORT_DATE_UID,
-            label = programStage?.executionDateLabel() ?: resources.formatWithEventLabel(
-                R.string.event_label_date,
-                programStage?.uid(),
-            ),
+            label = programStage?.displayExecutionDateLabel()
+                ?: eventResourcesProvider.formatWithProgramStageEventLabel(
+                    R.string.event_label_date,
+                    programStage?.uid(),
+                    programUid,
+                ),
             valueType = ValueType.DATE,
             mandatory = true,
             optionSet = null,
@@ -420,7 +433,7 @@ class EventRepository(
                 PeriodSelector(
                     type = periodType,
                     minDate = getPeriodMinDate(periodType),
-                    maxDate = dateUtils.today,
+                    maxDate = dateUtils.getStartOfDay(Date()),
                 )
             } else {
                 null
@@ -433,8 +446,10 @@ class EventRepository(
             .withTrackedEntityType()
             .byUid().eq(programUid)
             .one().blockingGet()?.let { program ->
+                val firstAvailablePeriodDate =
+                    getFirstAvailablePeriod(event?.enrollment(), programStage)
                 var minDate = dateUtils.expDate(
-                    null,
+                    firstAvailablePeriodDate,
                     program.expiryDays() ?: 0,
                     periodType,
                 )
@@ -460,12 +475,71 @@ class EventRepository(
         return null
     }
 
+    private fun getFirstAvailablePeriod(enrollmentUid: String?, programStage: ProgramStage?): Date {
+        val stageLastDate = getStageLastDate()
+        val minEventDate = stageLastDate ?: when (programStage?.generatedByEnrollmentDate()) {
+            true -> getEnrollmentDate(enrollmentUid)
+            else -> getEnrollmentIncidentDate(enrollmentUid)
+                ?: getEnrollmentDate(enrollmentUid)
+        }
+        val calendar = DateUtils.getInstance().getCalendarByDate(minEventDate)
+
+        return dateUtils.getNextPeriod(
+            programStage?.periodType(),
+            calendar.time ?: event?.eventDate(),
+            if (stageLastDate == null) 0 else 1,
+        )
+    }
+
+    private fun getStageLastDate(): Date? {
+        val enrollmentUid = event?.enrollment()
+        val programStageUid = programStage?.uid()
+        val activeEvents =
+            d2.eventModule().events().byEnrollmentUid()
+                .eq(enrollmentUid).byProgramStageUid()
+                .eq(programStageUid)
+                .byDeleted().isFalse
+                .orderByEventDate(RepositoryScope.OrderByDirection.DESC).blockingGet()
+                .filter { it.uid() != eventUid }
+        val scheduleEvents =
+            d2.eventModule().events().byEnrollmentUid().eq(enrollmentUid).byProgramStageUid()
+                .eq(programStageUid)
+                .byDeleted().isFalse
+                .orderByDueDate(RepositoryScope.OrderByDirection.DESC).blockingGet()
+                .filter { it.uid() != eventUid }
+
+        var activeDate: Date? = null
+        var scheduleDate: Date? = null
+        if (activeEvents.isNotEmpty()) {
+            activeDate = activeEvents[0].eventDate()
+        }
+        if (scheduleEvents.isNotEmpty()) scheduleDate = scheduleEvents[0].dueDate()
+
+        return when {
+            scheduleDate == null -> activeDate
+            activeDate == null -> scheduleDate
+            activeDate.before(scheduleDate) -> scheduleDate
+            else -> activeDate
+        }
+    }
+
+    private fun getEnrollmentDate(uid: String?): Date? {
+        val enrollment = d2.enrollmentModule().enrollments().byUid().eq(uid).blockingGet().first()
+        return enrollment.enrollmentDate()
+    }
+
+    private fun getEnrollmentIncidentDate(uid: String?): Date? {
+        val enrollment = d2.enrollmentModule().enrollments().uid(uid).blockingGet()
+        return enrollment?.incidentDate()
+    }
+
     private fun createEventDetailsSection(): FieldUiModel {
         return fieldFactory.createSection(
             sectionUid = EVENT_DETAILS_SECTION_UID,
-            sectionName = resources.formatWithEventLabel(
+            sectionName = eventResourcesProvider.formatWithProgramStageEventLabel(
                 stringResource = R.string.event_details_section_title,
-                programStageUid = event?.programStage(),
+                programStageUid = programStage?.uid(),
+                programUid = programUid,
             ),
             description = programStage?.description(),
             isOpen = false,
@@ -506,7 +580,7 @@ class EventRepository(
         return Single.fromCallable {
             val stageDataElements =
                 d2.programModule().programStageDataElements().withRenderType()
-                    .byProgramStage().eq(event?.programStage())
+                    .byProgramStage().eq(programStage?.uid())
                     .orderBySortOrder(RepositoryScope.OrderByDirection.ASC)
                     .blockingGet()
             val singleSectionOptions =
@@ -536,7 +610,7 @@ class EventRepository(
                 )
                 programStageSection.dataElements()?.forEach { dataElement ->
                     d2.programModule().programStageDataElements().withRenderType()
-                        .byProgramStage().eq(event?.programStage())
+                        .byProgramStage().eq(programStage?.uid())
                         .byDataElement().eq(dataElement.uid())
                         .one().blockingGet()?.let {
                             fields.add(
@@ -573,7 +647,8 @@ class EventRepository(
             else -> null
         }
         val friendlyValue = dataValue?.let {
-            valueRepository.blockingGetValueCheck(d2, uid).userFriendlyValue(d2)
+            valueRepository.blockingGetValueCheck(d2, uid)
+                .userFriendlyValue(d2, addPercentageSymbol = false)
         }
         val allowFutureDates = programStageDataElement.allowFutureDate() ?: false
         val formName = de?.displayFormName()
@@ -586,23 +661,18 @@ class EventRepository(
                 dataValue =
                     optionSetOptions.find { it.code() == dataValue }?.displayName()
             }
-            val optionCount = optionSetOptions.size
-            optionSetConfig = OptionSetConfiguration.config(optionCount) {
-                val options = optionSetOptions.sortedBy { it.sortOrder() }
 
-                val metadataIconMap =
-                    options.associate {
-                        it.uid() to metadataIconProvider(
-                            it.style(),
-                            defaultStyleColor
-                        )
-                    }
-
-                OptionSetConfiguration.OptionConfigData(
-                    options = options,
-                    metadataIconMap = metadataIconMap,
-                )
-            }
+            val (searchEmitter, optionFlow) = options(
+                optionSetUid = optionSet!!,
+                optionsToHide = emptyList(),
+                optionGroupsToHide = emptyList(),
+                optionGroupsToShow = emptyList(),
+            )
+            optionSetConfig = OptionSetConfiguration(
+                searchEmitter = searchEmitter,
+                optionFlow = optionFlow,
+                onSearch = { searchEmitter.value = it },
+            )
         }
         val fieldRendering = getValueTypeDeviceRendering(programStageDataElement)
         val objectStyle = getObjectStyle(de)
@@ -620,40 +690,27 @@ class EventRepository(
         val renderingType = getSectionRenderingType(programStageSection)
         val featureType = getFeatureType(valueType)
 
-        val label = formName ?: displayName
-
         val url = de?.url()
 
-        var fieldViewModel = if (label.isBiometricsVerificationText())
-            fieldFactory.createBiometricsVerification(
-                uid,
-                dataValue ?: "",
-                programStageSection?.uid()
-            ) else
-            fieldFactory.create(
-                uid,
-                label,
-                valueType!!,
-                mandatory,
-                optionSet,
-                dataValue,
-                sectionUid,
-                allowFutureDates,
-                isEventEditable(),
-                renderingType,
-                description,
-                fieldRendering,
-                objectStyle,
-                de.fieldMask(),
-                optionSetConfig,
-                featureType,
-                null,
-                null,
-                null,
-                null,
-                null,
-                url
-            )
+        var fieldViewModel = fieldFactory.create(
+            uid,
+            formName ?: displayName,
+            valueType!!,
+            mandatory,
+            optionSet,
+            dataValue,
+            sectionUid,
+            allowFutureDates,
+            isEventEditable(),
+            renderingType,
+            description,
+            fieldRendering,
+            objectStyle,
+            de?.fieldMask(),
+            optionSetConfig,
+            featureType,
+            url = url
+        )
 
         if (!error.isNullOrEmpty()) {
             fieldViewModel = fieldViewModel.setError(error)

@@ -2,7 +2,6 @@ package org.dhis2.usescases.eventsWithoutRegistration.eventCapture
 
 import io.reactivex.Completable
 import io.reactivex.Single
-import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.data.dhislogic.AUTH_ALL
 import org.dhis2.data.dhislogic.AUTH_UNCOMPLETE_EVENT
 import org.hisp.dhis.android.core.D2
@@ -37,7 +36,6 @@ class EventCaptureRepositoryImplTest {
 
     private val eventUid = "eventUid"
     private val d2: D2 = Mockito.mock(D2::class.java, Mockito.RETURNS_DEEP_STUBS)
-    private val basicPreferenceProvider: BasicPreferenceProvider = mock()
 
     private val trackerEventEnrollmentUid = "enrollmentUid"
     private val testEventStageUid = "stageUid"
@@ -70,7 +68,6 @@ class EventCaptureRepositoryImplTest {
         val repository = EventCaptureRepositoryImpl(
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         assertTrue(repository.isEnrollmentOpen)
@@ -87,8 +84,7 @@ class EventCaptureRepositoryImplTest {
 
         val repository = EventCaptureRepositoryImpl(
             eventUid,
-            d2,
-            basicPreferenceProvider
+            d2
         )
 
         repository.isEnrollmentOpen
@@ -109,7 +105,6 @@ class EventCaptureRepositoryImplTest {
         val repository = EventCaptureRepositoryImpl(
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         assertTrue(!repository.isEnrollmentCancelled)
@@ -130,7 +125,6 @@ class EventCaptureRepositoryImplTest {
         val repository = EventCaptureRepositoryImpl(
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         assertTrue(repository.isEnrollmentCancelled)
@@ -144,7 +138,6 @@ class EventCaptureRepositoryImplTest {
         val repository = EventCaptureRepositoryImpl(
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         repository.isEventEditable(eventUid)
@@ -178,7 +171,6 @@ class EventCaptureRepositoryImplTest {
         val repository = EventCaptureRepositoryImpl(
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         val testObserver = repository.programStageName().test()
@@ -195,7 +187,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         whenever(
@@ -223,7 +214,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         whenever(
@@ -244,7 +234,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         whenever(
@@ -271,7 +260,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         whenever(
@@ -292,7 +280,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
         val testStatus = EventStatus.SKIPPED
         whenever(
@@ -312,7 +299,6 @@ class EventCaptureRepositoryImplTest {
         val repository = EventCaptureRepositoryImpl(
             eventUid,
             d2,
-            basicPreferenceProvider
         )
         val testNewDate = GregorianCalendar(3021, 11, 1).time
         whenever(
@@ -336,7 +322,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         repository.programStage().test()
@@ -353,7 +338,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         whenever(
@@ -374,7 +358,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         repository.eventStatus().test()
@@ -391,7 +374,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         whenever(
@@ -431,7 +413,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         whenever(
@@ -454,7 +435,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         whenever(
@@ -477,7 +457,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         repository.eventIntegrityCheck().test()
@@ -494,7 +473,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         repository.eventIntegrityCheck().test()
@@ -511,7 +489,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
         val numberOfNotes = 12
         whenever(
@@ -538,7 +515,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         whenever(
@@ -557,7 +533,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         whenever(
@@ -584,7 +559,6 @@ class EventCaptureRepositoryImplTest {
 
             eventUid,
             d2,
-            basicPreferenceProvider
         )
 
         whenever(
@@ -610,7 +584,6 @@ class EventCaptureRepositoryImplTest {
         val repository = EventCaptureRepositoryImpl(
             eventUid,
             d2,
-            basicPreferenceProvider
         )
         whenever(
             d2.programModule().programIndicators().byProgramUid().eq(testEventProgramUid),

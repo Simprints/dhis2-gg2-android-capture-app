@@ -13,7 +13,6 @@ import org.dhis2.commons.prefs.Preference
 import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.resources.MetadataIconProvider
 import org.dhis2.ui.MetadataIconData
-import org.dhis2.utils.DateUtils
 import org.dhis2.utils.ValueUtils
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.arch.helpers.UidsHelper.getUidsList
@@ -22,6 +21,7 @@ import org.hisp.dhis.android.core.category.CategoryOptionCombo
 import org.hisp.dhis.android.core.common.State
 import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.enrollment.Enrollment
+import org.hisp.dhis.android.core.enrollment.EnrollmentAccess
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.event.Event
 import org.hisp.dhis.android.core.event.EventStatus
@@ -70,30 +70,6 @@ class DashboardRepositoryImpl(
             .toObservable()
     }
 
-    override fun getTEIEnrollmentEvents(
-        programUid: String?,
-        teiUid: String,
-    ): Observable<List<Event>> {
-        return d2.eventModule().events().byEnrollmentUid().eq(enrollmentUid)
-            .byDeleted().isFalse
-            .orderByTimeline(RepositoryScope.OrderByDirection.ASC)
-            .get().toFlowable().flatMapIterable { events: List<Event>? -> events }.distinct()
-            .map { event: Event ->
-                var event = event
-                if (java.lang.Boolean.FALSE
-                    == d2.programModule().programs().uid(programUid).blockingGet()!!
-                        .ignoreOverdueEvents()
-                ) if (event.status() == EventStatus.SCHEDULE &&
-                    event.dueDate()!!
-                        .before(DateUtils.getInstance().today)
-                ) {
-                    event = updateState(event, EventStatus.OVERDUE)
-                }
-                event
-            }.toList()
-            .toObservable()
-    }
-
     override fun getEnrollmentEventsWithDisplay(
         programUid: String?,
         teiUid: String,
@@ -124,53 +100,42 @@ class DashboardRepositoryImpl(
                 teiUid,
             )
                 .map<List<TrackedEntityAttributeValue>> { attributesValues: List<TrackedEntityAttributeValue> ->
-                    val formattedValues: MutableList<TrackedEntityAttributeValue> =
-                        java.util.ArrayList()
-                    for (attributeValue in attributesValues) {
-                        if (attributeValue.value() != null) {
-                            val attribute =
-                                d2.trackedEntityModule().trackedEntityAttributes()
-                                    .uid(attributeValue.trackedEntityAttribute()).blockingGet()
-                            if (attribute!!.valueType() != ValueType.IMAGE) {
-                                formattedValues.add(
-                                    ValueUtils.transform(
-                                        d2,
-                                        attributeValue,
-                                        attribute!!.valueType(),
-                                        if (attribute!!.optionSet() != null) {
-                                            attribute!!.optionSet()!!
-                                                .uid()
-                                        } else {
-                                            null
-                                        },
-                                    ),
-                                )
-                            }
-                        } else {
-                            formattedValues.add(
-                                TrackedEntityAttributeValue.builder()
-                                    .trackedEntityAttribute(attributeValue.trackedEntityAttribute())
-                                    .trackedEntityInstance(teiUid)
-                                    .value("")
-                                    .build(),
-                            )
-                        }
-                    }
+                    val formattedValues = formatProgramAttributeValues(attributesValues)
                     formattedValues
                 }.toObservable()
         } else {
             val teType =
                 d2.trackedEntityModule().trackedEntityInstances().uid(teiUid).blockingGet()!!
                     .trackedEntityType()
-            val attributeValues: MutableList<TrackedEntityAttributeValue> = java.util.ArrayList()
-            for (attributeValue in teiAttributesProvider.getValuesFromTrackedEntityTypeAttributes(
-                teType,
-                teiUid,
-            )) {
-                val attribute = d2.trackedEntityModule().trackedEntityAttributes()
-                    .uid(attributeValue.trackedEntityAttribute()).blockingGet()
-                if (attribute!!.valueType() != ValueType.IMAGE && attributeValue.value() != null) {
-                    attributeValues.add(
+
+            val attributeValues = mapTeiTypeAttributeValues(
+                teiAttributesProvider.getValuesFromTrackedEntityTypeAttributes(
+                    teType,
+                    teiUid,
+                ),
+            )
+            if (attributeValues.isEmpty()) {
+                formatProgramAttributeValuesByTrackedEntity(
+                    attributeValues,
+                    teiAttributesProvider.getValuesFromProgramTrackedEntityAttributes(
+                        teType,
+                        teiUid,
+                    ),
+                )
+            }
+            Observable.just(attributeValues)
+        }
+    }
+
+    private fun formatProgramAttributeValues(list: List<TrackedEntityAttributeValue>): MutableList<TrackedEntityAttributeValue> {
+        val formattedValues: MutableList<TrackedEntityAttributeValue> = mutableListOf()
+        for (attributeValue in list) {
+            if (attributeValue.value() != null) {
+                val attribute =
+                    d2.trackedEntityModule().trackedEntityAttributes()
+                        .uid(attributeValue.trackedEntityAttribute()).blockingGet()
+                if (attribute!!.valueType() != ValueType.IMAGE) {
+                    formattedValues.add(
                         ValueUtils.transform(
                             d2,
                             attributeValue,
@@ -184,31 +149,106 @@ class DashboardRepositoryImpl(
                         ),
                     )
                 }
+            } else {
+                formattedValues.add(
+                    TrackedEntityAttributeValue.builder()
+                        .trackedEntityAttribute(attributeValue.trackedEntityAttribute())
+                        .trackedEntityInstance(teiUid)
+                        .value("")
+                        .build(),
+                )
             }
-            if (attributeValues.isEmpty()) {
-                for (attributeValue in teiAttributesProvider.getValuesFromProgramTrackedEntityAttributes(
-                    teType,
-                    teiUid,
-                )) {
-                    val attribute = d2.trackedEntityModule().trackedEntityAttributes()
-                        .uid(attributeValue.trackedEntityAttribute()).blockingGet()
-                    attributeValues.add(
-                        ValueUtils.transform(
-                            d2,
-                            attributeValue,
-                            attribute!!.valueType(),
-                            if (attribute.optionSet() != null) {
-                                attribute.optionSet()!!
-                                    .uid()
-                            } else {
-                                null
-                            },
+        }
+        return formattedValues
+    }
+
+    private fun formatProgramAttributeValuesByTrackedEntity(
+        formattedList: MutableList<TrackedEntityAttributeValue>,
+        list: List<TrackedEntityAttributeValue>,
+    ): MutableList<TrackedEntityAttributeValue> {
+        for (attributeValue in list) {
+            val attribute = d2.trackedEntityModule().trackedEntityAttributes()
+                .uid(attributeValue.trackedEntityAttribute()).blockingGet()
+            formattedList.add(
+                ValueUtils.transform(
+                    d2,
+                    attributeValue,
+                    attribute!!.valueType(),
+                    if (attribute.optionSet() != null) {
+                        attribute.optionSet()!!
+                            .uid()
+                    } else {
+                        null
+                    },
+                ),
+            )
+        }
+        return formattedList
+    }
+
+    private fun mapTeiTypeAttributeValues(list: List<TrackedEntityAttributeValue>): MutableList<TrackedEntityAttributeValue> {
+        val attributeValues: MutableList<TrackedEntityAttributeValue> = mutableListOf()
+        for (attributeValue in list) {
+            val attribute = d2.trackedEntityModule().trackedEntityAttributes()
+                .uid(attributeValue.trackedEntityAttribute()).blockingGet()
+            if (attribute!!.valueType() != ValueType.IMAGE && attributeValue.value() != null) {
+                attributeValues.add(
+                    ValueUtils.transform(
+                        d2,
+                        attributeValue,
+                        attribute.valueType(),
+                        if (attribute.optionSet() != null) {
+                            attribute.optionSet()!!
+                                .uid()
+                        } else {
+                            null
+                        },
+                    ),
+                )
+            }
+        }
+
+        return attributeValues
+    }
+
+    private fun mapRelationShipTypes(
+        list: List<RelationshipType>,
+        teType: String,
+    ): MutableList<Pair<RelationshipType?, String>> {
+        val relTypeList: MutableList<Pair<RelationshipType?, String>> =
+            java.util.ArrayList()
+        for (relationshipType in list) {
+            if (relationshipType.fromConstraint() != null && relationshipType.fromConstraint()!!
+                    .trackedEntityType() != null && relationshipType.fromConstraint()!!
+                    .trackedEntityType()!!.uid() == teType
+            ) {
+                if (relationshipType.toConstraint() != null && relationshipType.toConstraint()!!
+                        .trackedEntityType() != null
+                ) {
+                    relTypeList.add(
+                        Pair.create(
+                            relationshipType,
+                            relationshipType.toConstraint()!!
+                                .trackedEntityType()!!.uid(),
                         ),
                     )
                 }
+            } else if (relationshipType.bidirectional()!! && relationshipType.toConstraint() != null && relationshipType.toConstraint()!!
+                    .trackedEntityType() != null && relationshipType.toConstraint()!!
+                    .trackedEntityType()!!
+                    .uid() == teType && relationshipType.fromConstraint() != null &&
+                relationshipType.fromConstraint()!!.trackedEntityType() != null
+            ) {
+                relTypeList.add(
+                    Pair.create(
+                        relationshipType,
+                        relationshipType.fromConstraint()!!
+                            .trackedEntityType()!!.uid(),
+                    ),
+                )
             }
-            Observable.just(attributeValues)
         }
+        return relTypeList
     }
 
     override fun setFollowUp(enrollmentUid: String?): Boolean {
@@ -255,8 +295,8 @@ class DashboardRepositoryImpl(
         return d2.systemInfoModule().systemInfo().get().toObservable()
             .map<String?>(Function { obj: SystemInfo -> obj.version() })
             .flatMap { version: String? ->
-                if (version == "2.29") {
-                    return@flatMap d2.relationshipModule().relationshipTypes()
+                return@flatMap if (version == "2.29") {
+                    d2.relationshipModule().relationshipTypes()
                         .get().toObservable()
                         .flatMapIterable<RelationshipType?> { list: List<RelationshipType?>? -> list }
                         .map<Pair<RelationshipType?, String>> { relationshipType: RelationshipType? ->
@@ -266,45 +306,10 @@ class DashboardRepositoryImpl(
                             )
                         }.toList().toObservable()
                 } else {
-                    return@flatMap d2.relationshipModule()
+                    d2.relationshipModule()
                         .relationshipTypes().withConstraints().get()
                         .map<List<Pair<RelationshipType?, String>>> { relationshipTypes: List<RelationshipType> ->
-                            val relTypeList: MutableList<Pair<RelationshipType?, String>> =
-                                java.util.ArrayList()
-                            for (relationshipType in relationshipTypes) {
-                                if (relationshipType.fromConstraint() != null && relationshipType.fromConstraint()!!
-                                        .trackedEntityType() != null && relationshipType.fromConstraint()!!
-                                        .trackedEntityType()!!.uid() == teType
-                                ) {
-                                    if (relationshipType.toConstraint() != null && relationshipType.toConstraint()!!
-                                            .trackedEntityType() != null
-                                    ) {
-                                        relTypeList.add(
-                                            Pair.create(
-                                                relationshipType,
-                                                relationshipType.toConstraint()!!
-                                                    .trackedEntityType()!!.uid(),
-                                            ),
-                                        )
-                                    }
-                                } else if (relationshipType.bidirectional()!! && relationshipType.toConstraint() != null && relationshipType.toConstraint()!!
-                                        .trackedEntityType() != null && relationshipType.toConstraint()!!
-                                        .trackedEntityType()!!
-                                        .uid() == teType
-                                ) {
-                                    if (relationshipType.fromConstraint() != null && relationshipType.fromConstraint()!!
-                                            .trackedEntityType() != null
-                                    ) {
-                                        relTypeList.add(
-                                            Pair.create(
-                                                relationshipType,
-                                                relationshipType.fromConstraint()!!
-                                                    .trackedEntityType()!!.uid(),
-                                            ),
-                                        )
-                                    }
-                                }
-                            }
+                            val relTypeList = mapRelationShipTypes(relationshipTypes, teType)
                             relTypeList.toList()
                         }.toObservable()
                 }
@@ -375,6 +380,17 @@ class DashboardRepositoryImpl(
         }
     }
 
+    private fun getOwnerOrgUnit(teiUid: String): OrganisationUnit? {
+        val orgUnitId = d2.trackedEntityModule()
+            .trackedEntityInstances().withProgramOwners()
+            .uid(teiUid).blockingGet()
+            ?.programOwners()?.first { it.trackedEntityInstance() == teiUid }?.ownerOrgUnit()
+
+        return d2.organisationUnitModule().organisationUnits()
+            .uid(orgUnitId)
+            .blockingGet()
+    }
+
     override fun getDashboardModel(): DashboardModel {
         return if (programUid.isNullOrEmpty()) {
             DashboardTEIModel(
@@ -385,12 +401,12 @@ class DashboardRepositoryImpl(
                 getTeiOrgUnits(teiUid, null).blockingFirst(),
                 getTeiHeader(),
                 getTeiProfilePath(),
+                getOwnerOrgUnit(teiUid),
             )
         } else {
             DashboardEnrollmentModel(
                 getEnrollment().blockingFirst(),
                 getProgramStages(programUid).blockingFirst(),
-                getTEIEnrollmentEvents(programUid, teiUid).blockingFirst(),
                 getTrackedEntityInstance(teiUid).blockingFirst(),
                 getAttributesMap(programUid, teiUid).blockingFirst(),
                 getTEIAttributeValues(programUid, teiUid).blockingFirst(),
@@ -398,6 +414,7 @@ class DashboardRepositoryImpl(
                 getTeiOrgUnits(teiUid, programUid).blockingFirst(),
                 getTeiHeader(),
                 getTeiProfilePath(),
+                getOwnerOrgUnit(teiUid),
             )
         }
     }
@@ -440,7 +457,7 @@ class DashboardRepositoryImpl(
             .trackedEntityInstances()
             .uid(teiUid)
             .blockingGet()
-            ?.state() == State.TO_POST
+            ?.aggregatedSyncState() == State.TO_POST
         val hasAuthority = d2.userModule()
             .authorities()
             .byName().eq("F_TEI_CASCADE_DELETE")
@@ -461,7 +478,7 @@ class DashboardRepositoryImpl(
         val local = d2.enrollmentModule()
             .enrollments()
             .uid(enrollmentUid)
-            .blockingGet()!!.state() == State.TO_POST
+            .blockingGet()!!.aggregatedSyncState() == State.TO_POST
         val hasAuthority = d2.userModule()
             .authorities()
             .byName().eq("F_ENROLLMENT_CASCADE_DELETE")
@@ -479,9 +496,9 @@ class DashboardRepositoryImpl(
                 enrollmentObjectRepository.blockingGet()!!.status()!!,
             )
             enrollmentObjectRepository.blockingDelete()
-            !d2.enrollmentModule().enrollments().byTrackedEntityInstance().eq(teiUid)
+            d2.enrollmentModule().enrollments().byTrackedEntityInstance().eq(teiUid)
                 .byDeleted().isFalse
-                .byStatus().eq(EnrollmentStatus.ACTIVE).blockingGet().isEmpty()
+                .byStatus().eq(EnrollmentStatus.ACTIVE).blockingGet().isNotEmpty()
         }
     }
 
@@ -574,6 +591,39 @@ class DashboardRepositoryImpl(
             Preference.GROUPING,
             groups,
         )
+    }
+
+    override fun transferTei(newOrgUnitId: String) {
+        d2.trackedEntityModule()
+            .ownershipManager()
+            .blockingTransfer(teiUid, programUid!!, newOrgUnitId)
+    }
+
+    override fun teiCanBeTransferred(): Boolean {
+        if (programUid == null) {
+            return false
+        }
+
+        val orgUnits = d2.organisationUnitModule().organisationUnits()
+            .byOrganisationUnitScope(OrganisationUnit.Scope.SCOPE_TEI_SEARCH)
+            .byProgramUids(listOf(programUid))
+            .blockingGet()
+
+        if (orgUnits.isEmpty()) {
+            return false
+        }
+
+        return orgUnits.size > 1 ||
+            orgUnits.first().uid() != getOwnerOrgUnit(teiUid)?.uid()
+    }
+
+    override fun enrollmentHasWriteAccess(): Boolean {
+        return programUid?.let {
+            d2.enrollmentModule().enrollmentService().blockingGetEnrollmentAccess(
+                teiUid,
+                it,
+            )
+        } == EnrollmentAccess.WRITE_ACCESS
     }
 
     private fun getGroupingOptions(): HashMap<String, Boolean> {

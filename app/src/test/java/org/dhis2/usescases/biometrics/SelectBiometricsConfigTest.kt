@@ -1,5 +1,8 @@
 package org.dhis2.usescases.biometrics
 
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 import org.dhis2.usescases.biometrics.entities.BiometricsConfig
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.repositories.BiometricsConfigRepository
@@ -9,8 +12,8 @@ import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.Mockito.verify
 import org.mockito.junit.MockitoJUnitRunner
+import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
-
 
 @RunWith(MockitoJUnitRunner::class)
 class SelectBiometricsConfigTest {
@@ -20,29 +23,29 @@ class SelectBiometricsConfigTest {
     lateinit var biometricsConfigRepository: BiometricsConfigRepository
 
     @Test
-    fun `Should select default config if there are more than one config by user org unit group`() {
+    fun `Should select default config if there are more than one config by user org unit group`()= runBlocking<Unit> {
         val selectBiometricsConfig = givenABiometricConfigs(listOf("iKcGSF3p97c", "aAcGSF3p97c"))
 
-        selectBiometricsConfig("dummyProgram")
+        selectBiometricsConfig("dummyProgram").collect()
 
         verify(biometricsConfigRepository).saveSelectedConfig(defaultConfig)
     }
 
     @Test
-    fun `Should select default config if there are not config by user org unit group or program`() {
+    fun `Should select default config if there are not config by user org unit group or program`()= runBlocking<Unit> {
         val selectBiometricsConfig =
             givenABiometricConfigs(listOf("non_in_config_1", "non_in_config_2"))
 
-        selectBiometricsConfig("dummyProgram")
+        selectBiometricsConfig("dummyProgram").collect()
 
         verify(biometricsConfigRepository).saveSelectedConfig(defaultConfig)
     }
 
     @Test
-    fun `Should select config if there are config by user org unit group and non by program`() {
+    fun `Should select config if there are config by user org unit group and non by program`()= runBlocking<Unit> {
         val selectBiometricsConfig = givenABiometricConfigs(listOf("aAcGSF3p97c"))
 
-        selectBiometricsConfig("dummyProgram")
+        selectBiometricsConfig("dummyProgram").collect()
 
         val expectedConfig = configs[3]
 
@@ -50,10 +53,10 @@ class SelectBiometricsConfigTest {
     }
 
     @Test
-    fun `Should select config if there are config by program`() {
+    fun `Should select config if there are config by program`()= runBlocking<Unit> {
         val selectBiometricsConfig = givenABiometricConfigs(listOf("aAcGSF3p97c"))
 
-        selectBiometricsConfig("DM9n1bUw8W8")
+        selectBiometricsConfig("DM9n1bUw8W8").collect()
 
         val expectedConfig = configs[2]
 
@@ -63,11 +66,14 @@ class SelectBiometricsConfigTest {
     private fun givenABiometricConfigs(userOrgUnitGroups: List<String>): SelectBiometricsConfig {
         whenever(
             biometricsConfigRepository.getBiometricsConfigs()
-        ).thenReturn(configs)
+        ).thenReturn(flowOf(configs))
 
         whenever(
             biometricsConfigRepository.getUserOrgUnitGroups()
-        ).thenReturn(userOrgUnitGroups)
+        ).thenReturn(flowOf(userOrgUnitGroups))
+
+        whenever(biometricsConfigRepository.saveSelectedConfig(any())
+        ).thenReturn(flowOf(Unit))
 
         return SelectBiometricsConfig(biometricsConfigRepository)
     }

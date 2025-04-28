@@ -16,7 +16,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import org.dhis2.R
 import org.dhis2.commons.biometrics.gradientButtonColor
 
 @Composable
@@ -57,7 +56,6 @@ fun TeiDashboardBioButtonPreview() {
     TeiDashboardBioButton(model = BioButtonModel(
         text = "Biometrics",
         backgroundColor = "#4d4d4d",
-        icon = R.drawable.ic_bio_face_success,
         onActionClick = {})
     )
 }

@@ -40,9 +40,9 @@ class SearchHelperFragment : Fragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        (context as SearchTEActivity).searchComponent.plus(
+        (context as SearchTEActivity).searchComponent?.plus(
             SearchHelperModule(),
-        ).inject(this)
+        )?.inject(this)
     }
 
     override fun onCreateView(

@@ -3,10 +3,9 @@ package org.dhis2.usescases.eventsWithoutRegistration.eventCapture.eventCaptureF
 import dagger.Module
 import dagger.Provides
 import org.dhis2.commons.di.dagger.PerFragment
-import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.resources.ResourceManager
-import org.dhis2.data.biometrics.OrgUnitD2Repository
-import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
+import org.dhis2.form.ui.provider.FormResultDialogProvider
+import org.dhis2.form.ui.provider.FormResultDialogResourcesProvider
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureContract
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.domain.ReOpenEventUseCase
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.injection.EventDispatchers
@@ -26,8 +25,6 @@ class EventCaptureFormModule(
         resourceManager: ResourceManager,
         reOpenEventUseCase: ReOpenEventUseCase,
         eventDispatchers: EventDispatchers,
-        basicPreferenceProvider: BasicPreferenceProvider,
-        orgUnitRepository: OrgUnitRepository
     ): EventCaptureFormPresenter {
         return EventCaptureFormPresenter(
             view,
@@ -37,9 +34,23 @@ class EventCaptureFormModule(
             resourceManager,
             reOpenEventUseCase,
             eventDispatchers,
-            basicPreferenceProvider,
-            orgUnitRepository
         )
+    }
+
+    @Provides
+    @PerFragment
+    fun provideResultDialogProvider(
+        resourceProvider: FormResultDialogResourcesProvider,
+    ): FormResultDialogProvider {
+        return FormResultDialogProvider(resourceProvider)
+    }
+
+    @Provides
+    @PerFragment
+    fun provideCompleteEventDialogResourcesProvider(
+        resourceManager: ResourceManager,
+    ): FormResultDialogResourcesProvider {
+        return FormResultDialogResourcesProvider(resourceManager)
     }
 
     @Provides
@@ -52,10 +63,4 @@ class EventCaptureFormModule(
     @Provides
     @PerFragment
     fun provideEventDispatchers() = EventDispatchers()
-
-    @Provides
-    @PerFragment
-    fun provideOrgUnitRepository(d2: D2): OrgUnitRepository {
-        return OrgUnitD2Repository(d2)
-    }
 }

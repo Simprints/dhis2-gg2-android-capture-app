@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
@@ -16,7 +17,7 @@ import androidx.recyclerview.widget.RecyclerView
 import dhis2.org.R
 import org.dhis2.commons.dialogs.CustomDialog
 import org.hisp.dhis.android.core.program.ProgramIndicator
-import org.hisp.dhis.mobile.ui.designsystem.component.IndicatorInput
+import org.hisp.dhis.mobile.ui.designsystem.component.Indicator
 import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
 
 class IndicatorViewHolder(
@@ -38,7 +39,7 @@ class IndicatorViewHolder(
                         .then(
                             if (programIndicatorModel.programIndicator?.description() != null) {
                                 Modifier.clickable(
-                                    interactionSource = MutableInteractionSource(),
+                                    interactionSource = remember { MutableInteractionSource() },
                                     indication = rememberRipple(),
                                     onClick = { showDescription(programIndicatorModel.programIndicator) },
                                 )
@@ -47,7 +48,7 @@ class IndicatorViewHolder(
                             },
                         ),
                 ) {
-                    IndicatorInput(
+                    Indicator(
                         title = programIndicatorModel.label(),
                         indicatorColor = if (!programIndicatorModel.color.isNullOrEmpty()) {
                             Color(programIndicatorModel.color())
@@ -58,7 +59,7 @@ class IndicatorViewHolder(
                         modifier = Modifier.then(
                             if (programIndicatorModel.programIndicator?.description() != null) {
                                 Modifier.clickable(
-                                    interactionSource = MutableInteractionSource(),
+                                    interactionSource = remember { MutableInteractionSource() },
                                     indication = rememberRipple(),
                                     onClick = { showDescription(programIndicatorModel.programIndicator) },
                                 )
