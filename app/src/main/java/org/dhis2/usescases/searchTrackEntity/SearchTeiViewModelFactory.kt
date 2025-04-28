@@ -2,6 +2,7 @@ package org.dhis2.usescases.searchTrackEntity
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import org.dhis2.commons.filters.FilterManager
 import org.dhis2.commons.network.NetworkUtils
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.resources.ResourceManager
@@ -23,6 +24,7 @@ class SearchTeiViewModelFactory(
     private val mapStyleConfig: MapStyleConfiguration,
     private val resourceManager: ResourceManager,
     private val displayNameProvider: DisplayNameProvider,
+    private val filterManager: FilterManager,
     private val basicPreferenceProvider: BasicPreferenceProvider
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
@@ -39,6 +41,7 @@ class SearchTeiViewModelFactory(
             mapStyleConfig,
             resourceManager,
             displayNameProvider,
+            filterManager,
             basicPreferenceProvider
         ) as T
     }

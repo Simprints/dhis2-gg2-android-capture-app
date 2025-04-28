@@ -13,10 +13,10 @@ import androidx.paging.PagingDataAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.card.MaterialCardView
 import org.dhis2.R
-import org.dhis2.commons.data.SearchTeiModel
 import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.databinding.ItemSearchErrorBinding
 import org.dhis2.databinding.ItemSearchTrackedEntityBinding
+import org.dhis2.usescases.searchTrackEntity.SearchTeiModel
 import org.dhis2.usescases.searchTrackEntity.ui.mapper.TEICardMapper
 import org.hisp.dhis.mobile.ui.designsystem.component.ListCard
 import org.hisp.dhis.mobile.ui.designsystem.component.ListCardTitleModel
@@ -45,6 +45,13 @@ class SearchTeiLiveAdapter(
         ONLINE_ERROR,
     }
 
+    // Clear animation when view is detached from window to avoid crash:
+    // java.lang.IllegalArgumentException: Tmp detached view should be removed from RecyclerView before it can be recycled
+    override fun onViewDetachedFromWindow(holder: RecyclerView.ViewHolder) {
+        super.onViewDetachedFromWindow(holder)
+        holder.itemView.clearAnimation()
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         return when (SearchItem.entries[viewType]) {
@@ -69,8 +76,12 @@ class SearchTeiLiveAdapter(
     }
 
     override fun getItemViewType(position: Int): Int {
+        var onlineErrorMessage: String? = null
+        if (position < snapshot().size) {
+            onlineErrorMessage = snapshot()[position]?.onlineErrorMessage
+        }
         return when {
-            getItem(position)?.onlineErrorMessage != null -> SearchItem.ONLINE_ERROR.ordinal
+            onlineErrorMessage != null -> SearchItem.ONLINE_ERROR.ordinal
             fromRelationship -> SearchItem.RELATIONSHIP_TEI.ordinal
             else -> SearchItem.TEI.ordinal
         }
@@ -132,12 +143,6 @@ class SearchTeiLiveAdapter(
                                 onCardClick = card.onCardCLick,
                             )
                         }
-                    }
-                    holder.bind(it, {
-                        getItem(holder.absoluteAdapterPosition)?.toggleAttributeList()
-                        notifyItemChanged(holder.absoluteAdapterPosition)
-                    }) { path: String? ->
-                        path?.let { onImageClick(path) }
                     }
                 }
             }

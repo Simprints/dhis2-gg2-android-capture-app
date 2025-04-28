@@ -5,7 +5,7 @@ import dagger.Module
 import dagger.Provides
 import dhis2.org.analytics.charts.Charts
 import org.dhis2.R
-import org.dhis2.commons.di.dagger.PerActivity
+import org.dhis2.commons.date.DateLabelProvider
 import org.dhis2.commons.filters.data.FilterPresenter
 import org.dhis2.commons.network.NetworkUtils
 import org.dhis2.commons.prefs.BasicPreferenceProvider
@@ -27,22 +27,21 @@ import org.dhis2.form.data.metadata.OptionSetConfiguration
 import org.dhis2.form.data.metadata.OrgUnitConfiguration
 import org.dhis2.form.ui.FieldViewModelFactory
 import org.dhis2.form.ui.FieldViewModelFactoryImpl
-import org.dhis2.form.ui.LayoutProviderImpl
 import org.dhis2.form.ui.provider.AutoCompleteProviderImpl
 import org.dhis2.form.ui.provider.DisplayNameProviderImpl
 import org.dhis2.form.ui.provider.HintProviderImpl
 import org.dhis2.form.ui.provider.KeyboardActionProviderImpl
 import org.dhis2.form.ui.provider.LegendValueProviderImpl
 import org.dhis2.form.ui.provider.UiEventTypesProviderImpl
-import org.dhis2.form.ui.provider.UiStyleProviderImpl
-import org.dhis2.form.ui.style.FormUiModelColorFactoryImpl
-import org.dhis2.form.ui.style.LongTextUiColorFactoryImpl
+import org.dhis2.tracker.data.ProfilePictureProvider
 import org.dhis2.ui.ThemeManager
+import org.dhis2.usescases.events.EventInfoProvider
 import org.dhis2.usescases.searchTrackEntity.SearchRepository
 import org.dhis2.usescases.searchTrackEntity.SearchRepositoryImpl
 import org.dhis2.usescases.searchTrackEntity.SearchRepositoryImplKt
 import org.dhis2.usescases.searchTrackEntity.SearchRepositoryKt
 import org.dhis2.usescases.searchTrackEntity.ui.mapper.TEICardMapper
+import org.dhis2.usescases.tracker.TrackedEntityInstanceInfoProvider
 import org.dhis2.utils.DateUtils
 import org.hisp.dhis.android.core.D2
 
@@ -94,7 +93,8 @@ class BiometricsDuplicatesDialogModule(
         networkUtils: NetworkUtils?,
         searchTEIRepository: SearchTEIRepository?,
         themeManager: ThemeManager?,
-        metadataIconProvider: MetadataIconProvider
+        metadataIconProvider: MetadataIconProvider,
+        basicPreferenceProvider: BasicPreferenceProvider
     ): SearchRepository {
         return SearchRepositoryImpl(
             teiType,
@@ -109,7 +109,8 @@ class BiometricsDuplicatesDialogModule(
             networkUtils,
             searchTEIRepository,
             themeManager,
-            metadataIconProvider
+            metadataIconProvider,
+            basicPreferenceProvider
         )
     }
 
@@ -122,12 +123,6 @@ class BiometricsDuplicatesDialogModule(
         periodUtils: DhisPeriodUtils
     ): FieldViewModelFactory {
         return FieldViewModelFactoryImpl(
-            UiStyleProviderImpl(
-                FormUiModelColorFactoryImpl(context, colorUtils),
-                LongTextUiColorFactoryImpl(context, colorUtils),
-                false
-            ),
-            LayoutProviderImpl(),
             HintProviderImpl(context),
             DisplayNameProviderImpl(
                 OptionSetConfiguration(d2),
@@ -145,17 +140,36 @@ class BiometricsDuplicatesDialogModule(
     @Provides
     fun searchRepositoryKt(
         searchRepository: SearchRepository,
-        d2: D2?,
+        d2: D2,
         dispatcherProvider: DispatcherProvider,
         fieldViewModelFactory: FieldViewModelFactory,
-        metadataIconProvider: MetadataIconProvider
+        metadataIconProvider: MetadataIconProvider,
+        colorUtils:ColorUtils
     ): SearchRepositoryKt {
+        val resourceManager = ResourceManager(context, colorUtils)
+        val dateLabelProvider =
+            DateLabelProvider(context, ResourceManager(context, colorUtils))
+        val profilePictureProvider = ProfilePictureProvider(d2!!)
+
         return SearchRepositoryImplKt(
             searchRepository,
-            d2!!,
+            d2,
             dispatcherProvider,
             fieldViewModelFactory,
-            metadataIconProvider
+            metadataIconProvider,
+            TrackedEntityInstanceInfoProvider(
+                d2,
+                profilePictureProvider,
+                dateLabelProvider,
+                metadataIconProvider
+            ),
+            EventInfoProvider(
+                d2,
+                resourceManager,
+                dateLabelProvider,
+                metadataIconProvider,
+                profilePictureProvider
+            )
         )
     }
 

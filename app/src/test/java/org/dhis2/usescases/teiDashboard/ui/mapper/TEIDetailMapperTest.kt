@@ -7,7 +7,6 @@ import org.dhis2.usescases.teiDashboard.DashboardEnrollmentModel
 import org.hisp.dhis.android.core.common.State
 import org.hisp.dhis.android.core.enrollment.Enrollment
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
-import org.hisp.dhis.android.core.event.Event
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
 import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.android.core.program.ProgramStage
@@ -50,9 +49,26 @@ class TEIDetailMapperTest {
         assertEquals(result.title, model.teiHeader)
         assertEquals(result.additionalInfo[0].value, model.trackedEntityAttributes[0].second.value())
         assertEquals(result.additionalInfo[1].value, model.trackedEntityAttributes[1].second.value())
+        assertEquals(result.additionalInfo[3].value, orgUnit().displayName())
     }
 
-    private fun createFakeModel(): DashboardEnrollmentModel {
+    @Test
+    fun shouldShowOwnedAndEnrolledOrgUnit() {
+        val model = createFakeModel(otherOrgUnit())
+
+        val result = mapper.map(
+            dashboardModel = model,
+            phoneCallback = {},
+            emailCallback = {},
+            programsCallback = {},
+            onImageClick = {},
+        )
+
+        assertEquals(result.additionalInfo[3].value, otherOrgUnit().displayName())
+        assertEquals(result.additionalInfo[4].value, model.orgUnits.first().displayName())
+    }
+
+    private fun createFakeModel(ownerOrgUnit: OrganisationUnit = orgUnit()): DashboardEnrollmentModel {
         val attributeValues = listOf(
             Pair(getTEA("uid1", "First Name"), getTEAValue("Jonah")),
             Pair(getTEA("uid2", "Last Name"), getTEAValue("Hill")),
@@ -61,14 +77,14 @@ class TEIDetailMapperTest {
         val model = DashboardEnrollmentModel(
             setEnrollment(),
             emptyList<ProgramStage>(),
-            emptyList<Event>(),
             setTei(),
             attributeValues,
             emptyList<TrackedEntityAttributeValue>(),
             setPrograms(),
-            emptyList<OrganisationUnit>(),
+            listOf(orgUnit()),
             "header",
             "avatarFilepath",
+            ownerOrgUnit,
         )
 
         return model
@@ -95,6 +111,7 @@ class TEIDetailMapperTest {
         .uid("EnrollmentUid")
         .status(EnrollmentStatus.COMPLETED)
         .program("Program1Uid")
+        .organisationUnit("orgUnitUid")
         .build()
 
     private fun setPrograms() = listOf<Pair<Program, MetadataIconData>>(
@@ -113,4 +130,14 @@ class TEIDetailMapperTest {
             MetadataIconData.defaultIcon(),
         ),
     )
+
+    private fun orgUnit() = OrganisationUnit.builder()
+        .uid("orgUnitUid")
+        .displayName("orgUnitName")
+        .build()
+
+    private fun otherOrgUnit() = OrganisationUnit.builder()
+        .uid("otherOrgUnitUid")
+        .displayName("otherOrgUnitName")
+        .build()
 }

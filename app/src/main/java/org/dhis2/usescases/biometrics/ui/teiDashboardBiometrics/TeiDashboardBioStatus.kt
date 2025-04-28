@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import org.dhis2.R
 
 //TODO: Evaluate move this to a common module
 // is a copy of BiometricsStatusFlag
@@ -62,8 +61,7 @@ fun TeiDashboardBioStatusPreview() {
     TeiDashboardBioStatus(
         model = BioStatus(
             text = "Biometrics",
-            backgroundColor = "#4d4d4d",
-            icon = R.drawable.ic_bio_face_success
+            backgroundColor = "#4d4d4d"
         )
     )
 }
