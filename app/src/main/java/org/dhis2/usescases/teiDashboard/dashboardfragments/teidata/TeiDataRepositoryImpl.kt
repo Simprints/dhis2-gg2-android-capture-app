@@ -7,6 +7,7 @@ import org.dhis2.commons.bindings.userFriendlyValue
 import org.dhis2.commons.data.EventViewModel
 import org.dhis2.commons.data.EventViewModelType
 import org.dhis2.commons.data.StageSection
+import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.resources.DhisPeriodUtils
 import org.dhis2.commons.resources.MetadataIconProvider
 import org.dhis2.data.biometrics.utils.updateBiometricsAttributeValue
@@ -36,6 +37,7 @@ class TeiDataRepositoryImpl(
     private val enrollmentUid: String?,
     private val periodUtils: DhisPeriodUtils,
     private val metadataIconProvider: MetadataIconProvider,
+    private val basicPreferenceProvider: BasicPreferenceProvider
 ) : TeiDataRepository {
 
     override fun getTEIEnrollmentEvents(
@@ -159,7 +161,7 @@ class TeiDataRepositoryImpl(
     }
 
     override fun updateBiometricsAttributeValueInTei(value: String, parentTeiUid:String?) {
-        updateBiometricsAttributeValue(d2, teiUid,value)
+        updateBiometricsAttributeValue(d2, basicPreferenceProvider , teiUid,value)
     }
 
     private fun getGroupedEvents(

@@ -158,7 +158,8 @@ public class SearchTEModule {
                                       NetworkUtils networkUtils,
                                       SearchTEIRepository searchTEIRepository,
                                       ThemeManager themeManager,
-                                      MetadataIconProvider metadataIconProvider) {
+                                      MetadataIconProvider metadataIconProvider,
+                                      BasicPreferenceProvider basicPreferenceProvider) {
         return new SearchRepositoryImpl(teiType,
                 initialProgram,
                 d2,
@@ -171,7 +172,8 @@ public class SearchTEModule {
                 networkUtils,
                 searchTEIRepository,
                 themeManager,
-                metadataIconProvider);
+                metadataIconProvider,
+                basicPreferenceProvider);
     }
 
     @Provides
