@@ -623,8 +623,7 @@ class SearchTEIViewModel(
                 biometricsMode == BiometricsMode.full
             ) {
                 listOf(
-                    SequentialSearchAction.SearchWithBiometrics,
-                    SequentialSearchAction.RegisterNew
+                    SequentialSearchAction.SearchWithBiometrics
                 )
             } else {
                 listOf(SequentialSearchAction.RegisterNew)
