@@ -1,0 +1,63 @@
+name: Build signed APK on main branch changes and upload to artifacts
+env:
+  main_project_module: app
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - release/*
+jobs:
+  build-signed-apk-artifact:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Get current date and time
+        id: date-time
+        run: echo "dateTimeUtc=$(date -u +'%Y-%m-%d-%H%M')" >> "$GITHUB_OUTPUT"
+
+      - name: Get commit hash
+        id: commit-hash
+        run: echo "shortSha1=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Get repository name
+        run: echo "repository_name=$(echo '${{ github.repository }}' | awk -F '/' '{print $2}')" >> $GITHUB_ENV
+
+      - name: Set Up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Change wrapper permissions
+        run: chmod +x ./gradlew
+
+      - name: Decode keystore
+        id: decode_keystore
+        uses: timheuer/base64-to-file@v1
+        with:
+          fileName: 'dhis_keystore.jks'
+          encodedString: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: Build release APK
+        run: ./gradlew app:assembleSimprintsRelease
+        env:
+          SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SIGNING_KEYSTORE_PATH: ${{ steps.decode_keystore.outputs.filePath }}
+
+      - name: Get app version
+        working-directory: ./gradle
+        id: read-version
+        run: echo "vName=$(grep 'vName' libs.versions.toml | awk -F' = ' '{print $2}' | tr -d '"')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload built APK to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.repository_name }}-${{ steps.date-time.outputs.dateTimeUtc }}utc-Release-Signed-APK-commit-${{ steps.commit-hash.outputs.shortSha1 }}
+          path: ${{ env.main_project_module }}/build/outputs/apk/simprints/release/dhis2-v${{ steps.read-version.outputs.vName }}-simprints-release.apk
