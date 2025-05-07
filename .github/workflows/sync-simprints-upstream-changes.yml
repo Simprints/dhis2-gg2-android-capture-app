@@ -35,4 +35,4 @@ jobs:
     env:
       CURRENT_FORK_REPOSITORY: ${{ github.repository }}
       UPSTREAM_REPOSITORY: EyeSeeTea/dhis2-android-capture-app
-      GH_TOKEN: ${{ github.token }}
+      GH_TOKEN: ${{ secrets.GH_WORKFLOW_SYNC_PAT }}
