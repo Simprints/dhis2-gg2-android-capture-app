@@ -60,4 +60,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.repository_name }}-${{ steps.date-time.outputs.dateTimeUtc }}utc-Release-Signed-APK-commit-${{ steps.commit-hash.outputs.shortSha1 }}
-          path: ${{ env.main_project_module }}/build/outputs/apk/simprints/release/dhis2-v${{ steps.read-version.outputs.vName }}-simprints-release.apk
+          path: ${{ env.main_project_module }}/build/outputs/apk/simprints/release/dhis2-v${{ steps.read-version.outputs.vName }}.apk
