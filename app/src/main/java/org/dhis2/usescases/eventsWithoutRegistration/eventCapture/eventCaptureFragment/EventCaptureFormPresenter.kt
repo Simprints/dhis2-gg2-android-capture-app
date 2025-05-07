@@ -3,27 +3,10 @@ package org.dhis2.usescases.eventsWithoutRegistration.eventCapture.eventCaptureF
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.dhis2.R
-import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.viewmodel.DispatcherProvider
-import org.dhis2.data.biometrics.getBiometricsConfig
 import org.dhis2.data.dhislogic.AUTH_ALL
 import org.dhis2.data.dhislogic.AUTH_UNCOMPLETE_EVENT
-import org.dhis2.form.data.DataIntegrityCheckResult
-import org.dhis2.form.data.FieldsWithErrorResult
-import org.dhis2.form.data.FieldsWithWarningResult
-import org.dhis2.form.data.MissingMandatoryResult
-import org.dhis2.form.data.NotSavedResult
-import org.dhis2.form.data.SuccessfulResult
-import org.dhis2.form.model.EventMode
-import org.dhis2.form.model.FieldUiModel
-import org.dhis2.form.model.biometrics.BiometricsDataElementStatus
-import org.dhis2.form.model.biometrics.BiometricsDataElementUiModelImpl
-import org.dhis2.usescases.biometrics.BIOMETRICS_ENABLED
-import org.dhis2.usescases.biometrics.entities.BiometricsMode
-import org.dhis2.usescases.biometrics.getOrgUnitAsModuleId
-import org.dhis2.usescases.biometrics.isLastVerificationValid
-import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.eventsWithoutRegistration.EventIdlingResourceSingleton
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureContract
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.domain.ReOpenEventUseCase
@@ -32,7 +15,6 @@ import org.hisp.dhis.android.core.event.Event
 import org.hisp.dhis.android.core.event.EventEditableStatus
 import org.hisp.dhis.android.core.event.EventNonEditableReason
 import org.hisp.dhis.android.core.event.EventStatus
-import org.jetbrains.annotations.Nullable
 
 class EventCaptureFormPresenter(
     private val view: EventCaptureFormView,
@@ -42,196 +24,7 @@ class EventCaptureFormPresenter(
     private val resourceManager: ResourceManager,
     private val reOpenEventUseCase: ReOpenEventUseCase,
     private val dispatcherProvider: DispatcherProvider,
-    private val basicPreferenceProvider: BasicPreferenceProvider,
-    private val orgUnitRepository: OrgUnitRepository
 ) {
-
-    private var biometricsVerificationStatus: Int = -1
-    private var biometricsGuid: String? = null
-    private var teiOrgUnit: String? = null
-    private var trackedEntityInstanceId: String? = null
-
-    private var biometricsVerificationUiModel: BiometricsDataElementUiModelImpl? = null
-
-
-    fun handleDataIntegrityResult(result: DataIntegrityCheckResult, eventMode: EventMode? = null) {
-        when (result) {
-            is FieldsWithErrorResult -> activityPresenter.attemptFinish(
-                result.canComplete,
-                result.onCompleteMessage,
-                result.fieldUidErrorList,
-                result.mandatoryFields,
-                result.warningFields,
-                eventMode,
-            )
-
-            is FieldsWithWarningResult -> activityPresenter.attemptFinish(
-                result.canComplete,
-                result.onCompleteMessage,
-                emptyList(),
-                emptyMap(),
-                result.fieldUidWarningList,
-                eventMode,
-            )
-
-            is MissingMandatoryResult -> activityPresenter.attemptFinish(
-                result.canComplete,
-                result.onCompleteMessage,
-                result.errorFields,
-                result.mandatoryFields,
-                result.warningFields,
-                eventMode,
-            )
-
-            is SuccessfulResult -> activityPresenter.attemptFinish(
-                result.canComplete,
-                result.onCompleteMessage,
-                emptyList(),
-                emptyMap(),
-                emptyList(),
-            )
-
-            NotSavedResult -> {
-                // Nothing to do in this case
-            }
-        }
-    }
-
-    fun onFieldsLoading(fields: List<FieldUiModel>): List<FieldUiModel> {
-        val updatedFields = updateBiometricsField(fields)
-
-        if (BIOMETRICS_ENABLED) {
-
-            biometricsVerificationUiModel = updatedFields.firstOrNull {
-                it is BiometricsDataElementUiModelImpl
-            }?.let { it as BiometricsDataElementUiModelImpl }
-
-
-            biometricsVerificationUiModel?.setBiometricsRetryListener(
-                object : BiometricsDataElementUiModelImpl.BiometricsReTryOnClickListener {
-                    override fun onRetryClick() {
-                        val ageInMonths = activityPresenter.getTEIAgeInMonths()
-
-                        val orgUnitAsModuleId =
-                            getOrgUnitAsModuleId(teiOrgUnit ?: "", d2, basicPreferenceProvider)
-
-                        val orgUnit = orgUnitRepository.getByUid(getOrgUnitId())
-                        val orgUnitUId = orgUnit.uid() ?: ""
-                        val orgUnitName = orgUnit.name() ?: ""
-
-                        val userOrgUnits = orgUnitRepository.getUserOrgUnits(getProgramId())
-
-                        view.verifyBiometrics(
-                            biometricsGuid,
-                            orgUnitAsModuleId,
-                            trackedEntityInstanceId,
-                            ageInMonths,
-                            orgUnitUId,
-                            orgUnitName,
-                            userOrgUnits.map { it.uid() }
-                        )
-                    }
-                }
-            )
-
-            biometricsVerificationUiModel?.setBiometricsRegisterListener(
-                object : BiometricsDataElementUiModelImpl.BiometricsRegisterClickListener {
-                    override fun onClick() {
-                        val ageInMonths = activityPresenter.getTEIAgeInMonths()
-
-                        val orgUnitAsModuleId =
-                            getOrgUnitAsModuleId(teiOrgUnit ?: "", d2, basicPreferenceProvider)
-
-                        val orgUnit = orgUnitRepository.getByUid(getOrgUnitId())
-                        val orgUnitUId = orgUnit.uid() ?: ""
-                        val orgUnitName = orgUnit.name() ?: ""
-
-                        val userOrgUnits = orgUnitRepository.getUserOrgUnits(getProgramId())
-
-                        view.registerBiometrics(
-                            orgUnitAsModuleId,
-                            trackedEntityInstanceId,
-                            ageInMonths,
-                            orgUnitUId,
-                            orgUnitName,
-                            userOrgUnits.map { it.uid() }
-                        )
-                    }
-                }
-            )
-
-            if (biometricsVerificationUiModel != null) {
-                launchBiometricsVerificationIfRequired(updatedFields)
-            }
-        }
-
-        return updatedFields
-    }
-
-    private fun updateBiometricsField(fields: List<FieldUiModel>?): MutableList<FieldUiModel> {
-        val biometricsMode = getBiometricsConfig(basicPreferenceProvider).biometricsMode
-
-        val finalFields = if (biometricsMode == BiometricsMode.full) fields else fields?.filter {
-            it !is BiometricsDataElementUiModelImpl
-        }?.toMutableList()
-
-        return finalFields?.map {
-            if (it is BiometricsDataElementUiModelImpl) {
-                val biometricsUiModel = it as BiometricsDataElementUiModelImpl
-                val status = mapVerificationStatus(biometricsVerificationStatus)
-                biometricsUiModel
-                    .setValue(biometricsGuid)
-                    .setStatus(status)
-            } else {
-                it
-            }
-        } as MutableList<FieldUiModel>
-    }
-
-    private fun launchBiometricsVerificationIfRequired(fields: List<FieldUiModel>) {
-        biometricsVerificationUiModel = fields.firstOrNull {
-            it is BiometricsDataElementUiModelImpl
-        }?.let { it as BiometricsDataElementUiModelImpl }
-
-        if (biometricsVerificationUiModel != null && this.biometricsGuid != null &&
-            this.biometricsGuid!!.isNotBlank() &&
-            biometricsVerificationUiModel!!.status == BiometricsDataElementStatus.NOT_DONE
-        ) {
-            val lastUpdated = activityPresenter.getBiometricsAttributeValueInTeiLastUpdated(
-                biometricsVerificationUiModel?.uid
-            )
-
-            if (!isLastVerificationValid(
-                    lastUpdated,
-                    activityPresenter.getLastBiometricsVerificationDuration(),
-                    true
-                )
-            ) {
-                val ageInMonths = activityPresenter.getTEIAgeInMonths()
-
-                val orgUnitAsModuleId =
-                    getOrgUnitAsModuleId(this.teiOrgUnit ?: "", d2, basicPreferenceProvider)
-
-                val orgUnit = orgUnitRepository.getByUid(getOrgUnitId())
-                val orgUnitUId = orgUnit.uid() ?: ""
-                val orgUnitName = orgUnit.name() ?: ""
-
-                val userOrgUnits = orgUnitRepository.getUserOrgUnits(getProgramId())
-
-                view.verifyBiometrics(
-                    this.biometricsGuid,
-                    orgUnitAsModuleId,
-                    this.trackedEntityInstanceId,
-                    ageInMonths,
-                    orgUnitUId,
-                    orgUnitName,
-                    userOrgUnits.map { it.uid() }
-                )
-            } else {
-                refreshBiometricsStatus(1, false)
-            }
-        }
-    }
 
     fun showOrHideSaveButton() {
         val isEditable =
@@ -240,6 +33,7 @@ class EventCaptureFormPresenter(
         when (isEditable) {
             is EventEditableStatus.Editable -> {
                 view.showSaveButton()
+                view.hideNonEditableMessage()
             }
 
             is EventEditableStatus.NonEditable -> {
@@ -247,6 +41,10 @@ class EventCaptureFormPresenter(
                 configureNonEditableMessage(isEditable.reason)
             }
         }
+    }
+
+    fun saveAndExit(eventStatus: EventStatus?) {
+        activityPresenter.saveAndExit(eventStatus)
     }
 
     private fun configureNonEditableMessage(eventNonEditableReason: EventNonEditableReason) {
@@ -289,67 +87,16 @@ class EventCaptureFormPresenter(
         it.status() == EventStatus.COMPLETED && hasReopenAuthority()
     } ?: false
 
-    private fun getEvent(): Event? {
+    fun getEvent(): Event? {
         return d2.eventModule().events().uid(eventUid).blockingGet()
+    }
+
+    fun getEventStatus(eventUid: String): EventStatus? {
+        return d2.eventModule().events().uid(eventUid).blockingGet()?.status()
     }
 
     private fun hasReopenAuthority(): Boolean = d2.userModule().authorities()
         .byName().`in`(AUTH_UNCOMPLETE_EVENT, AUTH_ALL)
         .one()
         .blockingExists()
-
-    // EyeSeeTea customizations
-
-    fun initBiometricsValues(
-        biometricsGuid: @Nullable String?,
-        biometricsVerificationStatus: Int,
-        teiOrgUnit: @Nullable String?,
-        trackedEntityInstanceId: @Nullable String?
-    ) {
-        this.biometricsGuid = biometricsGuid
-        this.biometricsVerificationStatus = biometricsVerificationStatus
-        this.teiOrgUnit = teiOrgUnit
-        this.trackedEntityInstanceId = trackedEntityInstanceId
-    }
-
-    fun refreshBiometricsStatus(
-        biometricsVerificationStatus: Int,
-        updateBiometricsGuidInAttribute: Boolean = true,
-        newBiometricsGuid: String? = null
-    ) {
-        if (newBiometricsGuid != null) {
-            biometricsGuid = newBiometricsGuid
-        }
-
-        val status = mapVerificationStatus(biometricsVerificationStatus)
-
-        if (status == BiometricsDataElementStatus.SUCCESS && updateBiometricsGuidInAttribute) {
-            activityPresenter.updateBiometricsAttributeValueInTei(biometricsGuid)
-        }
-
-        this.biometricsVerificationStatus = biometricsVerificationStatus
-
-        view.onReopen()
-    }
-
-    private fun mapVerificationStatus(biometricsVerificationStatus: Int): BiometricsDataElementStatus {
-        return when (biometricsVerificationStatus) {
-            0 -> BiometricsDataElementStatus.FAILURE
-            1 -> BiometricsDataElementStatus.SUCCESS
-            else -> BiometricsDataElementStatus.NOT_DONE
-        }
-    }
-
-    private fun getOrgUnitId(): String {
-        val event = d2.eventModule().events().uid(eventUid).blockingGet()
-        val enrollmentUid = event?.enrollment()
-        val organisationUnit = d2.enrollmentModule().enrollments().uid(enrollmentUid).blockingGet()?.organisationUnit()
-
-        return organisationUnit ?: ""
-    }
-
-    private fun getProgramId(): String {
-        val event = d2.eventModule().events().uid(eventUid).blockingGet()
-        return event?.program() ?: ""
-    }
 }

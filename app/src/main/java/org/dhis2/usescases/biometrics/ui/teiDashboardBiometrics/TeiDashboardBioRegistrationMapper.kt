@@ -4,8 +4,6 @@ import org.dhis2.R
 import org.dhis2.commons.biometrics.declinedButtonColor
 import org.dhis2.commons.biometrics.defaultButtonColor
 import org.dhis2.commons.biometrics.failedButtonColor
-import org.dhis2.commons.biometrics.getBioIconFailed
-import org.dhis2.commons.biometrics.getBioIconSuccess
 import org.dhis2.commons.biometrics.successButtonColor
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.data.biometrics.RegisterResult
@@ -21,7 +19,6 @@ class TeiDashboardBioRegistrationMapper(
             BioStatus(
                 text = getText(registerResult),
                 backgroundColor = getBackgroundColor(registerResult) ?: defaultButtonColor,
-                icon = getIcon(registerResult)
             )
         } else {
             null
@@ -31,7 +28,6 @@ class TeiDashboardBioRegistrationMapper(
             BioButtonModel(
                 text = getText(registerResult),
                 backgroundColor = getBackgroundColor(registerResult),
-                icon = getIcon(registerResult),
                 onActionClick = actionCallback
             )
         } else {
@@ -62,22 +58,6 @@ class TeiDashboardBioRegistrationMapper(
 
                 is RegisterResult.AgeGroupNotSupported -> resourceManager.getString(R.string.age_group_not_supported)
                 is RegisterResult.RegisterLastFailure -> resourceManager.getString(R.string.enroll_biometrics)
-            }
-        }
-    }
-
-    private fun getIcon(
-        registerResult: RegisterResult?,
-    ): Int {
-        return if (registerResult == null) {
-            R.drawable.ic_bio_fingerprint
-        } else {
-            when (registerResult) {
-                is RegisterResult.Completed -> resourceManager.context.getBioIconSuccess()
-                is RegisterResult.Failure -> resourceManager.context.getBioIconFailed()
-                is RegisterResult.PossibleDuplicates -> resourceManager.context.getBioIconFailed()
-                is RegisterResult.AgeGroupNotSupported -> resourceManager.context.getBioIconFailed()
-                is RegisterResult.RegisterLastFailure -> R.drawable.ic_bio_fingerprint
             }
         }
     }

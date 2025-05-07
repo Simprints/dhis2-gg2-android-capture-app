@@ -12,6 +12,7 @@ import org.dhis2.commons.bindings.trackedEntityTypeForTei
 import org.dhis2.commons.biometrics.BIOMETRICS_FAILURE_PATTERN
 import org.dhis2.commons.biometrics.BiometricsPreference
 import org.dhis2.commons.data.TeiAttributesInfo
+import org.dhis2.commons.date.DateUtils
 import org.dhis2.commons.matomo.Actions.Companion.CREATE_TEI
 import org.dhis2.commons.matomo.Categories.Companion.TRACKER_LIST
 import org.dhis2.commons.matomo.Labels.Companion.CLICK
@@ -21,10 +22,8 @@ import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.defaultSubscribe
 import org.dhis2.data.biometrics.SimprintsItem
 import org.dhis2.data.biometrics.getBiometricsConfigByProgram
-import org.dhis2.data.biometrics.utils.getBiometricsTrackedEntityAttribute
 import org.dhis2.data.biometrics.utils.getTeiByUid
-import org.dhis2.data.biometrics.utils.getTrackedEntityAttributeValueByAttribute
-import org.dhis2.form.data.EnrollmentRepository
+import org.dhis2.data.biometrics.utils.updateVerification
 import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.RowAction
 import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
@@ -54,6 +53,8 @@ import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityAttributeValue
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceObjectRepository
 import timber.log.Timber
+import java.util.Calendar.DAY_OF_YEAR
+import java.util.Date
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 
@@ -63,7 +64,6 @@ class EnrollmentPresenterImpl(
     val view: EnrollmentView,
     val d2: D2,
     private val enrollmentObjectRepository: EnrollmentObjectRepository,
-    private val dataEntryRepository: EnrollmentRepository,
     private val teiRepository: TrackedEntityInstanceObjectRepository,
     private val programRepository: ReadOnlyOneObjectRepositoryFinalImpl<Program>,
     private val orgUnitRepository: OrgUnitRepository,
@@ -73,8 +73,10 @@ class EnrollmentPresenterImpl(
     private val matomoAnalyticsController: MatomoAnalyticsController,
     private val eventCollectionRepository: EventCollectionRepository,
     private val teiAttributesProvider: TeiAttributesProvider,
+    private val dateEditionWarningHandler: DateEditionWarningHandler,
     private val basicPreferenceProvider: BasicPreferenceProvider,
 ) {
+
 
     private var pendingSave: Boolean = false
     private val disposable = CompositeDisposable()
@@ -158,24 +160,6 @@ class EnrollmentPresenterImpl(
         )
     }
 
-    private fun shouldShowDateEditionWarning(uid: String): Boolean {
-        return if (uid == EnrollmentRepository.ENROLLMENT_DATE_UID &&
-            dataEntryRepository.hasEventsGeneratedByEnrollmentDate() &&
-            !hasShownEnrollmentDateEditionWarning
-        ) {
-            hasShownEnrollmentDateEditionWarning = true
-            true
-        } else if (uid == EnrollmentRepository.INCIDENT_DATE_UID &&
-            dataEntryRepository.hasEventsGeneratedByIncidentDate() &&
-            !hasShownIncidentDateEditionWarning
-        ) {
-            hasShownIncidentDateEditionWarning = true
-            true
-        } else {
-            false
-        }
-    }
-
     fun subscribeToBackButton() {
         disposable.add(
             backButtonProcessor
@@ -211,8 +195,8 @@ class EnrollmentPresenterImpl(
 
     fun updateFields(action: RowAction? = null) {
         action?.let {
-            if (shouldShowDateEditionWarning(it.id)) {
-                view.showDateEditionWarning()
+            dateEditionWarningHandler.shouldShowWarning(fieldUid = it.id) { message ->
+                view.showDateEditionWarning(message)
             }
         }
     }
@@ -254,11 +238,12 @@ class EnrollmentPresenterImpl(
 
     fun deleteAllSavedData() {
         val isTeiInNoOtherProgram by lazy {
-            dataEntryRepository.isTeiInNoOtherProgram(
-                teiUid = teiRepository.blockingGet()?.uid(),
-                programUid = programRepository.blockingGet()?.uid(),
+            enrollmentFormRepository.isTeiInNoOtherProgram(
+                teiUid = teiRepository.blockingGet()?.uid().toString(),
+                programUid = programRepository.blockingGet()?.uid().toString(),
             )
         }
+
         if (teiRepository.blockingGet()?.syncState() == State.TO_POST && isTeiInNoOtherProgram) {
             teiRepository.blockingDelete()
         } else {
@@ -282,8 +267,7 @@ class EnrollmentPresenterImpl(
         }
     }
 
-    private fun isBiometricsAvailable(): Boolean =
-        BIOMETRICS_ENABLED && biometricsUiModel != null
+    fun hasWriteAccess() = enrollmentFormRepository.hasWriteAccess()
 
     fun showOrHideSaveButton() {
         val teiUid = teiRepository.blockingGet()?.uid() ?: ""
@@ -303,6 +287,29 @@ class EnrollmentPresenterImpl(
                 event?.status() == EventStatus.SKIPPED ||
                 event?.status() == EventStatus.OVERDUE
     }
+
+    fun suggestedReportDateIsNotFutureDate(eventUid: String): Boolean {
+        return try {
+            val event = eventCollectionRepository.uid(eventUid).blockingGet()
+            val programStage =
+                d2.programModule().programStages().uid(event?.programStage()).blockingGet()
+            val enrollment = enrollmentObjectRepository.blockingGet()
+            val generatedByEnrollment = programStage?.generatedByEnrollmentDate() ?: false
+            val startDate =
+                if (generatedByEnrollment) enrollment?.enrollmentDate() else enrollment?.incidentDate()
+            val calendar = DateUtils.getInstance().getCalendarByDate(startDate)
+            calendar.add(DAY_OF_YEAR, programStage?.minDaysFromStart() ?: 0)
+            val minStartReportEventDate = calendar.time
+            val currentDate = DateUtils.getInstance().getStartOfDay(Date())
+            return minStartReportEventDate.before(currentDate) || minStartReportEventDate == currentDate
+        } catch (e: Exception) {
+            Timber.d(e.message)
+            true
+        }
+    }
+
+    private fun isBiometricsAvailable(): Boolean =
+        BIOMETRICS_ENABLED && biometricsUiModel != null
 
     fun onBiometricsCompleted(guid: String) {
         lastPossibleDuplicates = null
@@ -330,6 +337,12 @@ class EnrollmentPresenterImpl(
     private fun saveBiometricValue(value: String?) {
         biometricsUiModel!!.onTextChange(value)
         biometricsUiModel!!.onSave(value)
+
+        if (value != null) {
+            val teiUid = teiRepository.blockingGet()?.uid() ?: ""
+
+            updateVerification(basicPreferenceProvider, teiUid)
+        }
 
         if (pendingSave) {
             pendingSave = false
@@ -399,7 +412,6 @@ class EnrollmentPresenterImpl(
 
             lastPossibleDuplicates = LastPossibleDuplicates(finalPossibleDuplicates, sessionId)
 
-            view.hideProgress()
             view.showPossibleDuplicatesDialog(
                 finalPossibleDuplicates,
                 sessionId,
@@ -531,24 +543,10 @@ class EnrollmentPresenterImpl(
         } as MutableList<FieldUiModel>
     }
 
-    fun getBiometricsGuid(): String? {
-        val teiUid = teiRepository.blockingGet()?.uid() ?: return null
-
-        val teiValues = getTeiByUid(d2, teiUid)?.trackedEntityAttributeValues() ?: return null
-
-        val biometricsAttribute = getBiometricsTrackedEntityAttribute(d2) ?: return null
-
-        val attValue = getTrackedEntityAttributeValueByAttribute(
-            biometricsAttribute,
-            teiValues
-        )
-
-        return attValue?.value()
-    }
-
     fun registerLastFailure() {
         pendingSave = true
 
         saveBiometricValue(null)
     }
 }
+

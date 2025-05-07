@@ -1,10 +1,12 @@
 package org.dhis2.data.biometrics
 
 import org.dhis2.usescases.biometrics.entities.BiometricsConfig
-import retrofit2.Call
-import retrofit2.http.GET
+import org.hisp.dhis.android.core.arch.api.HttpServiceClient
 
-interface BiometricsConfigApi {
-    @GET("dataStore/simprints/config")
-    fun getData(): Call<List<BiometricsConfig>>
+class BiometricsConfigApi (private val client: HttpServiceClient) {
+    suspend fun getData(): List<BiometricsConfig> {
+        return client.get {
+            url("dataStore/simprints/config")
+        }
+    }
 }

@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.paging.PagingData
 import io.reactivex.functions.Consumer
 import kotlinx.coroutines.flow.Flow
-import org.dhis2.commons.data.SearchTeiModel
+import org.dhis2.usescases.searchTrackEntity.SearchTeiModel
 import org.hisp.dhis.android.core.arch.call.D2Progress
 
 interface BiometricsDuplicatesDialogView {

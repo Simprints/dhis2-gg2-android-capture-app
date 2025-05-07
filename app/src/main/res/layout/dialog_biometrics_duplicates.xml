@@ -53,7 +53,7 @@
                     android:gravity="center_horizontal"
                     android:textSize="18sp"
                     android:ellipsize="end"
-                    android:textColor="@color/dark_grey"
+                    android:textColor="@color/gray_9b9"
                     android:text="@string/biometrics_duplicates_empty_message" />
 
             </RelativeLayout>

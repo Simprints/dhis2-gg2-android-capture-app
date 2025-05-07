@@ -7,8 +7,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.lifecycle.Lifecycle
-import timber.log.Timber
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
@@ -20,11 +18,13 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewModelScope
 import androidx.paging.LoadState
 import androidx.paging.map
 import androidx.recyclerview.widget.ConcatAdapter
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -32,6 +32,7 @@ import org.dhis2.bindings.dp
 import org.dhis2.commons.dialogs.imagedetail.ImageDetailActivity
 import org.dhis2.commons.filters.workingLists.WorkingListViewModel
 import org.dhis2.commons.filters.workingLists.WorkingListViewModelFactory
+import org.dhis2.commons.idlingresource.SearchIdlingResourceSingleton
 import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.databinding.FragmentSearchListBinding
 import org.dhis2.usescases.biometrics.ui.SequentialNextSearchActions
@@ -39,12 +40,14 @@ import org.dhis2.usescases.biometrics.ui.SequentialSearch
 import org.dhis2.usescases.general.FragmentGlobalAbstract
 import org.dhis2.usescases.searchTrackEntity.SearchTEActivity
 import org.dhis2.usescases.searchTrackEntity.SearchTEIViewModel
+import org.dhis2.usescases.searchTrackEntity.SearchTeiModel
 import org.dhis2.usescases.searchTrackEntity.SearchTeiViewModelFactory
 import org.dhis2.usescases.searchTrackEntity.adapters.SearchTeiLiveAdapter
 import org.dhis2.usescases.searchTrackEntity.ui.CreateNewButton
 import org.dhis2.usescases.searchTrackEntity.ui.FullSearchButtonAndWorkingList
 import org.dhis2.usescases.searchTrackEntity.ui.mapper.TEICardMapper
 import org.dhis2.utils.isLandscape
+import timber.log.Timber
 import javax.inject.Inject
 
 const val ARG_FROM_RELATIONSHIP = "ARG_FROM_RELATIONSHIP"
@@ -68,6 +71,9 @@ class SearchTEList : FragmentGlobalAbstract() {
 
     private val workingListViewModel by viewModels<WorkingListViewModel> { workingListViewModelFactory }
 
+    private val KEY_SCROLL_POSITION = "scroll_position"
+    private val KEY_LAST_CLICKED_TEI_UID = "last_clicked_tei_uid"
+
     private val initialLoadingAdapter by lazy {
         SearchListResultAdapter { }
     }
@@ -84,9 +90,10 @@ class SearchTEList : FragmentGlobalAbstract() {
             onDownloadTei = viewModel::onDownloadTei,
             onTeiClick = viewModel::onTeiClick,
             onImageClick = ::displayImageDetail,
-            onSearchTeiModelClick = viewModel::onSearchTeiModelClick,
+            onSearchTeiModelClick = ::onSearchTeiModelClick,
         )
     }
+
 
     private val globalAdapter by lazy {
         SearchTeiLiveAdapter(
@@ -116,6 +123,8 @@ class SearchTEList : FragmentGlobalAbstract() {
         arguments?.getBoolean(ARG_FROM_RELATIONSHIP) ?: false
     }
 
+    private var currentLastClickedTeiUid: String? = null
+
     companion object {
         fun get(fromRelationships: Boolean): SearchTEList {
             return SearchTEList().apply {
@@ -132,9 +141,9 @@ class SearchTEList : FragmentGlobalAbstract() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        (context as SearchTEActivity).searchComponent.plus(
+        (context as SearchTEActivity).searchComponent?.plus(
             SearchTEListModule(),
-        ).inject(this)
+        )?.inject(this)
     }
 
     @ExperimentalAnimationApi
@@ -144,7 +153,10 @@ class SearchTEList : FragmentGlobalAbstract() {
         savedInstanceState: Bundle?,
     ): View {
         return FragmentSearchListBinding.inflate(inflater, container, false).apply {
-            configureList(scrollView)
+            configureList(scrollView,
+                savedInstanceState?.getInt(KEY_SCROLL_POSITION),
+                savedInstanceState?.getString(KEY_LAST_CLICKED_TEI_UID))
+
             configureOpenSearchButton(openSearchButton)
 
             //EyeSeeTea customization
@@ -155,12 +167,41 @@ class SearchTEList : FragmentGlobalAbstract() {
         }
     }
 
-    private fun configureList(scrollView: RecyclerView) {
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+
+        val layoutManager = recycler.layoutManager as? LinearLayoutManager
+        layoutManager?.let {
+            outState.putInt(KEY_SCROLL_POSITION, it.findFirstCompletelyVisibleItemPosition())
+        }
+
+        if (currentLastClickedTeiUid != null) {
+            outState.putString(KEY_LAST_CLICKED_TEI_UID, currentLastClickedTeiUid)
+        }
+    }
+
+    private fun configureList(
+        scrollView: RecyclerView,
+        currentVisiblePosition: Int?,
+        lastClickedTeiUid: String?,
+    ) {
+        var currentPosition = currentVisiblePosition
+        currentLastClickedTeiUid = lastClickedTeiUid
+
+        val layoutManager = scrollView.layoutManager as? LinearLayoutManager
         scrollView.apply {
             adapter = listAdapter
+            // Deactivate ItemAnimator to avoid crash:
+            // java.lang.IllegalArgumentException: Tmp detached view should be removed from RecyclerView before it can be recycled
+            itemAnimator = null
             addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
                     super.onScrollStateChanged(recyclerView, newState)
+                    if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                        SearchIdlingResourceSingleton.decrement()
+                    } else if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                        SearchIdlingResourceSingleton.increment()
+                    }
                     if (!recyclerView.canScrollVertically(DIRECTION_DOWN)) {
                         viewModel.isScrollingDown.value = false
                     }
@@ -170,18 +211,25 @@ class SearchTEList : FragmentGlobalAbstract() {
                     super.onScrolled(recyclerView, dx, dy)
                     if (dy > 0) {
                         viewModel.isScrollingDown.value = true
+                        currentPosition = layoutManager?.findFirstCompletelyVisibleItemPosition()
                     } else if (dy < 0) {
                         viewModel.isScrollingDown.value = false
+                        currentPosition = layoutManager?.findFirstCompletelyVisibleItemPosition()
                     }
                 }
             })
-            liveAdapter.registerAdapterDataObserver(object : RecyclerView.AdapterDataObserver() {
-                override fun onItemRangeInserted(positionStart: Int, itemCount: Int) {
-                    if (positionStart == 0) {
-                        scrollToPosition(0)
+            lifecycleScope.launch {
+                liveAdapter.loadStateFlow.collectLatest {
+                    if (currentLastClickedTeiUid != null) {
+                        val position = liveAdapter.snapshot().items.indexOfFirst { it.tei.uid() == currentLastClickedTeiUid }
+                        if (position != -1) {
+                            layoutManager?.scrollToPositionWithOffset(position, 0)
+                        }
+                    } else {
+                        scrollToPosition(currentPosition ?: 0)
                     }
                 }
-            })
+            }
         }.also {
             recycler = it
         }
@@ -349,7 +397,6 @@ class SearchTEList : FragmentGlobalAbstract() {
         displayLoadingData()
 
         viewModel.fetchListResults {
-
             lifecycleScope.launch {
                 it?.takeIf { view != null }?.collectLatest {
                     liveAdapter.addOnPagesUpdatedListener {
@@ -357,13 +404,12 @@ class SearchTEList : FragmentGlobalAbstract() {
                     }
 
                     val pagingData = it.map { searchResult ->
-                        searchResult.setBiometricsSearchStatus(viewModel.getBiometricsSearchStatus())
+                        Timber.d("SearchResult: $searchResult")
 
                         searchResult
                     }
 
                     liveAdapter.submitData(lifecycle, pagingData)
-
                 } ?: onInitDataLoaded()
             }
         }
@@ -471,4 +517,9 @@ class SearchTEList : FragmentGlobalAbstract() {
         }
     }
 
+    private fun onSearchTeiModelClick(item: SearchTeiModel) {
+        currentLastClickedTeiUid =  item.tei.uid()
+
+        viewModel.onSearchTeiModelClick(item)
+    }
 }

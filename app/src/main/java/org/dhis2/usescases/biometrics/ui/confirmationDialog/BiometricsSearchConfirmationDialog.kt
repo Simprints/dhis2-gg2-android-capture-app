@@ -39,8 +39,8 @@ import androidx.fragment.app.FragmentManager
 import org.dhis2.R
 import org.dhis2.bindings.app
 import org.dhis2.commons.biometrics.gradientButtonColor
-import org.dhis2.commons.data.SearchTeiModel
 import org.dhis2.commons.ui.model.ListCardUiModel
+import org.dhis2.usescases.searchTrackEntity.SearchTeiModel
 import org.dhis2.usescases.searchTrackEntity.ui.mapper.TEICardMapper
 
 const val BIOMETRICS_SEARCH_CONFIRMATION_DIALOG_TAG: String =

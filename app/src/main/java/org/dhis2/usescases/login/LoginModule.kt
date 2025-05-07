@@ -14,11 +14,12 @@ import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.dhis2.data.biometric.BiometricController
 import org.dhis2.data.biometrics.BiometricsConfigApi
 import org.dhis2.data.biometrics.BiometricsConfigRepositoryImpl
-import org.dhis2.data.fingerprint.FingerPrintController
 import org.dhis2.data.server.UserManager
 import org.dhis2.usescases.biometrics.repositories.BiometricsConfigRepository
+import org.dhis2.usescases.general.ActivityGlobalAbstract
 import org.dhis2.usescases.login.auth.OpenIdProviders
 import org.dhis2.utils.analytics.AnalyticsHelper
 import org.hisp.dhis.android.core.D2
@@ -30,6 +31,9 @@ class LoginModule(
     private val viewModelStoreOwner: ViewModelStoreOwner,
     private val userManager: UserManager?,
 ) {
+
+    @Provides
+    fun provideActivity(): ActivityGlobalAbstract = view.abstractActivity
 
     @Provides
     @PerActivity
@@ -49,9 +53,8 @@ class LoginModule(
         d2: D2,
         basicPreferences: BasicPreferenceProvider
     ): BiometricsConfigRepository {
-        val biometricsConfigApi = d2.retrofit().create(
-            BiometricsConfigApi::class.java
-        )
+        val biometricsConfigApi = BiometricsConfigApi(d2.httpServiceClient())
+
         return BiometricsConfigRepositoryImpl(d2, basicPreferences, biometricsConfigApi)
     }
 
@@ -62,7 +65,7 @@ class LoginModule(
         resourceManager: ResourceManager,
         schedulerProvider: SchedulerProvider,
         dispatcherProvider: DispatcherProvider,
-        fingerPrintController: FingerPrintController,
+        biometricController: BiometricController,
         analyticsHelper: AnalyticsHelper,
         crashReportController: CrashReportController,
         networkUtils: NetworkUtils,
@@ -76,7 +79,7 @@ class LoginModule(
                 resourceManager,
                 schedulerProvider,
                 dispatcherProvider,
-                fingerPrintController,
+                biometricController,
                 analyticsHelper,
                 crashReportController,
                 networkUtils,

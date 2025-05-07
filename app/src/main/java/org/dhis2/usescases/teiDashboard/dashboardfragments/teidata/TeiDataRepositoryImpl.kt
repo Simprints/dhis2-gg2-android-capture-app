@@ -7,11 +7,13 @@ import org.dhis2.commons.bindings.userFriendlyValue
 import org.dhis2.commons.data.EventViewModel
 import org.dhis2.commons.data.EventViewModelType
 import org.dhis2.commons.data.StageSection
-import org.dhis2.commons.date.DateUtils
+import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.resources.DhisPeriodUtils
 import org.dhis2.commons.resources.MetadataIconProvider
 import org.dhis2.data.biometrics.utils.updateBiometricsAttributeValue
 import org.dhis2.ui.toColor
+import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.getProgramStageName
+import org.dhis2.utils.DateUtils
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.getProgramStageName
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.arch.repositories.scope.RepositoryScope
@@ -35,6 +37,7 @@ class TeiDataRepositoryImpl(
     private val enrollmentUid: String?,
     private val periodUtils: DhisPeriodUtils,
     private val metadataIconProvider: MetadataIconProvider,
+    private val basicPreferenceProvider: BasicPreferenceProvider
 ) : TeiDataRepository {
 
     override fun getTEIEnrollmentEvents(
@@ -47,7 +50,11 @@ class TeiDataRepositoryImpl(
         return if (groupedByStage) {
             getGroupedEvents(eventRepo, selectedStage!!, replaceProgramStageName)
         } else {
-            getTimelineEvents(eventRepo, replaceProgramStageName)
+            getTimelineEvents(
+                eventRepo,
+                if (selectedStage != null) selectedStage!!.showAllEvents else true,
+                replaceProgramStageName
+            )
         }
     }
 
@@ -154,7 +161,7 @@ class TeiDataRepositoryImpl(
     }
 
     override fun updateBiometricsAttributeValueInTei(value: String, parentTeiUid:String?) {
-        updateBiometricsAttributeValue(d2, teiUid,value)
+        updateBiometricsAttributeValue(d2, basicPreferenceProvider , teiUid,value)
     }
 
     private fun getGroupedEvents(
@@ -182,14 +189,14 @@ class TeiDataRepositoryImpl(
 
                     val canAddEventToEnrollment = enrollmentUid?.let {
                         programStage.access()?.data()?.write() == true &&
-                            d2.eventModule().eventService().blockingCanAddEventToEnrollment(
-                                it,
-                                programStage.uid(),
-                            )
+                                d2.eventModule().eventService().blockingCanAddEventToEnrollment(
+                                    it,
+                                    programStage.uid(),
+                                )
                     } ?: false
 
                     val showAllEvents = selectedStage.showAllEvents &&
-                        selectedStage.stageUid == programStage.uid()
+                            selectedStage.stageUid == programStage.uid()
 
                     eventViewModels.add(
                         EventViewModel(
@@ -219,7 +226,8 @@ class TeiDataRepositoryImpl(
                         val showBottomShadow = index == eventList.size - 1
 
                         val finalProgramStage = if (replaceProgramStageName == true)
-                            programStage.toBuilder().displayName(getProgramStageName(d2, event.uid())).build()
+                            programStage.toBuilder()
+                                .displayName(getProgramStageName(d2, event.uid())).build()
                         else programStage
 
                         eventViewModels.add(
@@ -309,7 +317,8 @@ class TeiDataRepositoryImpl(
                         .blockingGet() ?: throw IllegalArgumentException()
 
                     val finalProgramStage = if (replaceProgramStageName == true)
-                        programStage?.toBuilder()?.displayName(getProgramStageName(d2, event.uid()))?.build()
+                        programStage?.toBuilder()?.displayName(getProgramStageName(d2, event.uid()))
+                            ?.build()
                     else programStage
 
                     eventViewModels.add(
@@ -325,7 +334,10 @@ class TeiDataRepositoryImpl(
                                 .uid(event.organisationUnit()).blockingGet()?.displayName()
                                 ?: "",
                             catComboName = getCatOptionComboName(event.attributeOptionCombo()),
-                            dataElementValues = getEventValues(event.uid(), finalProgramStage?.uid()),
+                            dataElementValues = getEventValues(
+                                event.uid(),
+                                finalProgramStage?.uid()
+                            ),
                             groupedByStage = false,
                             displayDate = periodUtils.getPeriodUIString(
                                 programStage.periodType() ?: PeriodType.Daily,
@@ -460,7 +472,7 @@ class TeiDataRepositoryImpl(
     override fun displayOrganisationUnit(programUid: String): Boolean {
         return d2.organisationUnitModule().organisationUnits()
             .byProgramUids(listOf(programUid))
-            .blockingGet().size > 1
+            .blockingCount() > 1
     }
 
     override fun enrollmentOrgUnitInCaptureScope(enrollmentOrgUnit: String): Boolean {
