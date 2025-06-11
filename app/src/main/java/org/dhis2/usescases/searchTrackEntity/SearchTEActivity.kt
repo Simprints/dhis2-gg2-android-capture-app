@@ -42,7 +42,6 @@ import org.dhis2.commons.biometrics.BIOMETRICS_USER_NOT_FOUND
 import org.dhis2.commons.date.DateUtils
 import org.dhis2.commons.date.DateUtils.OnNextSelected
 import org.dhis2.commons.date.Period
-import org.dhis2.commons.dialogs.CustomDialog
 import org.dhis2.commons.extensions.closeKeyboard
 import org.dhis2.commons.featureconfig.data.FeatureConfigRepository
 import org.dhis2.commons.filters.FilterItem
@@ -67,7 +66,6 @@ import org.dhis2.databinding.ActivitySearchBinding
 import org.dhis2.form.ui.intent.FormIntent.OnSave
 import org.dhis2.tracker.NavigationBarUIState
 import org.dhis2.ui.ThemeManager
-import org.dhis2.usescases.biometrics.ui.SearchHelperFragment
 import org.dhis2.usescases.biometrics.ui.SequentialSearchAction.SearchWithAttributes
 import org.dhis2.usescases.biometrics.ui.SequentialSearchAction.SearchWithBiometrics
 import org.dhis2.usescases.biometrics.ui.confirmationDialog.BIOMETRICS_SEARCH_CONFIRMATION_DIALOG_TAG
@@ -166,9 +164,6 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
     }
 
     private var currentContent: Content? = null
-
-    private var searchHelperFragment: SearchHelperFragment? = null
-    private var biometricsErrorDialog: CustomDialog? = null
     private var lastSelection: SearchTeiModel? = null
 
     @OptIn(ExperimentalAnimationApi::class)
@@ -232,8 +227,6 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
         if (intent.shouldLaunchSyncDialog()) {
             openSyncDialog()
         }
-
-        initSearchHelperFragment()
 
         viewModel.setOnSequentialSearchActionListener { action ->
             if (action != null) {
@@ -956,12 +949,6 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
         ) {
             Handler(Looper.getMainLooper()).postDelayed({ viewModel.openSearchForm() }, 100)
         }
-    }
-
-    private fun initSearchHelperFragment() {
-        searchHelperFragment = SearchHelperFragment()
-        val transaction = supportFragmentManager.beginTransaction()
-        transaction.replace(R.id.searchHelperViewContainer, searchHelperFragment!!).commit()
     }
 
     companion object {

@@ -287,9 +287,6 @@ class SearchTEIViewModel(
                     hasActiveFilters = hasActiveFilters(),
                     isOpened = filterIsOpen(),
                 ),
-                searchHelper = SearchHelper(
-                    isOpened = false,
-                ),
                 biometricsMode
             )
         )
@@ -321,10 +318,6 @@ class SearchTEIViewModel(
                 searchFilters = SearchFilters(
                     hasActiveFilters = hasActiveFilters(),
                     isOpened = filterIsOpen(),
-                ),
-
-                searchHelper = SearchHelper(
-                    isOpened = false,
                 ),
                 BiometricsMode.zero
             ),
@@ -360,9 +353,6 @@ class SearchTEIViewModel(
                 searchFilters = SearchFilters(
                     hasActiveFilters = hasActiveFilters(),
                     isOpened = false,
-                ),
-                searchHelper = SearchHelper(
-                    isOpened = biometricsMode == BiometricsMode.full && (fromRelationship == null || fromRelationship == false),
                 ),
                 biometricsMode
             ),
@@ -919,18 +909,7 @@ class SearchTEIViewModel(
             }
         } ?: false
 
-        val searchHelperIsOpen = _screenState.value?.let {
-            if (it is SearchList) {
-                it.searchHelper.isOpened
-            } else {
-                false
-            }
-        } ?: false
-
-        if (isPortrait && searchHelperIsOpen) {
-            //EyeSeeTea Customization
-            closeSearchHelper()
-        } else if (isPortrait && searchOrFilterIsOpen && !searchScreenIsForced) {
+        if (isPortrait && searchOrFilterIsOpen && !searchScreenIsForced) {
             if (keyBoardIsOpen) closeKeyboardCallback()
             closeSearchOrFilterCallback()
             viewModelScope.launch {
@@ -1241,27 +1220,8 @@ class SearchTEIViewModel(
         }
     }
 
-    fun onSearchHelperActionSelected(action: SequentialSearchAction) {
-        closeSearchHelper()
-
-        onSearchHelperAction(action)
-    }
-
     private var onSequentialSearchActionCallback: ((helperAction: SequentialSearchAction) -> Unit)? =
         null
-
-    private fun closeSearchHelper() {
-        _screenState.value.takeIf { it is SearchList }?.let {
-            val currentScreen = (it as SearchList)
-            currentScreen.copy(
-                searchHelper = SearchHelper(
-                    isOpened = false,
-                ),
-            )
-        }?.let {
-            _screenState.value = it
-        }
-    }
 
     fun setOnSequentialSearchActionListener(filterIsOpenCallback: (action: SequentialSearchAction) -> Unit) {
         this.onSequentialSearchActionCallback = filterIsOpenCallback
@@ -1278,7 +1238,7 @@ class SearchTEIViewModel(
     }
 
     fun sequentialSearchNextAction(action: SequentialSearchAction) {
-        onSearchHelperActionSelected(action)
+        onSearchHelperAction(action)
     }
 
     fun resetSequentialSearch() {
