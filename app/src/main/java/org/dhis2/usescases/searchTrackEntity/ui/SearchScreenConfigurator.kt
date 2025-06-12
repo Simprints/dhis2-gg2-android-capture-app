@@ -38,7 +38,6 @@ class SearchScreenConfigurator(
         when {
             searchConfiguration.searchFilters.isOpened -> openFilters()
             searchConfiguration.searchForm.isOpened -> openSearch()
-            searchConfiguration.searchHelper.isOpened -> openSearchHelper()
             else -> closeBackdrop()
         }
 

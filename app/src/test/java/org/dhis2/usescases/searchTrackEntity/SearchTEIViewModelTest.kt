@@ -166,9 +166,7 @@ class SearchTEIViewModelTest {
         val screenState = viewModel.screenState.value
         assertTrue(screenState is SearchList)
 
-        // EyeSeeTea customization - show helper screen
-        //assertTrue((screenState as SearchList).searchForm.isOpened)
-        assertTrue((screenState as SearchList).searchHelper.isOpened)
+        assertTrue((screenState as SearchList).searchForm.isOpened)
     }
 
     @Test
