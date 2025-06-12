@@ -35,9 +35,12 @@ import org.dhis2.commons.filters.workingLists.WorkingListViewModelFactory
 import org.dhis2.commons.idlingresource.SearchIdlingResourceSingleton
 import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.databinding.FragmentSearchListBinding
+import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.ui.SequentialNextSearchActions
 import org.dhis2.usescases.biometrics.ui.SequentialSearch
+import org.dhis2.usescases.biometrics.ui.SequentialSearchAction
 import org.dhis2.usescases.general.FragmentGlobalAbstract
+import org.dhis2.usescases.searchTrackEntity.SearchList
 import org.dhis2.usescases.searchTrackEntity.SearchTEActivity
 import org.dhis2.usescases.searchTrackEntity.SearchTEIViewModel
 import org.dhis2.usescases.searchTrackEntity.SearchTeiModel
@@ -153,9 +156,11 @@ class SearchTEList : FragmentGlobalAbstract() {
         savedInstanceState: Bundle?,
     ): View {
         return FragmentSearchListBinding.inflate(inflater, container, false).apply {
-            configureList(scrollView,
+            configureList(
+                scrollView,
                 savedInstanceState?.getInt(KEY_SCROLL_POSITION),
-                savedInstanceState?.getString(KEY_LAST_CLICKED_TEI_UID))
+                savedInstanceState?.getString(KEY_LAST_CLICKED_TEI_UID)
+            )
 
             configureOpenSearchButton(openSearchButton)
 
@@ -221,7 +226,8 @@ class SearchTEList : FragmentGlobalAbstract() {
             lifecycleScope.launch {
                 liveAdapter.loadStateFlow.collectLatest {
                     if (currentLastClickedTeiUid != null) {
-                        val position = liveAdapter.snapshot().items.indexOfFirst { it.tei.uid() == currentLastClickedTeiUid }
+                        val position =
+                            liveAdapter.snapshot().items.indexOfFirst { it.tei.uid() == currentLastClickedTeiUid }
                         if (position != -1) {
                             layoutManager?.scrollToPositionWithOffset(position, 0)
                         }
@@ -245,10 +251,17 @@ class SearchTEList : FragmentGlobalAbstract() {
                 val teTypeName by viewModel.teTypeName.observeAsState()
                 val sequentialSearch by viewModel.sequentialSearch.observeAsState(false)
                 val isLoaded by viewModel.isDataLoaded.observeAsState(false)
+                val screenState by viewModel.screenState.observeAsState(false)
 
                 val seqSearch = (sequentialSearch as SequentialSearch?)
 
+
                 if (seqSearch == null && !teTypeName.isNullOrBlank() && isLoaded == true) {
+
+                    val isBiometricsFull =
+                        screenState is SearchList && (screenState as SearchList).biometricsMode == BiometricsMode.full
+
+
                     val isFilterOpened by viewModel.filtersOpened.observeAsState(false)
                     val createButtonVisibility by viewModel
                         .createButtonScrollVisibility.observeAsState(true)
@@ -263,7 +276,11 @@ class SearchTEList : FragmentGlobalAbstract() {
                         closeFilterVisibility = isFilterOpened,
                         isLandscape = isLandscape(),
                         queryData = queryData,
-                        onSearchClick = { viewModel.setSearchScreen(fromRelationship) },
+                        onSearchClick = {
+                            if (isBiometricsFull) viewModel.sequentialSearchNextAction(
+                                SequentialSearchAction.SearchWithBiometrics
+                            ) else viewModel.setSearchScreen(fromRelationship)
+                        },
                         onEnrollClick = { viewModel.onEnrollClick() },
                         onCloseFilters = { viewModel.onFiltersClick(isLandscape()) },
                         onClearSearchQuery = {
@@ -518,7 +535,7 @@ class SearchTEList : FragmentGlobalAbstract() {
     }
 
     private fun onSearchTeiModelClick(item: SearchTeiModel) {
-        currentLastClickedTeiUid =  item.tei.uid()
+        currentLastClickedTeiUid = item.tei.uid()
 
         viewModel.onSearchTeiModelClick(item)
     }
