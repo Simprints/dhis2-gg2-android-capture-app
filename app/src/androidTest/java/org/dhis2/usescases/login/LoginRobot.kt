@@ -21,14 +21,13 @@ import androidx.test.platform.app.InstrumentationRegistry
 import org.dhis2.R
 import org.dhis2.common.BaseRobot
 import org.dhis2.common.viewactions.ClickDrawableAction
-import org.dhis2.ui.dialogs.bottomsheet.CLICKABLE_TEXT_TAG
+import org.dhis2.commons.dialogs.bottomsheet.CLICKABLE_TEXT_TAG
 import org.dhis2.usescases.BaseTest.Companion.MOCK_SERVER_URL
 import org.dhis2.usescases.about.PolicyView
 import org.dhis2.usescases.qrScanner.ScanActivity
 import org.dhis2.utils.WebViewActivity
 import org.hamcrest.CoreMatchers
 import org.hamcrest.CoreMatchers.not
-import androidx.compose.ui.test.hasText
 
 
 fun loginRobot(
@@ -154,7 +153,9 @@ class LoginRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
     }
 
     fun checkShareDataDialogIsDisplayed() {
-        onView(withId(android.R.id.content)).check(matches(isDisplayed()))
+        val title = InstrumentationRegistry.getInstrumentation()
+            .targetContext.getString(R.string.improve_app_msg_title)
+        composeTestRule.onNodeWithText(title)
     }
 
     fun clickOnPrivacyPolicy() {

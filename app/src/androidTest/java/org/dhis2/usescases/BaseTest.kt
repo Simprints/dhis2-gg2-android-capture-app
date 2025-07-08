@@ -6,10 +6,12 @@ import androidx.test.espresso.IdlingRegistry
 import androidx.test.espresso.intent.Intents
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.rule.GrantPermissionRule
+import dhis2.org.analytics.charts.idling.AnalyticsCountingIdlingResource
 import org.dhis2.AppTest
 import org.dhis2.AppTest.Companion.DB_TO_IMPORT
 import org.dhis2.common.BaseRobot
 import org.dhis2.common.di.TestingInjector
+import org.dhis2.common.featureConfig.FeatureConfigRobot
 import org.dhis2.common.keystore.KeyStoreRobot
 import org.dhis2.common.keystore.KeyStoreRobot.Companion.KEYSTORE_PASSWORD
 import org.dhis2.common.keystore.KeyStoreRobot.Companion.KEYSTORE_USERNAME
@@ -18,14 +20,18 @@ import org.dhis2.common.keystore.KeyStoreRobot.Companion.USERNAME
 import org.dhis2.common.mockwebserver.MockWebServerRobot
 import org.dhis2.common.preferences.PreferencesRobot
 import org.dhis2.common.rules.DisableAnimations
+import org.dhis2.commons.featureconfig.model.Feature
 import org.dhis2.commons.idlingresource.CountingIdlingResourceSingleton
 import org.dhis2.commons.idlingresource.SearchIdlingResourceSingleton
 import org.dhis2.commons.prefs.Preference
 import org.dhis2.form.ui.idling.FormCountingIdlingResource
+import org.dhis2.maps.utils.OnMapReadyIdlingResourceSingleton
+import org.dhis2.mobile.commons.coroutine.AndroidIdlingResource
+import org.dhis2.mobile.commons.coroutine.IdlingResourceProvider
+import org.dhis2.mobile.commons.coroutine.NoOpIdlingResource
 import org.dhis2.usescases.eventsWithoutRegistration.EventIdlingResourceSingleton
 import org.dhis2.usescases.programEventDetail.eventList.EventListIdlingResourceSingleton
 import org.dhis2.usescases.teiDashboard.dashboardfragments.teidata.TeiDataIdlingResourceSingleton
-import org.dhis2.maps.utils.OnMapReadyIdlingResourceSingleton
 import org.junit.After
 import org.junit.Before
 import org.junit.ClassRule
@@ -41,6 +47,8 @@ open class BaseTest {
     private lateinit var keyStoreRobot: KeyStoreRobot
     lateinit var preferencesRobot: PreferencesRobot
     lateinit var mockWebServerRobot: MockWebServerRobot
+    lateinit var featureConfigRobot: FeatureConfigRobot
+
 
     protected open fun getPermissionsToBeAccepted() = arrayOf<String>()
 
@@ -74,10 +82,12 @@ open class BaseTest {
             keyStoreRobot = providesKeyStoreRobot(context)
             preferencesRobot = providesPreferencesRobot(context)
             mockWebServerRobot = providesMockWebserverRobot(context)
+            featureConfigRobot = providesFeatureConfigRobot()
         }
     }
 
     private fun registerCountingIdlingResource() {
+        IdlingResourceProvider.idlingResource = AndroidIdlingResource
         IdlingRegistry.getInstance().register(
             EventListIdlingResourceSingleton.countingIdlingResource,
             CountingIdlingResourceSingleton.countingIdlingResource,
@@ -86,10 +96,13 @@ open class BaseTest {
             TeiDataIdlingResourceSingleton.countingIdlingResource,
             EventIdlingResourceSingleton.countingIdlingResource,
             OnMapReadyIdlingResourceSingleton.countingIdlingResource,
+            AnalyticsCountingIdlingResource.countingIdlingResource,
+            AndroidIdlingResource.getIdlingResource(),
         )
     }
 
     private fun unregisterCountingIdlingResource() {
+        IdlingResourceProvider.idlingResource = NoOpIdlingResource
         IdlingRegistry.getInstance()
             .unregister(
                 EventListIdlingResourceSingleton.countingIdlingResource,
@@ -98,6 +111,8 @@ open class BaseTest {
                 SearchIdlingResourceSingleton.countingIdlingResource,
                 TeiDataIdlingResourceSingleton.countingIdlingResource,
                 EventIdlingResourceSingleton.countingIdlingResource,
+                AnalyticsCountingIdlingResource.countingIdlingResource,
+                AndroidIdlingResource.getIdlingResource(),
             )
     }
 
@@ -163,6 +178,14 @@ open class BaseTest {
 
     fun cleanLocalDatabase() {
         (context.applicationContext as AppTest).deleteDatabase(DB_TO_IMPORT)
+    }
+
+    protected fun enableFeatureConfigValue(feature: Feature) {
+        featureConfigRobot.enableFeature(feature)
+    }
+
+    protected fun disableFeatureConfigValue(feature: Feature) {
+        featureConfigRobot.disableFeature(feature)
     }
 
     companion object {

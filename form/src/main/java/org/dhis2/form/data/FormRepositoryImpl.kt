@@ -1,7 +1,12 @@
 package org.dhis2.form.data
 
+import androidx.paging.PagingData
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.flow.Flow
+import org.dhis2.commons.dialogs.bottomsheet.FieldWithIssue
+import org.dhis2.commons.dialogs.bottomsheet.IssueType
+import org.dhis2.commons.periods.model.Period
 import org.dhis2.commons.prefs.Preference
 import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.form.data.EnrollmentRepository.Companion.ENROLLMENT_DATE_UID
@@ -13,10 +18,8 @@ import org.dhis2.form.model.SectionUiModelImpl
 import org.dhis2.form.model.StoreResult
 import org.dhis2.form.ui.provider.DisplayNameProvider
 import org.dhis2.form.ui.provider.LegendValueProvider
-import org.dhis2.form.ui.validation.FieldErrorMessageProvider
+import org.dhis2.mobile.commons.providers.FieldErrorMessageProvider
 import org.dhis2.mobileProgramRules.RuleEngineHelper
-import org.dhis2.ui.dialogs.bottomsheet.FieldWithIssue
-import org.dhis2.ui.dialogs.bottomsheet.IssueType
 import org.hisp.dhis.android.core.common.ValidationStrategy
 import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.common.ValueType.LONG_TEXT
@@ -53,7 +56,7 @@ class FormRepositoryImpl(
     private val disableCollapsableSections: Boolean? =
         dataEntryRepository.disableCollapsableSections()
 
-    override fun fetchFormItems(shouldOpenErrorLocation: Boolean): List<FieldUiModel> {
+    override suspend fun fetchFormItems(shouldOpenErrorLocation: Boolean): List<FieldUiModel> {
         itemList = dataEntryRepository.list().blockingFirst() ?: emptyList()
         openedSectionUid = getInitialOpenedSection(shouldOpenErrorLocation)
         backupList = itemList
@@ -72,7 +75,7 @@ class FormRepositoryImpl(
             dataEntryRepository.firstSectionToOpen()
     }
 
-    override fun composeList(skipProgramRules: Boolean): List<FieldUiModel> {
+    override suspend fun composeList(skipProgramRules: Boolean): List<FieldUiModel> {
         calculationLoop = 0
         return itemList
             .applyRuleEffects(skipProgramRules)
@@ -92,6 +95,10 @@ class FormRepositoryImpl(
 
     override fun activateEvent() {
         formValueStore.activateEvent()
+    }
+
+    override fun fetchPeriods(): Flow<PagingData<Period>> {
+        return dataEntryRepository.fetchPeriods()
     }
 
     private fun List<FieldUiModel>.setLastItem(): List<FieldUiModel> {
@@ -153,7 +160,7 @@ class FormRepositoryImpl(
         return ruleEffectsResult?.configurationErrors
     }
 
-    override fun runDataIntegrityCheck(backPressed: Boolean): DataIntegrityCheckResult {
+    override suspend fun runDataIntegrityCheck(backPressed: Boolean): DataIntegrityCheckResult {
         runDataIntegrity = true
         val itemsWithErrors = getFieldsWithError()
         val isEvent = dataEntryRepository.isEvent()
@@ -235,7 +242,7 @@ class FormRepositoryImpl(
 
         return when {
             (itemsWithErrors.isEmpty() && itemsWithWarning.isEmpty() && mandatoryItemsWithoutValue.isEmpty()) -> {
-                getSuccessfulResult(eventStatus)
+                getSuccessfulResult()
             }
 
             (itemsWithErrors.isNotEmpty()) -> {
@@ -286,7 +293,7 @@ class FormRepositoryImpl(
             EventStatus.COMPLETED -> {
                 FieldsWithWarningResult(
                     fieldUidWarningList = itemsWithWarning,
-                    canComplete = false,
+                    canComplete = ruleEffectsResult?.canComplete ?: false,
                     onCompleteMessage = ruleEffectsResult?.messageOnComplete,
                     eventResultDetails = EventResultDetails(
                         formValueStore.eventState(),
@@ -428,44 +435,16 @@ class FormRepositoryImpl(
         }
     }
 
-    private fun getSuccessfulResult(eventStatus: EventStatus?): SuccessfulResult {
-        return when (eventStatus) {
-            EventStatus.ACTIVE -> {
-                SuccessfulResult(
-                    canComplete = ruleEffectsResult?.canComplete ?: true,
-                    onCompleteMessage = ruleEffectsResult?.messageOnComplete,
-                    eventResultDetails = EventResultDetails(
-                        formValueStore.eventState(),
-                        dataEntryRepository.eventMode(),
-                        dataEntryRepository.validationStrategy(),
-                    ),
-                )
-            }
-
-            EventStatus.COMPLETED -> {
-                SuccessfulResult(
-                    canComplete = false,
-                    onCompleteMessage = ruleEffectsResult?.messageOnComplete,
-                    eventResultDetails = EventResultDetails(
-                        formValueStore.eventState(),
-                        dataEntryRepository.eventMode(),
-                        dataEntryRepository.validationStrategy(),
-                    ),
-                )
-            }
-
-            else -> {
-                SuccessfulResult(
-                    canComplete = ruleEffectsResult?.canComplete ?: false,
-                    onCompleteMessage = ruleEffectsResult?.messageOnComplete,
-                    eventResultDetails = EventResultDetails(
-                        formValueStore.eventState(),
-                        dataEntryRepository.eventMode(),
-                        validationStrategy = dataEntryRepository.validationStrategy(),
-                    ),
-                )
-            }
-        }
+    private fun getSuccessfulResult(): SuccessfulResult {
+        return SuccessfulResult(
+            canComplete = ruleEffectsResult?.canComplete ?: true,
+            onCompleteMessage = ruleEffectsResult?.messageOnComplete,
+            eventResultDetails = EventResultDetails(
+                formValueStore.eventState(),
+                dataEntryRepository.eventMode(),
+                dataEntryRepository.validationStrategy(),
+            ),
+        )
     }
 
     override fun completedFieldsPercentage(value: List<FieldUiModel>): Float {
@@ -478,7 +457,7 @@ class FormRepositoryImpl(
 
     override fun backupOfChangedItems() = backupList.minus(itemList.applyRuleEffects())
 
-    private fun getFieldsWithError() = itemsWithError.mapNotNull { errorItem ->
+    private suspend fun getFieldsWithError() = itemsWithError.mapNotNull { errorItem ->
         itemList.find { item ->
             item.uid == errorItem.id
         }?.let { item ->
@@ -563,7 +542,7 @@ class FormRepositoryImpl(
         } ?: this
     }
 
-    private fun List<FieldUiModel>.setOpenedSection(): List<FieldUiModel> {
+    private suspend fun List<FieldUiModel>.setOpenedSection(): List<FieldUiModel> {
         return map { field ->
             if (field.isSection()) {
                 updateSection(field, this)
@@ -632,7 +611,7 @@ class FormRepositoryImpl(
         )
     }
 
-    private fun updateField(fieldUiModel: FieldUiModel): FieldUiModel {
+    private suspend fun updateField(fieldUiModel: FieldUiModel): FieldUiModel {
         val needsMandatoryWarning = hasMandatoryWarnings(fieldUiModel)
         if (needsMandatoryWarning) {
             mandatoryItemsWithoutValue[fieldUiModel.label] = fieldUiModel.programStageSection ?: ""
@@ -752,7 +731,7 @@ class FormRepositoryImpl(
         }
     }
 
-    private fun List<FieldUiModel>.mergeListWithErrorFields(
+    private suspend fun List<FieldUiModel>.mergeListWithErrorFields(
         fieldsWithError: List<RowAction>,
     ): List<FieldUiModel> {
         mandatoryItemsWithoutValue.clear()

@@ -6,16 +6,19 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.dhis2.commons.date.DateUtils
+import org.dhis2.commons.periods.model.Period
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.form.R
 import org.dhis2.form.data.DataIntegrityCheckResult
@@ -36,7 +39,7 @@ import org.dhis2.form.model.UiRenderType
 import org.dhis2.form.model.ValueStoreResult
 import org.dhis2.form.ui.event.RecyclerViewUiEvents
 import org.dhis2.form.ui.intent.FormIntent
-import org.dhis2.form.ui.validation.validators.FieldMaskValidator
+import org.dhis2.mobile.commons.validation.validators.FieldMaskValidator
 import org.hisp.dhis.android.core.arch.helpers.Result
 import org.hisp.dhis.android.core.common.FeatureType
 import org.hisp.dhis.android.core.common.ValueType
@@ -112,10 +115,8 @@ class FormViewModel(
 
         viewModelScope.launch(dispatcher.io()) {
             fieldListChannel.consumeEach { fieldListConfiguration ->
-                val result = async {
-                    repository.composeList(fieldListConfiguration.skipProgramRules)
-                }
-                _items.postValue(result.await())
+                val result = repository.composeList(fieldListConfiguration.skipProgramRules)
+                _items.postValue(result)
                 if (fieldListConfiguration.finish) {
                     runDataIntegrityCheck()
                 }
@@ -189,7 +190,7 @@ class FormViewModel(
         }
     }
 
-    private fun createRowActionStore(it: FormIntent): Pair<RowAction, StoreResult> {
+    private suspend fun createRowActionStore(it: FormIntent): Pair<RowAction, StoreResult> {
         val rowAction = rowActionFromIntent(it)
 
         if (rowAction.type == ActionType.ON_FOCUS) {
@@ -202,7 +203,7 @@ class FormViewModel(
         return Pair(rowAction, result)
     }
 
-    private fun processUserAction(action: RowAction): StoreResult {
+    private suspend fun processUserAction(action: RowAction): StoreResult {
         return when (action.type) {
             ActionType.ON_SAVE -> handleOnSaveAction(action)
             ActionType.ON_FOCUS, ActionType.ON_NEXT -> handleFocusOrNextAction(action)
@@ -228,7 +229,7 @@ class FormViewModel(
         )
     }
 
-    private fun handleOnSaveAction(action: RowAction): StoreResult {
+    private suspend fun handleOnSaveAction(action: RowAction): StoreResult {
         if (action.valueType == ValueType.COORDINATE) {
             repository.setFieldRequestingCoordinates(action.id, false)
         }
@@ -316,7 +317,7 @@ class FormViewModel(
         )
     }
 
-    private fun handleOnStoreFileAction(action: RowAction): StoreResult {
+    private suspend fun handleOnStoreFileAction(action: RowAction): StoreResult {
         val saveResult = repository.storeFile(action.id, action.value)
         return when (saveResult?.valueStoreResult) {
             ValueStoreResult.FILE_SAVED -> {
@@ -343,11 +344,16 @@ class FormViewModel(
     private fun saveLastFocusedItem(rowAction: RowAction) = getLastFocusedTextItem()?.let {
         if (previousActionItem == null) previousActionItem = rowAction
         if (previousActionItem?.value != it.value && previousActionItem?.id == it.uid) {
-            val error = checkFieldError(it.valueType, it.value, it.fieldMask)
-            if (error != null) {
-                val action = rowActionFromIntent(
-                    FormIntent.OnSave(it.uid, it.value, it.valueType, it.fieldMask),
-                )
+            val action = rowActionFromIntent(
+                FormIntent.OnSave(
+                    it.uid,
+                    it.value,
+                    it.valueType,
+                    it.fieldMask,
+                    it.allowFutureDates,
+                ),
+            )
+            if (action.error != null) {
                 repository.updateErrorList(action)
                 StoreResult(
                     rowAction.id,
@@ -355,8 +361,6 @@ class FormViewModel(
                 )
             } else {
                 checkAutoCompleteForLastFocusedItem(it)
-                val intent = FormIntent.OnSave(it.uid, it.value, it.valueType, it.fieldMask)
-                val action = rowActionFromIntent(intent)
                 val result = repository.save(it.uid, it.value, action.extraData)
                 repository.updateValueOnList(it.uid, it.value, it.valueType)
                 repository.updateErrorList(action)
@@ -809,13 +813,13 @@ class FormViewModel(
 
     fun discardChanges() {
         repository.backupOfChangedItems().forEach {
-            submitIntent(FormIntent.OnSave(it.uid, it.value, it.valueType, it.fieldMask))
+            submitIntent(FormIntent.OnSave(it.uid, it.value, it.valueType, it.fieldMask, it.allowFutureDates))
         }
     }
 
     fun saveDataEntry() {
         getLastFocusedTextItem()?.let {
-            submitIntent(FormIntent.OnSave(it.uid, it.value, it.valueType, it.fieldMask))
+            submitIntent(FormIntent.OnSave(it.uid, it.value, it.valueType, it.fieldMask, it.allowFutureDates))
         }
         submitIntent(FormIntent.OnFinish())
     }
@@ -823,14 +827,12 @@ class FormViewModel(
     fun loadData() {
         loading.postValue(true)
         viewModelScope.launch(dispatcher.io()) {
-            val result = async {
-                repository.fetchFormItems(openErrorLocation)
-            }
+            val result = repository.fetchFormItems(openErrorLocation)
             dateFormatConfig = async {
                 repository.getDateFormatConfiguration()
             }.await()
             try {
-                _items.postValue(result.await())
+                _items.postValue(result)
             } catch (e: Exception) {
                 Timber.e(e)
                 _items.postValue(emptyList())
@@ -860,6 +862,10 @@ class FormViewModel(
                 type = ActionType.ON_SAVE,
             )
         }
+    }
+
+    fun fetchPeriods(): Flow<PagingData<Period>> {
+        return repository.fetchPeriods().flowOn(dispatcher.io())
     }
 
     companion object {

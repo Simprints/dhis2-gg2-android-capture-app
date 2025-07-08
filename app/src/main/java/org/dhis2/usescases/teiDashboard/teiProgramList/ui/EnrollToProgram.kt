@@ -111,8 +111,10 @@ private fun testingProgramModel(downloadState: ProgramDownloadState) = ProgramUi
     accessDataWrite = true,
     state = State.SYNCED,
     downloadState = downloadState,
-    stockConfig = null,
+    isStockUseCase = false,
     lastUpdated = Date(),
+    hasOverdueEvent = false,
+    filtersAreActive = false,
 )
 
 const val PROGRAM_TO_ENROLL = "PROGRAM_TO_ENROLL_%s"

@@ -2,14 +2,16 @@ package org.dhis2.android.rtsm.services.rules
 
 import io.reactivex.Flowable
 import io.reactivex.Single
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import org.apache.commons.lang3.math.NumberUtils
-import org.dhis2.android.rtsm.data.AppConfig
 import org.dhis2.android.rtsm.data.TransactionType
 import org.dhis2.android.rtsm.data.models.StockEntry
 import org.dhis2.android.rtsm.data.models.Transaction
 import org.dhis2.android.rtsm.utils.ConfigUtils
 import org.dhis2.android.rtsm.utils.RuleEngineHelper
 import org.dhis2.android.rtsm.utils.printRuleEffects
+import org.dhis2.commons.bindings.distributedTo
 import org.dhis2.commons.rules.RuleEngineContextData
 import org.dhis2.mobileProgramRules.toRuleDataValue
 import org.dhis2.mobileProgramRules.toRuleEngineInstant
@@ -23,6 +25,7 @@ import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 import org.hisp.dhis.android.core.event.EventStatus
 import org.hisp.dhis.android.core.program.ProgramRuleActionType
 import org.hisp.dhis.android.core.program.ProgramStage
+import org.hisp.dhis.android.core.usecase.stock.StockUseCase
 import org.hisp.dhis.rules.api.RuleEngine
 import org.hisp.dhis.rules.models.RuleDataValue
 import org.hisp.dhis.rules.models.RuleEffect
@@ -46,9 +49,9 @@ class RuleValidationHelperImpl @Inject constructor(
         program: String,
         transaction: Transaction,
         eventUid: String?,
-        appConfig: AppConfig,
+        stockUseCase: StockUseCase,
     ): Flowable<List<RuleEffect>> {
-        return ruleEngineData(entry.item.id, appConfig.program).flatMap { ruleEngineData ->
+        return ruleEngineData(entry.item.id, stockUseCase.programUid).flatMap { ruleEngineData ->
             val programStage = programStage(program) ?: return@flatMap Flowable.empty()
 
             Flowable.just(
@@ -58,10 +61,8 @@ class RuleValidationHelperImpl @Inject constructor(
                     addAll(
                         entryDataValues(
                             entry.qty,
-                            programStage.uid(),
                             transaction,
-                            entry.date,
-                            appConfig,
+                            stockUseCase,
                         ),
                     )
                 }
@@ -73,8 +74,6 @@ class RuleValidationHelperImpl @Inject constructor(
                             ruleEffect.data?.let { data ->
                                 dataValues.add(
                                     RuleDataValue(
-                                        entry.date.toRuleEngineInstant(),
-                                        programStage.uid(),
                                         ruleAction.field()!!,
                                         data,
                                     ),
@@ -131,6 +130,7 @@ class RuleValidationHelperImpl @Inject constructor(
         programStage.uid(),
         programStage.name()!!,
         RuleEventStatus.ACTIVE,
+        period.toRuleEngineInstant(),
         period.toRuleEngineInstant(),
         period.toRuleEngineLocalDate(),
         period.toRuleEngineLocalDate(),
@@ -225,23 +225,28 @@ class RuleValidationHelperImpl @Inject constructor(
             .toFlowable().flatMapIterable { events -> events }
             .map { event ->
                 RuleEvent(
-                    event.uid(),
-                    event.programStage()!!,
+                    event = event.uid(),
+                    programStage = event.programStage()!!,
+                    programStageName =
                     d2.programModule().programStages().uid(event.programStage())
                         .blockingGet()!!.name()!!,
+                    status =
                     if (event.status() == EventStatus.VISITED) {
                         RuleEventStatus.ACTIVE
                     } else {
                         RuleEventStatus.valueOf(event.status()!!.name)
                     },
-                    (event.eventDate() ?: Date()).toRuleEngineInstant(),
-                    event.dueDate()?.toRuleEngineLocalDate(),
-                    event.completedDate()?.toRuleEngineLocalDate(),
-                    event.organisationUnit()!!,
-                    d2.organisationUnitModule()
+                    eventDate = (event.eventDate() ?: Date()).toRuleEngineInstant(),
+                    createdDate = event.created()
+                        ?.let { Instant.fromEpochMilliseconds(it.time) }
+                        ?: Clock.System.now(),
+                    dueDate = event.dueDate()?.toRuleEngineLocalDate(),
+                    completedDate = event.completedDate()?.toRuleEngineLocalDate(),
+                    organisationUnit = event.organisationUnit()!!,
+                    organisationUnitCode = d2.organisationUnitModule()
                         .organisationUnits().uid(event.organisationUnit())
                         .blockingGet()?.code(),
-                    event.trackedEntityDataValues()?.toRuleDataValue(
+                    dataValues = event.trackedEntityDataValues()?.toRuleDataValue(
                         event,
                         d2.dataElementModule().dataElements(),
                         d2.programModule().programRuleVariables(),
@@ -271,21 +276,17 @@ class RuleValidationHelperImpl @Inject constructor(
 
     private fun entryDataValues(
         qty: String?,
-        programStage: String,
         transaction: Transaction,
-        eventDate: Date,
-        appConfig: AppConfig,
+        stockUseCase: StockUseCase,
     ): List<RuleDataValue> {
         val values = mutableListOf<RuleDataValue>()
 
         // Add the quantity if defined, and valid (signs (+/-) could come as streams if incomplete)
         if (qty != null && NumberUtils.isCreatable(qty)) {
             val deUid =
-                ConfigUtils.getTransactionDataElement(transaction.transactionType, appConfig)
+                ConfigUtils.getTransactionDataElement(transaction.transactionType, stockUseCase)
             values.add(
                 RuleDataValue(
-                    eventDate = eventDate.toRuleEngineInstant(),
-                    programStage = programStage,
                     dataElement = deUid,
                     value = qty,
                 ),
@@ -301,9 +302,7 @@ class RuleValidationHelperImpl @Inject constructor(
                         ?.code()?.let { code ->
                             values.add(
                                 RuleDataValue(
-                                    eventDate = eventDate.toRuleEngineInstant(),
-                                    programStage = programStage,
-                                    dataElement = appConfig.distributedTo,
+                                    dataElement = stockUseCase.distributedTo(),
                                     value = code,
                                 ),
                             )
