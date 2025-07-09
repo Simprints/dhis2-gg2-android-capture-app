@@ -48,8 +48,10 @@ class SearchScreenConfigurator(
     private fun configureLandscapeListScreen(searchConfiguration: SearchList) {
         if (searchConfiguration.searchFilters.isOpened) {
             openFilters()
-        } else {
+        } else if (searchConfiguration.searchForm.isOpened) {
             openSearch()
+        } else {
+            modifySidePanelContainerWidth(0f)
         }
 
         syncButtonVisibility(true)
@@ -78,11 +80,26 @@ class SearchScreenConfigurator(
         if (isPortrait()) {
             binding.programSpinner.visibility = View.VISIBLE
             binding.title.visibility = View.GONE
+        } else {
+            modifySidePanelContainerWidth()
         }
         binding.filterRecyclerLayout.visibility = View.VISIBLE
         binding.searchContainer.visibility = View.GONE
         filterIsOpenCallback(true)
         changeBounds(false, R.id.filterRecyclerLayout, 16.dp)
+    }
+
+    private fun modifySidePanelContainerWidth(ratio: Float = 0.3f) {
+        val constraintSet = ConstraintSet()
+        constraintSet.clone(binding.backdropLayout)
+
+        constraintSet.setGuidelinePercent(
+            R.id.backdropGuideDiv,
+            ratio
+        )
+        TransitionManager.beginDelayedTransition(binding.backdropLayout)
+        constraintSet.applyTo(binding.backdropLayout)
+        binding.backdropLayout.requestLayout()
     }
 
     fun closeBackdrop() {
@@ -101,6 +118,8 @@ class SearchScreenConfigurator(
         if (isPortrait()) {
             binding.programSpinner.visibility = View.GONE
             binding.title.visibility = View.VISIBLE
+        } else {
+            modifySidePanelContainerWidth(0.3f)
         }
         binding.searchContainer.visibility = View.VISIBLE
         filterIsOpenCallback(false)
