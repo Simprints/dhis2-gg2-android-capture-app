@@ -7,7 +7,6 @@ import org.dhis2.R
 import org.dhis2.bindings.display
 import org.dhis2.bindings.dp
 import org.dhis2.databinding.ActivitySearchBinding
-import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.searchTrackEntity.SearchAnalytics
 import org.dhis2.usescases.searchTrackEntity.SearchList
 import org.dhis2.usescases.searchTrackEntity.SearchScreenState
@@ -49,10 +48,10 @@ class SearchScreenConfigurator(
     private fun configureLandscapeListScreen(searchConfiguration: SearchList) {
         if (searchConfiguration.searchFilters.isOpened) {
             openFilters()
-        } else if (searchConfiguration.searchForm.isOpened || searchConfiguration.biometricsMode != BiometricsMode.full) {
+        } else if (searchConfiguration.searchForm.isOpened) {
             openSearch()
         } else {
-            openSearchHelper()
+            modifySidePanelContainerWidth(0f)
         }
 
         syncButtonVisibility(true)
@@ -81,12 +80,26 @@ class SearchScreenConfigurator(
         if (isPortrait()) {
             binding.programSpinner.visibility = View.VISIBLE
             binding.title.visibility = View.GONE
+        } else {
+            modifySidePanelContainerWidth()
         }
         binding.filterRecyclerLayout.visibility = View.VISIBLE
         binding.searchContainer.visibility = View.GONE
-        binding.searchHelperViewContainer.visibility = View.GONE
         filterIsOpenCallback(true)
         changeBounds(false, R.id.filterRecyclerLayout, 16.dp)
+    }
+
+    private fun modifySidePanelContainerWidth(ratio: Float = 0.3f) {
+        val constraintSet = ConstraintSet()
+        constraintSet.clone(binding.backdropLayout)
+
+        constraintSet.setGuidelinePercent(
+            R.id.backdropGuideDiv,
+            ratio
+        )
+        TransitionManager.beginDelayedTransition(binding.backdropLayout)
+        constraintSet.applyTo(binding.backdropLayout)
+        binding.backdropLayout.requestLayout()
     }
 
     fun closeBackdrop() {
@@ -96,7 +109,6 @@ class SearchScreenConfigurator(
         }
         binding.filterRecyclerLayout.visibility = View.GONE
         binding.searchContainer.visibility = View.GONE
-        binding.searchHelperViewContainer.visibility = View.GONE
         filterIsOpenCallback(false)
         changeBounds(true, R.id.backdropGuideTop, 0)
     }
@@ -106,9 +118,10 @@ class SearchScreenConfigurator(
         if (isPortrait()) {
             binding.programSpinner.visibility = View.GONE
             binding.title.visibility = View.VISIBLE
+        } else {
+            modifySidePanelContainerWidth(0.3f)
         }
         binding.searchContainer.visibility = View.VISIBLE
-        binding.searchHelperViewContainer.visibility = View.GONE
         filterIsOpenCallback(false)
         changeBounds(false, R.id.searchContainer, 0)
     }
@@ -121,13 +134,5 @@ class SearchScreenConfigurator(
             endID,
             margin,
         )
-    }
-
-    private fun openSearchHelper() {
-        binding.filterRecyclerLayout.visibility = View.GONE
-        binding.searchContainer.visibility = View.GONE
-        binding.searchHelperViewContainer!!.visibility = View.VISIBLE
-        filterIsOpenCallback(false)
-        changeBounds(false, R.id.searchHelperViewContainer, 0)
     }
 }
