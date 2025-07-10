@@ -274,7 +274,7 @@ class SearchTEList : FragmentGlobalAbstract() {
                         modifier = Modifier,
                         createButtonVisible = createButtonVisibility,
                         closeFilterVisibility = isFilterOpened,
-                        isLandscape = isLandscape(),
+                        isLandscape = isLandscape() && !isBiometricsFull,
                         queryData = queryData,
                         onSearchClick = {
                             if (isBiometricsFull) viewModel.sequentialSearchNextAction(

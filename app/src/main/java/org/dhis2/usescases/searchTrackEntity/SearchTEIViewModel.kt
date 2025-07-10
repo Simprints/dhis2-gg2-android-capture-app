@@ -65,6 +65,7 @@ import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.maintenance.D2ErrorCode
 import org.hisp.dhis.mobile.ui.designsystem.component.navigationBar.NavigationBarItem
 import timber.log.Timber
+import org.dhis2.utils.isLandscape
 
 const val TEI_TYPE_SEARCH_MAX_RESULTS = 5
 
@@ -147,7 +148,7 @@ class SearchTEIViewModel(
 
     private val biometricsMode = getBiometricsConfig(basicPreferenceProvider).biometricsMode
 
-    private val _isDataLoaded = MutableLiveData<Boolean?> (false)
+    private val _isDataLoaded = MutableLiveData<Boolean?>(false)
     val isDataLoaded: MutableLiveData<Boolean?> = _isDataLoaded
 
     init {
@@ -255,9 +256,10 @@ class SearchTEIViewModel(
         val displayFrontPageList =
             searchRepository.getProgram(initialProgramUid)?.displayFrontPageList() ?: true
         val shouldOpenSearch = !displayFrontPageList &&
-            !searchRepository.canCreateInProgramWithoutSearch() &&
-            !searching &&
-            _filtersActive.value == false
+                !searchRepository.canCreateInProgramWithoutSearch() &&
+                !searching &&
+                _filtersActive.value == false
+
 
         createButtonScrollVisibility.postValue(
             if (searching) {
@@ -281,7 +283,7 @@ class SearchTEIViewModel(
                         ?.minAttributesRequiredToSearch()
                         ?: 1,
                     isForced = shouldOpenSearch,
-                    isOpened = shouldOpenSearch,
+                    isOpened = shouldOpenSearch || (biometricsMode != BiometricsMode.full && isLandscape()),
                 ),
                 searchFilters = SearchFilters(
                     hasActiveFilters = hasActiveFilters(),
@@ -332,7 +334,7 @@ class SearchTEIViewModel(
         )
     }
 
-    fun setSearchScreen(fromRelationship:Boolean? = null) {
+    fun setSearchScreen(fromRelationship: Boolean? = null) {
         _screenState.postValue(
             SearchList(
                 previousSate = _screenState.value?.screenState ?: SearchScreenState.NONE,
@@ -621,7 +623,9 @@ class SearchTEIViewModel(
 
             _sequentialSearch.postValue(
                 SequentialSearch.AttributeSearch(
-                    previousSearch = previousSearch, nextActions = nextActions, queryData = queryData.toMap()
+                    previousSearch = previousSearch,
+                    nextActions = nextActions,
+                    queryData = queryData.toMap()
                 )
             )
         }
@@ -848,9 +852,9 @@ class SearchTEIViewModel(
                         type = SearchResult.SearchResultType.UNABLE_SEARCH_OUTSIDE,
                         uiData = UnableToSearchOutsideData(
                             trackedEntityTypeAttributes =
-                            searchRepository.trackedEntityTypeFields(),
+                                searchRepository.trackedEntityTypeFields(),
                             trackedEntityTypeName =
-                            searchRepository.trackedEntityType.displayName()!!,
+                                searchRepository.trackedEntityType.displayName()!!,
                         ),
                     ),
                 )
