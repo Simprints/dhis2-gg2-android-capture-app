@@ -348,7 +348,7 @@ class EnrollmentPresenterImpl(
             pendingSave = false
 
             runBlocking {
-                delay(200)
+                delay(1000)
                 view.performSaveClick()
             }
 
