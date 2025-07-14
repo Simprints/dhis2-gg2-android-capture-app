@@ -7,6 +7,7 @@ import org.dhis2.commons.filters.Filters
 import org.dhis2.commons.filters.data.FilterPresenter
 import org.dhis2.commons.filters.sorting.SortingItem
 import org.dhis2.commons.network.NetworkUtils
+import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.reporting.CrashReportController
 import org.dhis2.commons.resources.DhisPeriodUtils
 import org.dhis2.commons.resources.MetadataIconProvider
@@ -96,6 +97,7 @@ class SearchRepositoryTest {
     private val searchTEIRepository: SearchTEIRepository = mock()
     private val themeManager: ThemeManager = mock()
     private val profilePictureProvider: ProfilePictureProvider = mock()
+    private val basicPreferenceProvider: BasicPreferenceProvider = mock()
 
     @Before
     fun setUp() {
@@ -138,6 +140,7 @@ class SearchRepositoryTest {
             themeManager,
             metadataIconProvider,
             profilePictureProvider,
+            basicPreferenceProvider
         )
     }
 
