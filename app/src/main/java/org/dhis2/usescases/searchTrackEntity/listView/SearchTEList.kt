@@ -165,8 +165,8 @@ class SearchTEList : FragmentGlobalAbstract() {
             configureOpenSearchButton(openSearchButton)
 
             //EyeSeeTea customization
-            //configureCreateButton(createButton)
-            configureSequentialSearchNextAction(createButton)
+            configureCreateButton(createButton)
+            configureSequentialSearchNextAction(nextActions)
         }.root.also {
             observeNewData()
         }
@@ -309,6 +309,11 @@ class SearchTEList : FragmentGlobalAbstract() {
                 val hasQueryData = remember(viewModel.uiState) {
                     viewModel.queryData.isNotEmpty()
                 }
+                val sequentialSearch by viewModel.sequentialSearch.observeAsState()
+
+                val newPatientAction = sequentialSearch?.nextActions?.firstOrNull {
+                    it == SequentialSearchAction.RegisterNew
+                }
 
                 updateLayoutParams<CoordinatorLayout.LayoutParams> {
                     val bottomMargin = if (viewModel.isBottomNavigationBarVisible()) {
@@ -320,17 +325,18 @@ class SearchTEList : FragmentGlobalAbstract() {
                 }
 
                 val orientation = LocalConfiguration.current.orientation
-                if ((hasQueryData || orientation == Configuration.ORIENTATION_LANDSCAPE) && createButtonVisibility && !filtersOpened && !teTypeName.isNullOrBlank()) {
+                if (newPatientAction != null && (hasQueryData || orientation == Configuration.ORIENTATION_LANDSCAPE) && createButtonVisibility && !filtersOpened && !teTypeName.isNullOrBlank()) {
                     CreateNewButton(
                         modifier = Modifier,
                         extended = !isScrollingDown,
-                        onClick = viewModel::onEnrollClick,
+                        onClick = { viewModel.sequentialSearchNextAction(newPatientAction) },
                         teTypeName = teTypeName!!,
-                    )
+                        )
                 }
             }
         }
     }
+
 
     private fun displayImageDetail(imagePath: String) {
         val intent = ImageDetailActivity.intent(
@@ -508,8 +514,8 @@ class SearchTEList : FragmentGlobalAbstract() {
     }
 
     @ExperimentalAnimationApi
-    private fun configureSequentialSearchNextAction(createButton: ComposeView) {
-        createButton.apply {
+    private fun configureSequentialSearchNextAction(composeView: ComposeView) {
+        composeView.apply {
             setViewCompositionStrategy(
                 ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
             )
@@ -525,7 +531,11 @@ class SearchTEList : FragmentGlobalAbstract() {
                     setMargins(0, 0, 0, bottomMargin)
                 }
 
-                if (sequentialSearch?.nextActions?.isNotEmpty() == true) {
+                val notNewActions = sequentialSearch?.nextActions?.filterNot {
+                    it == SequentialSearchAction.RegisterNew
+                } ?: emptyList()
+
+                if (notNewActions.isNotEmpty()) {
                     SequentialNextSearchActions(
                         sequentialSearchActions = sequentialSearch?.nextActions!!,
                         onClick = { action -> viewModel.sequentialSearchNextAction(action) })
