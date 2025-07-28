@@ -1,4 +1,4 @@
-name: Build signed APK on main branch changes and upload to artifacts
+name: Build signed APK on main branch changes and create a release
 env:
   main_project_module: app
 on:
@@ -10,6 +10,8 @@ on:
 jobs:
   build-signed-apk-artifact:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -61,3 +63,17 @@ jobs:
         with:
           name: ${{ env.repository_name }}-${{ steps.date-time.outputs.dateTimeUtc }}utc-Release-Signed-APK-commit-${{ steps.commit-hash.outputs.shortSha1 }}
           path: ${{ env.main_project_module }}/build/outputs/apk/simprints/release/dhis2-v${{ steps.read-version.outputs.vName }}.apk
+
+      - name: Create GitHub release with the built APK
+        if: github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.read-version.outputs.vName }}" \
+            --repo="$GITHUB_REPOSITORY" \
+            --title="Release v${{ steps.read-version.outputs.vName }}" \
+            --notes="Signed release v${{ steps.read-version.outputs.vName }} of ${{ env.repository_name }}
+
+          Built from commit: ${{ steps.commit-hash.outputs.shortSha1 }}
+          Build date: ${{ steps.date-time.outputs.dateTimeUtc }} UTC" \
+            ${{ env.main_project_module }}/build/outputs/apk/simprints/release/dhis2-v${{ steps.read-version.outputs.vName }}.apk
