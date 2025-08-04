@@ -787,6 +787,8 @@ class FormView : Fragment() {
          */
         fun onFocused(callback: () -> Unit) = apply { this.onFocused = callback }
 
+        fun onFieldItemsRendered(callback:(fieldsEmpty: Boolean) -> Unit) = apply { this.onFieldItemsRendered = callback }
+
         /**
          * Set a FragmentManager for instantiating the form view
          * */

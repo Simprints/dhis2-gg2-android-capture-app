@@ -65,6 +65,8 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
     lateinit var binding: EnrollmentActivityBinding
     lateinit var mode: EnrollmentMode
 
+    var pendingSave: Boolean = false
+
     companion object {
         const val ENROLLMENT_UID_EXTRA = "ENROLLMENT_UID_EXTRA"
         const val PROGRAM_UID_EXTRA = "PROGRAM_UID_EXTRA"
@@ -140,6 +142,12 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
             enrollmentResultDialogProvider = enrollmentResultDialogProvider,
             onFieldsLoading = { fields ->  presenter.onFieldsLoading(fields) },
             onFieldsLoaded = { fields -> presenter.onFieldsLoaded(fields) },
+            onFieldItemsRendered = {
+                if (pendingSave){
+                    pendingSave = false
+                    formView.onSaveClick()
+                }
+            }
         ) {
             presenter.checkIfBiometricValueValid()
             presenter.finish(enrollmentMode)
@@ -511,5 +519,9 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
             enrollingOrgUnitId,
             enrollingOrgUnitName,
             userOrgUnits)
+    }
+
+    override fun markAsPendingSave() {
+        pendingSave = true
     }
 }

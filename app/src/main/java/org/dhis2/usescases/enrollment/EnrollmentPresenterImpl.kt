@@ -347,10 +347,7 @@ class EnrollmentPresenterImpl(
         if (pendingSave) {
             pendingSave = false
 
-            runBlocking {
-                delay(1000)
-                view.performSaveClick()
-            }
+            view.markAsPendingSave()
 
             return
         }
