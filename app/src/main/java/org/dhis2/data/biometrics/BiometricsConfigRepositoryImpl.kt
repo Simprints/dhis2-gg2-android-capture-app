@@ -7,6 +7,7 @@ import org.dhis2.commons.biometrics.BiometricsIcon
 import org.dhis2.commons.biometrics.BiometricsPreference
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.usescases.biometrics.entities.BiometricsConfig
+import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.repositories.BiometricsConfigRepository
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit
@@ -20,8 +21,9 @@ class BiometricsConfigRepositoryImpl(
 
     override fun sync(): Flow<Unit> = flow {
         try {
-            val configOptions = biometricsConfigApi.getData()
+            val configOptionsDTO = biometricsConfigApi.getData()
 
+            val configOptions = configOptionsDTO.map { mapBiometricsConfig(it) }
 
             preferenceProvider.saveAsJson(BiometricsPreference.CONFIGURATIONS, configOptions)
             Timber.d("BiometricsConfig synced!")
@@ -144,5 +146,23 @@ class BiometricsConfigRepositoryImpl(
         } else {
             config.orgUnitLevelAsModuleId
         }
+    }
+
+    private fun mapBiometricsConfig(
+        dto: BiometricsConfigDTO
+    ): BiometricsConfig {
+        return BiometricsConfig(
+            orgUnitGroup = dto.orgUnitGroup,
+            program = dto.program,
+            projectId = dto.projectId,
+            confidenceScoreFilter = dto.confidenceScoreFilter,
+            icon = dto.icon,
+            lastVerificationDuration = dto.lastVerificationDuration,
+            lastDeclinedEnrolDuration = dto.lastDeclinedEnrolDuration,
+            orgUnitLevelAsModuleId = dto.orgUnitLevelAsModuleId,
+            ageThresholdMonths = dto.ageThresholdMonths,
+            dateOfBirthAttribute = dto.dateOfBirthAttribute,
+            biometricsMode = BiometricsMode.valueOf(dto.biometricsMode.name.lowercase())
+        )
     }
 }
