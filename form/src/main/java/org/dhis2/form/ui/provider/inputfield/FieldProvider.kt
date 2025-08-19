@@ -66,6 +66,7 @@ fun FieldProvider(
     resources: ResourceManager,
     focusManager: FocusManager,
     onNextClicked: () -> Unit,
+    onFileSelected: (String) -> Unit,
 ) {
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
     val focusRequester = remember { FocusRequester() }
@@ -142,6 +143,7 @@ fun FieldProvider(
                 focusRequester = focusRequester,
                 onNextClicked = onNextClicked,
                 focusManager = focusManager,
+                onFileSelected = onFileSelected,
             )
         }
     }
@@ -158,6 +160,7 @@ fun ProvideByValueType(
     focusRequester: FocusRequester,
     onNextClicked: () -> Unit,
     focusManager: FocusManager,
+    onFileSelected: (String) -> Unit,
 ) {
     when (fieldUiModel.valueType) {
         ValueType.TEXT -> {
@@ -305,6 +308,7 @@ fun ProvideByValueType(
                 modifier = modifier,
                 fieldUiModel = fieldUiModel,
                 resources = resources,
+                onFileSelected = onFileSelected,
                 uiEventHandler = uiEventHandler,
             )
         }
@@ -326,7 +330,7 @@ fun ProvideByValueType(
             when (fieldUiModel.renderingType) {
                 UiRenderType.HORIZONTAL_CHECKBOXES,
                 UiRenderType.VERTICAL_CHECKBOXES,
-                -> {
+                    -> {
                     ProvideYesNoCheckBoxInput(
                         modifier = modifier,
                         inputStyle = inputStyle,
@@ -386,7 +390,7 @@ fun ProvideByValueType(
         ValueType.DATE,
         ValueType.DATETIME,
         ValueType.TIME,
-        -> {
+            -> {
             when (fieldUiModel.periodSelector) {
                 null -> {
                     ProvideInputDate(
@@ -426,6 +430,7 @@ fun ProvideByValueType(
                         intentHandler = intentHandler,
                         uiEventHandler = uiEventHandler,
                         resources = resources,
+                        onFileSelected = onFileSelected,
                     )
                 }
             }
@@ -475,7 +480,7 @@ fun ProvideByValueType(
         ValueType.USERNAME,
         ValueType.TRACKER_ASSOCIATE,
         null,
-        -> {
+            -> {
             InputNotSupported(title = fieldUiModel.label)
         }
     }
@@ -492,7 +497,7 @@ fun ProvideByOptionSet(
     when (fieldUiModel.renderingType) {
         UiRenderType.HORIZONTAL_RADIOBUTTONS,
         UiRenderType.VERTICAL_RADIOBUTTONS,
-        -> {
+            -> {
             ProvideRadioButtonInput(
                 modifier = modifier,
                 inputStyle = inputStyle,
@@ -503,7 +508,7 @@ fun ProvideByOptionSet(
 
         UiRenderType.HORIZONTAL_CHECKBOXES,
         UiRenderType.VERTICAL_CHECKBOXES,
-        -> {
+            -> {
             ProvideCheckBoxInput(
                 modifier = modifier,
                 inputStyle = inputStyle,
@@ -753,8 +758,8 @@ private fun ProvideIntegerNegative(
         mutableStateOf(
             TextFieldValue(
                 fieldUiModel.value?.replace("-", "") ?: "",
-                savedTextSelection
-            )
+                savedTextSelection,
+            ),
         )
     }
 
@@ -1150,3 +1155,4 @@ private fun ProvideOrgUnitInput(
 
 private fun FieldUiModel.needKeyboard() = optionSet == null &&
         valueType?.let { it.isText || it.isNumeric || it.isDate } ?: false
+

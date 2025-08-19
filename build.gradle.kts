@@ -1,10 +1,10 @@
-import java.util.Locale
-
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
     repositories {
-        google()
         maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
+        google()
+        mavenLocal()
+        mavenCentral()
     }
     dependencies {
         classpath(libs.gradlePlugin)
@@ -19,6 +19,7 @@ plugins {
     id("org.jlleitschuh.gradle.ktlint").version("11.5.1")
     id("org.sonarqube").version("3.5.0.2730")
     id("com.github.ben-manes.versions").version("0.46.0")
+    alias(libs.plugins.dokka)
 }
 
 sonarqube {
@@ -62,13 +63,14 @@ allprojects {
     }
 
     repositories {
+        maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
         google()
         mavenCentral()
         maven {
             url = uri("https://maven.google.com")
         }
         maven { url = uri("https://jitpack.io") }
-        maven { url = uri("https://oss.sonatype.org/content/repositories/snapshots") }
+        mavenLocal()
     }
 
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
@@ -94,6 +96,7 @@ allprojects {
         filter {
             excludes.add("**/*.kts")
             exclude { element -> element.file.path.contains("androidTest") }
+            exclude { element -> element.file.path.contains("generated") }
             exclude { element -> element.file.path.contains("dhis2-android-sdk") }
         }
     }

@@ -9,6 +9,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
+import android.transition.ChangeBounds
+import android.transition.TransitionManager
 import android.view.View
 import android.webkit.MimeTypeMap
 import android.widget.TextView
@@ -21,12 +23,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.app.NotificationCompat
+import androidx.core.net.toUri
 import androidx.databinding.DataBindingUtil
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import dispatch.core.dispatcherProvider
 import kotlinx.coroutines.launch
 import org.dhis2.BuildConfig
 import org.dhis2.R
@@ -34,6 +39,13 @@ import org.dhis2.bindings.app
 import org.dhis2.bindings.hasPermissions
 import org.dhis2.commons.animations.hide
 import org.dhis2.commons.animations.show
+import org.dhis2.commons.filters.FilterItem
+import org.dhis2.commons.filters.FilterManager
+import org.dhis2.commons.filters.Filters
+import org.dhis2.commons.filters.FiltersAdapter
+import org.dhis2.commons.filters.periods.ui.FilterPeriodsDialog
+import org.dhis2.commons.filters.periods.ui.FilterPeriodsDialog.Companion.FILTER_DIALOG
+import org.dhis2.commons.orgunitselector.OUTreeFragment
 import org.dhis2.commons.sync.OnDismissListener
 import org.dhis2.commons.sync.SyncContext
 import org.dhis2.databinding.ActivityMainBinding
@@ -67,10 +79,14 @@ class MainActivity :
     DrawerLayout.DrawerListener {
 
     private lateinit var binding: ActivityMainBinding
+
     lateinit var mainComponent: MainComponent
 
     @Inject
     lateinit var presenter: MainPresenter
+
+    @Inject
+    lateinit var newAdapter: FiltersAdapter
 
     @Inject
     lateinit var pageConfigurator: NavigationPageConfigurator
@@ -82,25 +98,27 @@ class MainActivity :
             // no-op
         }
 
+    private var backDropActive = false
+
     private val requestWritePermissions =
-        registerForActivityResult(
-            ActivityResultContracts.RequestPermission(),
-        ) { granted ->
-            if (granted) {
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 onDownloadNewVersion()
+            } else if (granted) {
+                onDownloadNewVersion()
+            } else {
+                Toast.makeText(
+                    context,
+                    getString(R.string.storage_denied),
+                    Toast.LENGTH_LONG,
+                ).show()
             }
         }
 
     private var isPinLayoutVisible = false
     private var isChangeServerURLVisible = false
 
-    private val mainNavigator = MainNavigator(
-        supportFragmentManager,
-        { /*no-op*/ },
-    ) { titleRes, _, showBottomNavigation ->
-        setTitle(getString(titleRes))
-        setBottomNavigationVisibility(showBottomNavigation)
-    }
+    private lateinit var mainNavigator: MainNavigator
 
     private val navigationLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { }
@@ -139,6 +157,19 @@ class MainActivity :
             )
             mainComponent.inject(this@MainActivity)
         } ?: navigateTo<LoginActivity>(true)
+        mainNavigator = MainNavigator(
+            dispatcherProvider = presenter.dispatcherProvider,
+            supportFragmentManager,
+            {
+                if (backDropActive) {
+                    showHideFilter()
+                }
+            },
+        ) { titleRes, showFilterButton, showBottomNavigation ->
+            setTitle(getString(titleRes))
+            setFilterButtonVisibility(showFilterButton)
+            setBottomNavigationVisibility(showBottomNavigation)
+        }
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
 
@@ -154,6 +185,8 @@ class MainActivity :
         }
 
         binding.mainDrawerLayout.addDrawerListener(this)
+
+        binding.filterRecycler.adapter = newAdapter
 
         setUpNavigationBar()
         setUpDevelopmentMode()
@@ -216,6 +249,8 @@ class MainActivity :
         super.onResume()
         if (sessionManagerServiceImpl.isUserLoggedIn()) {
             presenter.init()
+            presenter.initFilters()
+            binding.totalFilters = FilterManager.getInstance().totalFilters
         }
     }
 
@@ -287,10 +322,12 @@ class MainActivity :
                 when (it.running) {
                     true -> {
                         binding.syncActionButton.visibility = View.GONE
+                        setFilterButtonVisibility(false)
                         setBottomNavigationVisibility(false)
                     }
 
                     false -> {
+                        setFilterButtonVisibility(true)
                         binding.syncActionButton.visibility = View.VISIBLE
                         setBottomNavigationVisibility(true)
                         presenter.onDataSuccess()
@@ -327,6 +364,35 @@ class MainActivity :
         }
     }
 
+    override fun showHideFilter() {
+        val transition = ChangeBounds()
+        transition.duration = 200
+        TransitionManager.beginDelayedTransition(binding.backdropLayout, transition)
+        backDropActive = !backDropActive
+        val initSet = ConstraintSet()
+        initSet.clone(binding.backdropLayout)
+        if (backDropActive) {
+            initSet.connect(
+                R.id.fragment_container,
+                ConstraintSet.TOP,
+                R.id.filterRecycler,
+                ConstraintSet.BOTTOM,
+                50,
+            )
+            binding.navigationBar.hide()
+        } else {
+            initSet.connect(
+                R.id.fragment_container,
+                ConstraintSet.TOP,
+                R.id.toolbar,
+                ConstraintSet.BOTTOM,
+                0,
+            )
+            binding.navigationBar.show()
+        }
+        initSet.applyTo(binding.backdropLayout)
+    }
+
     override fun showGranularSync() {
         SyncStatusDialog.Builder()
             .withContext(this)
@@ -351,6 +417,30 @@ class MainActivity :
             .show("ALL_SYNC")
     }
 
+    override fun updateFilters(totalFilters: Int) {
+        binding.totalFilters = totalFilters
+    }
+
+    override fun showPeriodRequest(periodRequest: FilterManager.PeriodRequest) {
+        if (periodRequest == FilterManager.PeriodRequest.FROM_TO) {
+            FilterPeriodsDialog.newPeriodsFilter(filterType = Filters.PERIOD, isFromToFilter = true).show(supportFragmentManager, FILTER_DIALOG)
+        } else {
+            FilterPeriodsDialog.newPeriodsFilter(filterType = Filters.PERIOD).show(supportFragmentManager, FILTER_DIALOG)
+        }
+    }
+
+    override fun openOrgUnitTreeSelector() {
+        OUTreeFragment.Builder()
+            .withPreselectedOrgUnits(
+                FilterManager.getInstance().orgUnitFilters.map { it.uid() }.toMutableList(),
+            )
+            .onSelection { selectedOrgUnits ->
+                presenter.setOrgUnitFilters(selectedOrgUnits)
+            }
+            .build()
+            .show(supportFragmentManager, "OUTreeFragment")
+    }
+
     override fun goToLogin(accountsCount: Int, isDeletion: Boolean) {
         startActivity(
             LoginActivity::class.java,
@@ -371,12 +461,33 @@ class MainActivity :
         binding.executePendingBindings()
     }
 
+    private fun setFilterButtonVisibility(showFilterButton: Boolean) {
+        binding.filterActionButton.visibility = if (showFilterButton && presenter.hasFilters()) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+        binding.syncActionButton.visibility = if (showFilterButton) {
+            View.VISIBLE
+        } else {
+            View.GONE
+        }
+    }
+
     override fun openDrawer(gravity: Int) {
         if (!binding.mainDrawerLayout.isDrawerOpen(gravity)) {
             binding.mainDrawerLayout.openDrawer(gravity)
         } else {
             binding.mainDrawerLayout.closeDrawer(gravity)
         }
+    }
+
+    override fun setFilters(filters: List<FilterItem>) {
+        newAdapter.submitList(filters)
+    }
+
+    override fun hideFilters() {
+        binding.filterActionButton.visibility = View.GONE
     }
 
     override fun onLockClick() {
@@ -424,9 +535,11 @@ class MainActivity :
     }
 
     override fun onDrawerStateChanged(newState: Int) {
+        // no op
     }
 
     override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
+        // no op
     }
 
     override fun onDrawerClosed(drawerView: View) {
@@ -434,6 +547,7 @@ class MainActivity :
     }
 
     override fun onDrawerOpened(drawerView: View) {
+        // no op
     }
 
     private fun initCurrentScreen() {
@@ -558,10 +672,9 @@ class MainActivity :
             hasNoPermissionToInstall() ->
                 manageUnknownSources.launch(
                     Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES)
-                        .setData(Uri.parse(String.format("package:%s", packageName))),
+                        .setData(String.format("package:%s", packageName).toUri()),
                 )
-
-            !hasPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)) ->
+            !hasPermissions(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)) && Build.VERSION.SDK_INT < Build.VERSION_CODES.R ->
                 requestReadStoragePermission.launch(Manifest.permission.READ_EXTERNAL_STORAGE)
 
             else -> Intent(Intent.ACTION_VIEW).apply {
@@ -594,7 +707,9 @@ class MainActivity :
 
     private val requestReadStoragePermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                onDownloadNewVersion()
+            } else if (granted) {
                 onDownloadNewVersion()
             } else {
                 Toast.makeText(

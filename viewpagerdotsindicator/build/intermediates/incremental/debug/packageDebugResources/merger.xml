@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merger version="3"><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/xurxodev/Workspace/EyeSeeTea/android/dhis2-android-capture-app/viewpagerdotsindicator/src/main/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="main" generated-set="main$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/xurxodev/Workspace/EyeSeeTea/android/dhis2-android-capture-app/viewpagerdotsindicator/src/main/res"><file name="spring_dot_stroke_background" path="/Users/xurxodev/Workspace/EyeSeeTea/android/dhis2-android-capture-app/viewpagerdotsindicator/src/main/res/drawable/spring_dot_stroke_background.xml" qualifiers="" type="drawable"/><file name="worm_dot_background" path="/Users/xurxodev/Workspace/EyeSeeTea/android/dhis2-android-capture-app/viewpagerdotsindicator/src/main/res/drawable/worm_dot_background.xml" qualifiers="" type="drawable"/><file name="dot_background" path="/Users/xurxodev/Workspace/EyeSeeTea/android/dhis2-android-capture-app/viewpagerdotsindicator/src/main/res/drawable/dot_background.xml" qualifiers="" type="drawable"/><file name="spring_dot_background" path="/Users/xurxodev/Workspace/EyeSeeTea/android/dhis2-android-capture-app/viewpagerdotsindicator/src/main/res/drawable/spring_dot_background.xml" qualifiers="" type="drawable"/><file name="worm_dot_stroke_background" path="/Users/xurxodev/Workspace/EyeSeeTea/android/dhis2-android-capture-app/viewpagerdotsindicator/src/main/res/drawable/worm_dot_stroke_background.xml" qualifiers="" type="drawable"/><file name="worm_dot_layout" path="/Users/xurxodev/Workspace/EyeSeeTea/android/dhis2-android-capture-app/viewpagerdotsindicator/src/main/res/layout/worm_dot_layout.xml" qualifiers="" type="layout"/><file name="spring_dot_layout" path="/Users/xurxodev/Workspace/EyeSeeTea/android/dhis2-android-capture-app/viewpagerdotsindicator/src/main/res/layout/spring_dot_layout.xml" qualifiers="" type="layout"/><file name="dot_layout" path="/Users/xurxodev/Workspace/EyeSeeTea/android/dhis2-android-capture-app/viewpagerdotsindicator/src/main/res/layout/dot_layout.xml" qualifiers="" type="layout"/><file path="/Users/xurxodev/Workspace/EyeSeeTea/android/dhis2-android-capture-app/viewpagerdotsindicator/src/main/res/values/strings.xml" qualifiers=""><string name="app_name">View Pager Dots Indicator</string></file><file path="/Users/xurxodev/Workspace/EyeSeeTea/android/dhis2-android-capture-app/viewpagerdotsindicator/src/main/res/values/attrs.xml" qualifiers=""><attr format="color" name="dotsColor"/><attr format="color" name="dotsStrokeColor"/><attr format="dimension" name="dotsSize"/><attr format="float" name="dotsWidthFactor"/><attr format="dimension" name="dotsSpacing"/><attr format="dimension" name="dotsCornerRadius"/><attr format="dimension" name="dotsStrokeWidth"/><attr format="float" name="stiffness"/><attr format="float" name="dampingRatio"/><declare-styleable name="DotsIndicator">
+    <attr name="dotsColor"/>
+    <attr name="dotsSize"/>
+    <attr name="dotsWidthFactor"/>
+    <attr name="dotsSpacing"/>
+    <attr name="dotsCornerRadius"/>
+  </declare-styleable><declare-styleable name="SpringDotsIndicator">
+    <attr name="dotsColor"/>
+    <attr name="dotsSize"/>
+    <attr name="dotsSpacing"/>
+    <attr name="dotsCornerRadius"/>
+    <attr name="dotsStrokeWidth"/>
+    <attr name="dotsStrokeColor"/>
+    <attr name="stiffness"/>
+    <attr name="dampingRatio"/>
+  </declare-styleable><declare-styleable name="WormDotsIndicator">
+    <attr name="dotsColor"/>
+    <attr name="dotsSize"/>
+    <attr name="dotsSpacing"/>
+    <attr name="dotsCornerRadius"/>
+    <attr name="dotsStrokeWidth"/>
+    <attr name="dotsStrokeColor"/>
+  </declare-styleable></file></source></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/xurxodev/Workspace/EyeSeeTea/android/dhis2-android-capture-app/viewpagerdotsindicator/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="debug" generated-set="debug$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/xurxodev/Workspace/EyeSeeTea/android/dhis2-android-capture-app/viewpagerdotsindicator/src/debug/res"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated$Generated" generated="true" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/xurxodev/Workspace/EyeSeeTea/android/dhis2-android-capture-app/viewpagerdotsindicator/build/generated/res/resValues/debug"/></dataSet><dataSet aapt-namespace="http://schemas.android.com/apk/res-auto" config="generated" generated-set="generated$Generated" ignore_pattern="!.svn:!.git:!.ds_store:!*.scc:.*:&lt;dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"><source path="/Users/xurxodev/Workspace/EyeSeeTea/android/dhis2-android-capture-app/viewpagerdotsindicator/build/generated/res/resValues/debug"/></dataSet><mergedItems><configuration qualifiers=""><declare-styleable name="DotsIndicator">
+    <attr name="dotsColor"/>
+    <attr name="dotsSize"/>
+    <attr name="dotsWidthFactor"/>
+    <attr name="dotsSpacing"/>
+    <attr name="dotsCornerRadius"/>
+  </declare-styleable><declare-styleable name="WormDotsIndicator">
+    <attr name="dotsColor"/>
+    <attr name="dotsSize"/>
+    <attr name="dotsSpacing"/>
+    <attr name="dotsCornerRadius"/>
+    <attr name="dotsStrokeWidth"/>
+    <attr name="dotsStrokeColor"/>
+  </declare-styleable><declare-styleable name="SpringDotsIndicator">
+    <attr name="dotsColor"/>
+    <attr name="dotsSize"/>
+    <attr name="dotsSpacing"/>
+    <attr name="dotsCornerRadius"/>
+    <attr name="dotsStrokeWidth"/>
+    <attr name="dotsStrokeColor"/>
+    <attr name="stiffness"/>
+    <attr name="dampingRatio"/>
+  </declare-styleable></configuration></mergedItems></merger>

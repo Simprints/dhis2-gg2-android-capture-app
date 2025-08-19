@@ -8,7 +8,6 @@
     <string name="no">Нет</string>
     <string name="navigation_analytics">Аналитика</string>
     <string name="navigation_programs">Программы</string>
-    <string name="navigation_events">События</string>
     <string name="navigation_relationships">Зависимости</string>
     <string name="navigation_notes">Заметки</string>
     <string name="navigation_data_entry">Ввод данных</string>
@@ -25,10 +24,6 @@
     <string name="filters_title_sorting">Сортировка</string>
     <string name="filters_title_status">Статус</string>
     <string name="filters_title_date">Дата</string>
-    <string name="filters_title_event_date">Дата происшествия</string>
-    <string name="enrollment_date">Дата зачисления</string>
-    <string name="filters_title_event_status">Статус события</string>
-    <string name="filters_title_enrollment_status">Статус регистрации</string>
     <string name="state_error">Ошибка</string>
     <string name="state_warning">Предупреждение</string>
     <string name="state_relationship">Зависимость</string>

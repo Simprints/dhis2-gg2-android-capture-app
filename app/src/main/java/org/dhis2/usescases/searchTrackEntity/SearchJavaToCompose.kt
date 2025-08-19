@@ -7,9 +7,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
-import com.google.android.material.composethemeadapter.MdcTheme
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.searchTrackEntity.ui.WrappedSearchButton
+import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
 
 @ExperimentalAnimationApi
 fun ComposeView?.setLandscapeOpenSearchButton(
@@ -17,7 +17,7 @@ fun ComposeView?.setLandscapeOpenSearchButton(
     onClick: () -> Unit,
 ) {
     this?.setContent {
-        MdcTheme {
+        DHIS2Theme {
             val screenState by searchTEIViewModel.screenState.observeAsState()
             val teTypeName by searchTEIViewModel.teTypeName.observeAsState()
 

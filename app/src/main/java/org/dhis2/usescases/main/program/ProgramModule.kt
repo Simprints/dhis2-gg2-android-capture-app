@@ -7,6 +7,7 @@ import dagger.Module
 import dagger.Provides
 import org.dhis2.commons.di.dagger.PerFragment
 import org.dhis2.commons.featureconfig.data.FeatureConfigRepository
+import org.dhis2.commons.filters.FilterManager
 import org.dhis2.commons.filters.data.FilterPresenter
 import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.prefs.BasicPreferenceProvider
@@ -18,6 +19,7 @@ import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.biometrics.BiometricsConfigApi
 import org.dhis2.data.biometrics.BiometricsConfigRepositoryImpl
 import org.dhis2.data.dhislogic.DhisProgramUtils
+import org.dhis2.data.dhislogic.DhisTrackedEntityInstanceUtils
 import org.dhis2.data.notifications.NotificationD2Repository
 import org.dhis2.data.notifications.UserD2Repository
 import org.dhis2.data.service.SyncStatusController
@@ -43,7 +45,9 @@ class ProgramModule(
         dispatcherProvider: DispatcherProvider,
         featureConfigRepository: FeatureConfigRepository,
         matomoAnalyticsController: MatomoAnalyticsController,
+        filterManager: FilterManager,
         syncStatusController: SyncStatusController,
+        schedulerProvider: SchedulerProvider,
         selectBiometricsConfig: SelectBiometricsConfig
     ): ProgramViewModelFactory {
         return ProgramViewModelFactory(
@@ -52,7 +56,9 @@ class ProgramModule(
             featureConfigRepository,
             dispatcherProvider,
             matomoAnalyticsController,
+            filterManager,
             syncStatusController,
+            schedulerProvider,
             selectBiometricsConfig
         )
     }
@@ -63,6 +69,7 @@ class ProgramModule(
         d2: D2,
         filterPresenter: FilterPresenter,
         dhisProgramUtils: DhisProgramUtils,
+        dhisTrackedEntityInstanceUtils: DhisTrackedEntityInstanceUtils,
         schedulerProvider: SchedulerProvider,
         colorUtils: ColorUtils,
         metadataIconProvider: MetadataIconProvider,
@@ -71,6 +78,7 @@ class ProgramModule(
             d2,
             filterPresenter,
             dhisProgramUtils,
+            dhisTrackedEntityInstanceUtils,
             ResourceManager(view.context, colorUtils),
             metadataIconProvider,
             schedulerProvider,

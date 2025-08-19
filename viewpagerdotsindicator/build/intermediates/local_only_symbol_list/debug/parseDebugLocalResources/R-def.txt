@@ -1,0 +1,26 @@
+R_DEF: Internal format may change without notice
+local
+attr dampingRatio
+attr dotsColor
+attr dotsCornerRadius
+attr dotsSize
+attr dotsSpacing
+attr dotsStrokeColor
+attr dotsStrokeWidth
+attr dotsWidthFactor
+attr stiffness
+drawable dot_background
+drawable spring_dot_background
+drawable spring_dot_stroke_background
+drawable worm_dot_background
+drawable worm_dot_stroke_background
+id dot
+id spring_dot
+id worm_dot
+layout dot_layout
+layout spring_dot_layout
+layout worm_dot_layout
+string app_name
+styleable DotsIndicator dotsColor dotsSize dotsWidthFactor dotsSpacing dotsCornerRadius
+styleable SpringDotsIndicator dotsColor dotsSize dotsSpacing dotsCornerRadius dotsStrokeWidth dotsStrokeColor stiffness dampingRatio
+styleable WormDotsIndicator dotsColor dotsSize dotsSpacing dotsCornerRadius dotsStrokeWidth dotsStrokeColor

@@ -1,7 +1,5 @@
 package org.dhis2.usescases.eventsWithoutRegistration.eventDetails.providers
 
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -12,8 +10,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.unit.dp
+import kotlinx.datetime.LocalDate
 import org.dhis2.R
+import org.dhis2.commons.dialogs.bottomsheet.bottomSheetInsets
+import org.dhis2.commons.dialogs.bottomsheet.bottomSheetLowerPadding
 import org.dhis2.commons.extensions.inDateRange
 import org.dhis2.commons.extensions.inOrgUnit
 import org.dhis2.commons.resources.ResourceManager
@@ -35,15 +35,14 @@ import org.hisp.dhis.mobile.ui.designsystem.component.DropdownInputField
 import org.hisp.dhis.mobile.ui.designsystem.component.DropdownItem
 import org.hisp.dhis.mobile.ui.designsystem.component.InputCoordinate
 import org.hisp.dhis.mobile.ui.designsystem.component.InputDateTime
-import org.hisp.dhis.mobile.ui.designsystem.component.InputDateTimeModel
 import org.hisp.dhis.mobile.ui.designsystem.component.InputDropDown
 import org.hisp.dhis.mobile.ui.designsystem.component.InputOrgUnit
 import org.hisp.dhis.mobile.ui.designsystem.component.InputPolygon
 import org.hisp.dhis.mobile.ui.designsystem.component.InputShellState
 import org.hisp.dhis.mobile.ui.designsystem.component.SelectableDates
 import org.hisp.dhis.mobile.ui.designsystem.component.model.DateTransformation
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import org.hisp.dhis.mobile.ui.designsystem.component.state.InputDateTimeData
+import org.hisp.dhis.mobile.ui.designsystem.component.state.rememberInputDateTimeState
 import java.time.format.DateTimeParseException
 
 @Composable
@@ -52,7 +51,6 @@ fun ProvideInputDate(
     modifier: Modifier = Modifier,
 ) {
     if (uiModel.showField) {
-        Spacer(modifier = Modifier.height(16.dp))
         val textSelection =
             TextRange(if (uiModel.eventDate.dateValue != null) uiModel.eventDate.dateValue.length else 0)
         var value by remember(uiModel.eventDate.dateValue) {
@@ -79,25 +77,13 @@ fun ProvideInputDate(
         } else {
             IntRange(1924, 2124)
         }
-        InputDateTime(
-            InputDateTimeModel(
+        val inputState = rememberInputDateTimeState(
+            InputDateTimeData(
                 title = uiModel.eventDate.label ?: "",
                 allowsManualInput = uiModel.allowsManualInput,
-                inputTextFieldValue = value,
                 actionType = DateTimeActionType.DATE,
-                state = state,
                 visualTransformation = DateTransformation(),
-                onValueChanged = {
-                    value = it ?: TextFieldValue()
-                    state = getInputShellStateBasedOnValue(it?.text)
-                    it?.let { it1 -> manageActionBasedOnValue(uiModel, it1.text) }
-                },
                 isRequired = uiModel.required,
-                onFocusChanged = { focused ->
-                    if (!focused && !isValid(value.text)) {
-                        state = InputShellState.ERROR
-                    }
-                },
                 is24hourFormat = uiModel.is24HourFormat,
                 selectableDates = uiModel.selectableDates ?: SelectableDates(
                     "01011924",
@@ -105,23 +91,33 @@ fun ProvideInputDate(
                 ),
                 yearRange = yearRange,
             ),
+            inputTextFieldValue = value,
+            inputState = state,
+        )
+        InputDateTime(
+            state = inputState,
             modifier = modifier.testTag(INPUT_EVENT_INITIAL_DATE),
+            onValueChanged = {
+                value = it ?: TextFieldValue()
+                it?.let { dateValue ->
+                    manageActionBasedOnValue(
+                        uiModel = uiModel,
+                        dateString = dateValue.text,
+                    )
+                }
+            },
+            onFocusChanged = { focused ->
+                if (!focused && !isValid(value.text) && state == InputShellState.FOCUSED) {
+                    state = InputShellState.ERROR
+                }
+            },
         )
     }
 }
 
 fun isValidDateFormat(dateString: String): Boolean {
-    val year = dateString.substring(4, 8)
-    val month = dateString.substring(2, 4)
-    val day = dateString.substring(0, 2)
-
-    val formattedDate = "$year-$month-$day"
-
-    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
-
     return try {
-        LocalDate.parse(formattedDate, formatter)
-        when (ValueType.DATE.validator.validate(formattedDate)) {
+        when (ValueType.DATE.validator.validate(dateString)) {
             is Result.Failure -> false
             is Result.Success -> true
         }
@@ -130,25 +126,31 @@ fun isValidDateFormat(dateString: String): Boolean {
     }
 }
 
-fun getInputShellStateBasedOnValue(dateString: String?): InputShellState {
-    dateString?.let {
-        return if (isValid(it) && !isValidDateFormat(it)) {
-            InputShellState.ERROR
-        } else {
-            InputShellState.FOCUSED
-        }
-    }
-    return InputShellState.FOCUSED
-}
-
 fun manageActionBasedOnValue(uiModel: EventInputDateUiModel, dateString: String) {
     if (dateString.isEmpty()) {
         uiModel.onClear?.invoke()
-    } else if (isValid(dateString) && isValidDateFormat(dateString)) {
+    } else if (isValidDateFormat(dateString)) {
         formatUIDateToStored(dateString)?.let { dateValues ->
-            uiModel.onDateSelected(dateValues)
+            if (uiModel.selectableDates?.let { dateValues.isInRange(it) } == true) {
+                uiModel.onDateSelected(dateValues)
+            } else {
+                uiModel.onError?.invoke()
+            }
         }
+    } else {
+        uiModel.onError?.invoke()
     }
+}
+
+fun InputDateValues.isInRange(selectableDates: SelectableDates): Boolean {
+    val format = LocalDate.Format {
+        dayOfMonth()
+        monthNumber()
+        year()
+    }
+    val date = LocalDate(year, month, day)
+    return format.parse(selectableDates.initialDate) <= date &&
+        format.parse(selectableDates.endDate) >= date
 }
 
 private fun isValid(valueString: String) = valueString.length == 8
@@ -175,14 +177,11 @@ private fun formatStoredDateToUI(dateValue: String): String? {
 }
 
 fun formatUIDateToStored(dateValue: String?): InputDateValues? {
-    return if (dateValue?.length != 8) {
+    return if (dateValue?.length != 10) {
         null
     } else {
-        val year = dateValue.substring(4, 8).toInt()
-        val month = dateValue.substring(2, 4).toInt()
-        val day = dateValue.substring(0, 2).toInt()
-
-        InputDateValues(day, month, year)
+        val date = LocalDate.Formats.ISO.parse(dateValue)
+        InputDateValues(date.dayOfMonth, date.monthNumber, date.year)
     }
 }
 
@@ -199,7 +198,6 @@ fun ProvideOrgUnit(
     showField: Boolean = true,
 ) {
     if (showField) {
-        Spacer(modifier = Modifier.height(16.dp))
         val state = getInputState(detailsEnabled && orgUnit.enable && orgUnit.orgUnits.size > 1)
 
         var inputFieldValue by remember(orgUnit.selectedOrgUnit) {
@@ -246,11 +244,11 @@ fun ProvideCategorySelector(
         }
     val dropdownItems = selectableOptions.map { DropdownItem(it.displayName() ?: it.code() ?: "") }
 
-    Spacer(modifier = Modifier.height(16.dp))
-
     if (selectableOptions.isNotEmpty()) {
         InputDropDown(
             modifier = modifier,
+            windowInsets = { bottomSheetInsets() },
+            bottomSheetLowerPadding = bottomSheetLowerPadding(),
             title = eventCatComboUiModel.category.name,
             state = getInputState(eventCatComboUiModel.detailsEnabled),
             selectedItem = DropdownItem(selectedItem ?: ""),
@@ -292,8 +290,6 @@ fun ProvidePeriodSelector(
     }
     val state = getInputState(uiModel.detailsEnabled)
 
-    Spacer(modifier = Modifier.height(16.dp))
-
     DropdownInputField(
         modifier = modifier,
         title = uiModel.eventDate.label ?: "",
@@ -327,8 +323,8 @@ fun ProvideEmptyCategorySelector(
         mutableStateOf("")
     }
 
-    Spacer(modifier = Modifier.height(16.dp))
     InputDropDown(
+        windowInsets = { bottomSheetInsets() },
         modifier = modifier,
         title = name,
         state = InputShellState.UNFOCUSED,
@@ -361,7 +357,6 @@ fun ProvideCoordinates(
     showField: Boolean = true,
 ) {
     if (showField) {
-        Spacer(modifier = Modifier.height(16.dp))
         when (coordinates.model?.renderingType) {
             UiRenderType.POLYGON, UiRenderType.MULTI_POLYGON -> {
                 InputPolygon(

@@ -12,6 +12,8 @@ import org.dhis2.R
 import org.dhis2.bindings.app
 import org.dhis2.commons.di.dagger.PerServer
 import org.dhis2.commons.filters.data.GetFiltersApplyingWebAppConfig
+import org.dhis2.commons.periods.data.EventPeriodRepository
+import org.dhis2.commons.periods.domain.GetEventPeriods
 import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.reporting.CrashReportController
 import org.dhis2.commons.resources.ColorUtils
@@ -23,7 +25,6 @@ import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.service.SyncStatusController
 import org.dhis2.data.service.VersionRepository
-import org.dhis2.form.data.FileController
 import org.dhis2.form.data.OptionsRepository
 import org.dhis2.form.data.RulesUtilsProvider
 import org.dhis2.form.data.RulesUtilsProviderImpl
@@ -31,6 +32,8 @@ import org.dhis2.form.data.UniqueAttributeController
 import org.dhis2.metadata.usecases.DataSetConfiguration
 import org.dhis2.metadata.usecases.ProgramConfiguration
 import org.dhis2.metadata.usecases.TrackedEntityTypeConfiguration
+import org.dhis2.mobile.commons.files.FileController
+import org.dhis2.mobile.commons.files.FileControllerImpl
 import org.dhis2.ui.ThemeManager
 import org.dhis2.utils.analytics.AnalyticsHelper
 import org.dhis2.utils.analytics.AnalyticsInterceptor
@@ -138,7 +141,7 @@ class ServerModule {
     @Provides
     @PerServer
     fun providesFileController(): FileController {
-        return FileController()
+        return FileControllerImpl()
     }
 
     @Provides
@@ -173,14 +176,23 @@ class ServerModule {
         return ResourceManager(contextWrapper, colorUtils)
     }
 
+    @Provides
+    @PerServer
+    fun provideEventPeriodRepository(d2: D2): EventPeriodRepository =
+        EventPeriodRepository(d2)
+
+    @Provides
+    @PerServer
+    fun providePeriodUseCase(
+        eventPeriodRepository: EventPeriodRepository,
+    ) =
+        GetEventPeriods(eventPeriodRepository)
+
     companion object {
         @JvmStatic
         fun getD2Configuration(context: Context): D2Configuration {
             val interceptors: MutableList<Interceptor> =
                 ArrayList()
-            context.app().appInspector.flipperInterceptor?.let { flipperInterceptor ->
-                interceptors.add(flipperInterceptor)
-            }
             interceptors.add(
                 AnalyticsInterceptor(
                     AnalyticsHelper(context.app().appComponent().matomoController()),
