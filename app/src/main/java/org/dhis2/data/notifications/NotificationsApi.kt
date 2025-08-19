@@ -1,16 +1,17 @@
-import org.dhis2.usescases.notifications.domain.Notification
-import org.dhis2.usescases.notifications.domain.UserGroups
+
+import org.dhis2.data.notifications.NotificationDTO
+import org.dhis2.data.notifications.UserGroupsDTO
 import org.hisp.dhis.android.core.arch.api.HttpServiceClient
 import org.hisp.dhis.android.core.user.User
 
 class NotificationsApi (private val client: HttpServiceClient) {
-    suspend fun getData(): List<Notification>{
+    suspend fun getData(): List<NotificationDTO>{
         return client.get {
             url("dataStore/notifications/notifications")
         }
     }
 
-    suspend fun postData( notifications:List<Notification>): User {
+    suspend fun postData( notifications:List<NotificationDTO>): User {
         return client.put {
             url("dataStore/notifications/notifications")
             body(notifications)
@@ -19,7 +20,7 @@ class NotificationsApi (private val client: HttpServiceClient) {
 }
 
 class UserGroupsApi (private val client: HttpServiceClient) {
-    suspend fun getData( userId:String): UserGroups {
+    suspend fun getData( userId:String): UserGroupsDTO {
         return client.get {
             url("users/$userId?fields=userGroups")
         }

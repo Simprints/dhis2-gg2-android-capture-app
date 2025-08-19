@@ -17,7 +17,7 @@ data class ReadBy(
 )
 
 data class Recipients(
-    val userGroups: ArrayList<Ref>,
+    val userGroups: List<Ref>,
     val users: List<Ref>,
     val wildcard: String
 )

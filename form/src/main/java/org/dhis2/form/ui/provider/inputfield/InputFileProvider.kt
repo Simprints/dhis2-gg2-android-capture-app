@@ -13,31 +13,32 @@ import org.dhis2.form.extensions.inputState
 import org.dhis2.form.extensions.legend
 import org.dhis2.form.extensions.supportingText
 import org.dhis2.form.model.FieldUiModel
-import org.dhis2.form.model.UiEventType
 import org.dhis2.form.ui.event.RecyclerViewUiEvents
-import org.dhis2.ui.model.InputData
+import org.dhis2.form.ui.files.rememberFilePicker
 import org.hisp.dhis.mobile.ui.designsystem.component.InputFileResource
 import org.hisp.dhis.mobile.ui.designsystem.component.UploadFileState
 import java.io.File
+import java.text.DecimalFormat
 
 @Composable
 internal fun ProvideInputFileResource(
     modifier: Modifier,
     fieldUiModel: FieldUiModel,
     resources: ResourceManager,
+    onFileSelected: (filePath: String) -> Unit,
     uiEventHandler: (RecyclerViewUiEvents) -> Unit,
 ) {
-    var uploadState by remember(fieldUiModel) { mutableStateOf(getFileUploadState(fieldUiModel.displayName, fieldUiModel.isLoadingData)) }
+    var uploadState by remember(fieldUiModel) {
+        mutableStateOf(
+            getFileUploadState(
+                fieldUiModel.displayName,
+                fieldUiModel.isLoadingData,
+            ),
+        )
+    }
+    val file = fieldUiModel.displayName?.let { File(it) }
 
-    val fileInputData =
-        fieldUiModel.displayName?.let {
-            val file = File(it)
-            InputData.FileInputData(
-                fileName = file.name,
-                fileSize = file.length(),
-                filePath = file.path,
-            )
-        }
+    val filePicker = rememberFilePicker(onFileSelected)
 
     InputFileResource(
         modifier = modifier.fillMaxWidth(),
@@ -46,11 +47,11 @@ internal fun ProvideInputFileResource(
         supportingText = fieldUiModel.supportingText(),
         buttonText = resources.getString(R.string.add_file),
         uploadFileState = uploadState,
-        fileName = fileInputData?.fileName,
-        fileWeight = fileInputData?.fileSizeLabel,
+        fileName = file?.name,
+        fileWeight = file?.length()?.let { fileSizeLabel(it) },
         onSelectFile = {
             uploadState = getFileUploadState(fieldUiModel.displayName, true)
-            fieldUiModel.invokeUiEvent(UiEventType.ADD_FILE)
+            filePicker.launch("*/*")
         },
         onClear = { fieldUiModel.onClear() },
         onUploadFile = {
@@ -60,6 +61,16 @@ internal fun ProvideInputFileResource(
         legendData = fieldUiModel.legend(),
         isRequired = fieldUiModel.mandatory,
     )
+}
+
+private fun fileSizeLabel(fileSize: Long) = run {
+    val kb = fileSize / 1024f
+    val mb = kb / 1024f
+    if (kb < 1024f) {
+        "${DecimalFormat("*0").format(kb)}KB"
+    } else {
+        "${DecimalFormat("*0.##").format(mb)}MB"
+    }
 }
 
 private fun getFileUploadState(value: String?, isLoading: Boolean): UploadFileState {

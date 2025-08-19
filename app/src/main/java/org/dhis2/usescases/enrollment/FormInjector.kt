@@ -31,6 +31,7 @@ fun AppCompatActivity.buildEnrollmentForm(
     enrollmentResultDialogProvider: FormResultDialogProvider,
     onFieldsLoading: (fields: List<FieldUiModel>) -> List<FieldUiModel>,
     onFieldsLoaded: (fields: List<FieldUiModel>) -> Unit,
+    onFieldItemsRendered: (fieldsEmpty: Boolean) -> Unit,
     onFinish: () -> Unit,
 ): FormView {
     return FormView.Builder()
@@ -51,6 +52,7 @@ fun AppCompatActivity.buildEnrollmentForm(
                 )
             }
         }
+        .onFieldItemsRendered(onFieldItemsRendered)
         .onFinishDataEntry(onFinish)
         .eventCompletionResultDialogProvider(enrollmentResultDialogProvider)
         .factory(supportFragmentManager)

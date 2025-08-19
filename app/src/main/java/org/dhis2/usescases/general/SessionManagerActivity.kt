@@ -7,7 +7,6 @@ import android.os.Bundle
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityOptionsCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import io.reactivex.Observable
 import io.reactivex.subjects.BehaviorSubject
@@ -20,6 +19,7 @@ import org.dhis2.commons.ActivityResultObserver
 import org.dhis2.commons.Constants
 import org.dhis2.commons.locationprovider.LocationProvider
 import org.dhis2.commons.service.SessionManagerServiceImpl
+import org.dhis2.commons.ui.extensions.handleInsets
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.server.OpenIdSession.LogOutReason
 import org.dhis2.data.service.SyncStatusController
@@ -51,6 +51,8 @@ abstract class SessionManagerActivity : AppCompatActivity(), ActivityResultObser
     fun observableLifeCycle(): Observable<Status> {
         return lifeCycleObservable
     }
+
+    open var handleEdgeToEdge = true
 
     @Inject
     lateinit var analyticsHelper: AnalyticsHelper
@@ -106,7 +108,8 @@ abstract class SessionManagerActivity : AppCompatActivity(), ActivityResultObser
         if (this !is SplashActivity &&
             this !is LoginActivity &&
             this !is AccountsActivity &&
-            this !is ScanActivity
+            this !is ScanActivity &&
+            handleEdgeToEdge
         ) {
             if (serverComponent != null) {
                 setTheme(serverComponent.themeManager().getProgramTheme())
@@ -114,6 +117,8 @@ abstract class SessionManagerActivity : AppCompatActivity(), ActivityResultObser
                 setTheme(R.style.AppTheme)
             }
         }
+
+        if (handleEdgeToEdge) handleInsets()
 
         super.onCreate(savedInstanceState)
     }
@@ -131,7 +136,7 @@ abstract class SessionManagerActivity : AppCompatActivity(), ActivityResultObser
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
-        permissions: Array<String?>,
+        permissions: Array<out String>,
         grantResults: IntArray,
     ) {
         if (activityResultObserver != null) {
@@ -190,9 +195,9 @@ abstract class SessionManagerActivity : AppCompatActivity(), ActivityResultObser
         if (finishAll) intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
         if (bundle != null) intent.putExtras(bundle)
         if (transition != null) {
-            ContextCompat.startActivity(this, intent, transition.toBundle())
+            startActivity(intent, transition.toBundle())
         } else {
-            ContextCompat.startActivity(this, intent, null)
+            startActivity(intent, null)
         }
         if (finishCurrent) finish()
     }
@@ -212,7 +217,11 @@ abstract class SessionManagerActivity : AppCompatActivity(), ActivityResultObser
     }
 
     private fun checkSessionTimeout() {
-        if (::sessionManagerServiceImpl.isInitialized && sessionManagerServiceImpl.checkSessionTimeout({ accountsCount -> sessionAction(accountsCount) }, lifecycleScope) && this !is LoginActivity) {
+        if (::sessionManagerServiceImpl.isInitialized && sessionManagerServiceImpl.checkSessionTimeout(
+                { accountsCount -> sessionAction(accountsCount) },
+                lifecycleScope,
+            ) && this !is LoginActivity
+        ) {
             workManagerController.cancelAllWork()
             syncStatusController.restore()
         }

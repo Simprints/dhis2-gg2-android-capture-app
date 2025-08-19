@@ -1,18 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="invalid_percentage">Chỉ cho phép giá trị từ 0 đến 100</string>
-    <string name="invalid_field">Xin vui lòng xem lại trường này</string>
-    <string name="formatting_error">Lỗi định dạng</string>
-    <string name="invalid_possitive">Chỉ cho phép số dương</string>
-    <string name="invalid_phone_number">Số điện thoại không hợp lệ</string>
-    <string name="invalid_email">Địa chỉ thư điện tử không hợp lệ</string>
-    <string name="invalid_negative_number">Chỉ cho phép số âm</string>
-    <string name="invalid_possitive_zero">Chỉ cho phép số nguyên hoặc số 0</string>
-    <string name="invalid_interval">Chỉ cho phép giá trị từ 0 đến 1</string>
-    <string name="validation_url">Đường dẫn liên kết không đúng</string>
-    <string name="invalid_integer">Giá trị phải là số nguyên</string>
-    <string name="wrong_pattern">Định dạng không đúng</string>
-    <string name="pattern_error">Cấu hình mẫu %s không đúng</string>
     <string name="update_field_error">Không thể cập nhật trường này. Xin vui lòng thử lại.</string>
     <string name="error">Lỗi</string>
     <string name="unique_warning">Giá trị phải là duy nhất, có một giá trị bị trùng. Nó chưa được lưu lại. Xin vui lòng kiểm tra. </string>
@@ -22,6 +9,9 @@
     <string name="conf_error_value_to_assign_option_set">Luật Chương Trình %s đang cố gắng gán giá trị %s mà không thuộc Bộ Tùy Chọn %s</string>
     <string name="conf_error_value_option_set">Giá trị của trường %s không thuộc Bộ Tùy Chọn trong %s</string>
     <string name="field_is_mandatory">Trường bắt buộc</string>
+    <string name="missing_warning_fields_completed_events">Bạn có một số tin nhắn cảnh báo.</string>
+    <string name="missing_warning_fields_events">Bạn có một số tin nhắn cảnh báo. \n Bạn có muốn đánh dấu biểu nhập này là hoàn tất không?</string>
+    <string name="required">Bắt buộc</string>
     <string name="date">Ngày</string>
     <string name="hint_year">Năm</string>
     <string name="hint_month">Tháng</string>
@@ -54,9 +44,13 @@
     <string name="complete">Hoàn tất</string>
     <string name="discard_changes">Hủy bỏ các thay đổi</string>
     <string name="saved">Đã lưu!</string>
+    <string name="event_error_on_complete">Bạn có một số tin nhắn lỗi.\n Bạn có muốn xem không?</string>
+    <string name="missing_error_fields_events">Một số trường dữ liệu có lỗi và chưa được lưu. \n Bạn có muốn xem lại biểu nhập không?</string>
     <string name="review_message">Một số trường dữ liệu cần bạn chú ý.\n Bạn có muốn xem xét biểu nhập không?</string>
     <string name="not_now">Không phải bây giờ</string>
+    <string name="save_anyway">Tiếp tục Lưu</string>
     <string name="keep_editing">Tiếp tục chỉnh sửa</string>
+    <string name="event_can_be_completed">Bạn có muốn đánh dấu biểu nhập này là hoàn tất không?</string>
     <string name="discard_go_back">Nếu bạn tắt bây giờ, tất cả thông tin trong biểu nhập sẽ bị hủy bỏ.</string>
     <string name="field_errors_not_saved_discard">Một số trường dữ liệu có lỗi và chưa được lưu.\n Nếu bạn tắt bây giờ, tất cả thay đổi sẽ bị hủy bỏ.</string>
     <string name="field_errors_not_saved">Một số trường dữ liệu bị lỗi và chưa được lưu</string>
@@ -70,11 +64,27 @@
     <string name="copied_text">Đã sao chép</string>
     <string name="empty_description">Không có thông tin cho trường dữ liệu này</string>
     <string name="take_photo">Chụp ảnh</string>
-    <string name="from_gallery">Chọn từ thư viện ảnh</string>
     <string name="warning_error_on_complete_title">Kiểm tra cái này!</string>
     <string name="action_do_not_show_again">Không hiển thị lại</string>
+    <string name="data_values_save_error">Các Giá trị dữ liệu không thể được lưu bằng những đối số này. Vui lòng sử dụng đối số khác.</string>
     <string name="enrollment_single_section_label">Thuộc tính - %s</string>
     <string name="tei_coordinates">Tọa độ của </string>
     <string name="no_reserved_values">Không có giá trị dành riêng nào nữa. Liên hệ với quản lý của bạn</string>
     <string name="incident_date">Ngày khởi phát</string>
+    <string name="location_permission_denied">Cần quyền định vị để thu thập vị trí. Xin vui lòng mở chúng trong cài đặt ứng dụng</string>
+    <string name="open_with">Mở với</string>
+    <string name="no_option_found">Không tìm thấy tùy chọn</string>
+    <string name="download">Tải về</string>
+    <string name="scan">Quét</string>
+    <string name="qr_code">Mã QR</string>
+    <string name="bar_code">Mã vạch</string>
+    <string name="add_location">Thêm vị trí</string>
+    <string name="form_without_fields">Biểu này không có trường dữ liệu được cấu hình</string>
+    <string name="event_details_section_title">Chi tiết %s</string>
+    <string name="event_data_section_title">Dữ liệu %s</string>
+    <string name="org_unit">Đơn vị</string>
+    <string name="coordinates">Toạ độ</string>
+    <string name="category_combo">Tổ hợp phân loại</string>
+    <string name="no_options">Không có tùy chọn</string>
+    <string name="cat_combo">Tổ hợp Phân Loại</string>
     </resources>

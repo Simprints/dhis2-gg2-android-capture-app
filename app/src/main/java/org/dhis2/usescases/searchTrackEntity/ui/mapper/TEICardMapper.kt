@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import org.dhis2.R
 import org.dhis2.bindings.hasFollowUp
+import org.dhis2.commons.bindings.isFilePathValid
 import org.dhis2.commons.date.toDateSpan
 import org.dhis2.commons.date.toOverdueOrScheduledUiText
 import org.dhis2.commons.date.toUi
@@ -80,7 +81,7 @@ class TEICardMapper(
             null
         }
 
-        if (item.profilePicturePath.isNotEmpty()) {
+        if (isFilePathValid(item.profilePicturePath)) {
             val file = File(item.profilePicturePath)
             val bitmap = BitmapFactory.decodeFile(file.absolutePath).asImageBitmap()
             val painter = BitmapPainter(bitmap)

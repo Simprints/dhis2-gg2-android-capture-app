@@ -9,6 +9,7 @@ import org.dhis2.commons.data.ProgramConfigurationRepository
 import org.dhis2.commons.resources.LocaleSelector
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.maps.api.NominatimGeocoderApi
+import org.dhis2.maps.model.MapScope
 import org.dhis2.maps.usecases.GeocoderSearchImpl
 import org.dhis2.maps.usecases.MapStyleConfiguration
 import org.dhis2.maps.usecases.SearchLocationManager
@@ -17,12 +18,12 @@ import org.hisp.dhis.android.core.D2Manager
 import org.hisp.dhis.android.core.common.FeatureType
 
 object Injector {
-    @Suppress("UNCHECKED_CAST")
     fun provideMapSelectorViewModelFactory(
         context: Context,
         locationType: FeatureType,
         initialCoordinates: String?,
-        programUid: String?,
+        uid: String?,
+        scope: MapScope,
     ) = object : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             return MapSelectorViewModel(
@@ -30,7 +31,8 @@ object Injector {
                 initialCoordinates = initialCoordinates,
                 mapStyleConfig = MapStyleConfiguration(
                     d2 = D2Manager.getD2(),
-                    programUid = programUid,
+                    uid = uid,
+                    scope = scope,
                     programConfigurationRepository = ProgramConfigurationRepository(D2Manager.getD2()),
                 ),
                 geocoder = GeocoderSearchImpl(

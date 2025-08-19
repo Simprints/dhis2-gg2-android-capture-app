@@ -10,7 +10,7 @@ plugins {
     kotlin("android")
     kotlin("kapt")
     id("kotlin-parcelize")
-    id("kotlinx-serialization")
+    alias(libs.plugins.kotlin.serialization)
     id("dagger.hilt.android.plugin")
     alias(libs.plugins.kotlin.compose.compiler)
 }
@@ -263,7 +263,6 @@ kotlin {
 
 dependencies {
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.jar"))))
-    implementation(project(":viewpagerdotsindicator"))
     implementation(project(":dhis_android_analytics"))
     implementation(project(":form"))
     implementation(project(":commons"))
@@ -272,6 +271,8 @@ dependencies {
     implementation(project(":stock-usecase"))
     implementation(project(":dhis2-mobile-program-rules"))
     implementation(project(":tracker"))
+    implementation(project(":aggregates"))
+    implementation(project(":commonskmm"))
 
     implementation(libs.security.conscrypt)
     implementation(libs.security.rootbeer)
@@ -300,17 +301,10 @@ dependencies {
     implementation(libs.analytics.customactivityoncrash)
     implementation(platform(libs.dispatcher.dispatchBOM))
     implementation(libs.dispatcher.dispatchCore)
+    implementation(libs.koin.core)
+    implementation(libs.koin.android)
 
     coreLibraryDesugaring(libs.desugar)
-
-    debugImplementation(libs.analytics.flipper)
-    debugImplementation(libs.analytics.soloader)
-    debugImplementation(libs.analytics.flipper.network)
-    debugImplementation(libs.analytics.flipper.leak)
-    debugImplementation(libs.analytics.leakcanary)
-
-    releaseImplementation(libs.analytics.leakcanary.noop)
-    releaseImplementation(libs.analytics.flipper.noop)
 
     "dhisPlayServicesImplementation"(libs.google.auth)
     "dhisPlayServicesImplementation"(libs.google.auth.apiphone)
