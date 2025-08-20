@@ -164,7 +164,7 @@ class EventMapFragment :
                                     .fillParentMaxWidth()
                                     .testTag("MAP_ITEM"),
                                 listCardState = rememberListCardState(
-                                    title = ListCardTitleModel(text = item.title),
+                                    title = ListCardTitleModel(text = item.title, allowOverflow = false),
                                     description = item.description?.let {
                                         ListCardDescriptionModel(
                                             text = it,
@@ -221,6 +221,7 @@ class EventMapFragment :
     }
 
     override fun onDestroy() {
+        programEventsViewModel.setProgress(false)
         presenter.onDestroy()
         super.onDestroy()
     }

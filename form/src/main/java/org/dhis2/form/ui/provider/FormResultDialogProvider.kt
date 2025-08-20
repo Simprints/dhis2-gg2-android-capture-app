@@ -1,5 +1,12 @@
 package org.dhis2.form.ui.provider
 
+import org.dhis2.commons.dialogs.bottomsheet.BottomSheetDialogUiModel
+import org.dhis2.commons.dialogs.bottomsheet.DialogButtonStyle
+import org.dhis2.commons.dialogs.bottomsheet.DialogButtonStyle.CompleteButton
+import org.dhis2.commons.dialogs.bottomsheet.DialogButtonStyle.MainButton
+import org.dhis2.commons.dialogs.bottomsheet.DialogButtonStyle.SecondaryButton
+import org.dhis2.commons.dialogs.bottomsheet.FieldWithIssue
+import org.dhis2.commons.dialogs.bottomsheet.IssueType
 import org.dhis2.form.R
 import org.dhis2.form.data.DataIntegrityCheckResult
 import org.dhis2.form.data.EventRepository
@@ -9,13 +16,6 @@ import org.dhis2.form.data.MissingMandatoryResult
 import org.dhis2.form.data.NotSavedResult
 import org.dhis2.form.data.SuccessfulResult
 import org.dhis2.form.model.EventMode
-import org.dhis2.ui.dialogs.bottomsheet.BottomSheetDialogUiModel
-import org.dhis2.ui.dialogs.bottomsheet.DialogButtonStyle
-import org.dhis2.ui.dialogs.bottomsheet.DialogButtonStyle.CompleteButton
-import org.dhis2.ui.dialogs.bottomsheet.DialogButtonStyle.MainButton
-import org.dhis2.ui.dialogs.bottomsheet.DialogButtonStyle.SecondaryButton
-import org.dhis2.ui.dialogs.bottomsheet.FieldWithIssue
-import org.dhis2.ui.dialogs.bottomsheet.IssueType
 import org.hisp.dhis.android.core.common.ValidationStrategy
 import org.hisp.dhis.android.core.event.EventStatus
 
@@ -33,11 +33,15 @@ class FormResultDialogProvider(
         eventState: EventStatus?,
         result: DataIntegrityCheckResult,
     ): Pair<BottomSheetDialogUiModel, List<FieldWithIssue>> {
+        val onCompleteMessages = getOnCompleteMessage(
+            canComplete,
+            onCompleteMessage,
+        )
         val dialogType = getDialogType(
             errorFields,
             emptyMandatoryFields,
             warningFields,
-            !canComplete && onCompleteMessage != null,
+            onCompleteMessages,
         )
         val showSkipButton = when {
             dialogType == DialogType.WARNING || dialogType == DialogType.SUCCESSFUL -> true
@@ -74,12 +78,14 @@ class FormResultDialogProvider(
                     result.fieldUidErrorList,
                     result.mandatoryFields.keys.toList(),
                     result.warningFields,
+                    onCompleteMessages,
                 )
                 Pair(model, fieldsWithIssues)
             }
             is FieldsWithWarningResult -> {
                 val fieldsWithIssues = getFieldsWithIssues(
                     warningFields = result.fieldUidWarningList,
+                    onCompleteFields = onCompleteMessages,
                 )
                 return Pair(model, fieldsWithIssues)
             }
@@ -101,7 +107,7 @@ class FormResultDialogProvider(
                 Pair(notSavedModel, emptyList())
             }
             is SuccessfulResult -> {
-                Pair(model, emptyList())
+                Pair(model, onCompleteMessages)
             }
         }
     }
@@ -166,44 +172,54 @@ class FormResultDialogProvider(
         errorFields: List<FieldWithIssue> = emptyList(),
         mandatoryFields: List<String> = emptyList(),
         warningFields: List<FieldWithIssue> = emptyList(),
+        onCompleteFields: List<FieldWithIssue> = emptyList(),
     ): List<FieldWithIssue> {
-        return errorFields.plus(
-            mandatoryFields.map {
-                FieldWithIssue(
-                    "uid",
-                    it,
-                    IssueType.MANDATORY,
-                    provider.provideMandatoryField(),
-                )
-            },
-        ).plus(warningFields)
+        return onCompleteFields
+            .plus(errorFields)
+            .plus(
+                mandatoryFields.map {
+                    FieldWithIssue(
+                        "uid",
+                        it,
+                        IssueType.MANDATORY,
+                        provider.provideMandatoryField(),
+                    )
+                },
+            ).plus(warningFields)
+    }
+
+    private fun getOnCompleteMessage(
+        canComplete: Boolean,
+        onCompleteMessage: String?,
+    ): List<FieldWithIssue> {
+        val issueOnComplete = onCompleteMessage?.let {
+            FieldWithIssue(
+                fieldUid = "",
+                fieldName = it,
+                issueType = when (canComplete) {
+                    false -> IssueType.ERROR_ON_COMPLETE
+                    else -> IssueType.WARNING_ON_COMPLETE
+                },
+                message = "",
+            )
+        }
+        return issueOnComplete?.let { listOf(it) } ?: emptyList()
     }
 
     private fun getDialogType(
         errorFields: List<FieldWithIssue>,
         mandatoryFields: Map<String, String>,
         warningFields: List<FieldWithIssue>,
-        errorOnComplete: Boolean,
+        onCompleteFields: List<FieldWithIssue>,
     ) = when {
-        errorOnComplete -> {
+        onCompleteFields.any { it.issueType == IssueType.ERROR_ON_COMPLETE } ->
             DialogType.COMPLETE_ERROR
-        }
-
-        errorFields.isNotEmpty() -> {
-            DialogType.ERROR
-        }
-
-        mandatoryFields.isNotEmpty() -> {
-            DialogType.MANDATORY
-        }
-
-        warningFields.isNotEmpty() -> {
+        errorFields.isNotEmpty() -> DialogType.ERROR
+        mandatoryFields.isNotEmpty() -> DialogType.MANDATORY
+        warningFields.isNotEmpty() ||
+            onCompleteFields.any { it.issueType == IssueType.WARNING_ON_COMPLETE } ->
             DialogType.WARNING
-        }
-
-        else -> {
-            DialogType.SUCCESSFUL
-        }
+        else -> DialogType.SUCCESSFUL
     }
     enum class DialogType { ERROR, MANDATORY, WARNING, SUCCESSFUL, COMPLETE_ERROR }
 }

@@ -55,4 +55,6 @@ interface EnrollmentView : AbstractActivityContracts.View {
         enrollingOrgUnitName: String,
         userOrgUnits: List<String>,
     )
+
+    fun markAsPendingSave()
 }

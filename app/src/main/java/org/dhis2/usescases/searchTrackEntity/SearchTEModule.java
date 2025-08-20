@@ -60,6 +60,7 @@ import org.dhis2.maps.geometry.mapper.featurecollection.MapTeisToFeatureCollecti
 import org.dhis2.maps.geometry.point.MapPointToFeature;
 import org.dhis2.maps.geometry.polygon.MapPolygonPointToFeature;
 import org.dhis2.maps.geometry.polygon.MapPolygonToFeature;
+import org.dhis2.maps.model.MapScope;
 import org.dhis2.maps.usecases.MapStyleConfiguration;
 import org.dhis2.maps.utils.DhisMapUtils;
 import org.dhis2.tracker.data.ProfilePictureProvider;
@@ -160,6 +161,7 @@ public class SearchTEModule {
                                       ThemeManager themeManager,
                                       MetadataIconProvider metadataIconProvider,
                                       BasicPreferenceProvider basicPreferenceProvider) {
+        ProfilePictureProvider profilePictureProvider = new ProfilePictureProvider(d2);
         return new SearchRepositoryImpl(teiType,
                 initialProgram,
                 d2,
@@ -173,6 +175,7 @@ public class SearchTEModule {
                 searchTEIRepository,
                 themeManager,
                 metadataIconProvider,
+                profilePictureProvider,
                 basicPreferenceProvider);
     }
 
@@ -184,7 +187,8 @@ public class SearchTEModule {
             DispatcherProvider dispatcherProvider,
             FieldViewModelFactory fieldViewModelFactory,
             MetadataIconProvider metadataIconProvider,
-            ColorUtils colorUtils
+            ColorUtils colorUtils,
+            DateUtils dateUtils
     ) {
         ResourceManager resourceManager = new ResourceManager(moduleContext, colorUtils);
         DateLabelProvider dateLabelProvider = new DateLabelProvider(moduleContext, new ResourceManager(moduleContext, colorUtils));
@@ -207,7 +211,8 @@ public class SearchTEModule {
                         resourceManager,
                         dateLabelProvider,
                         metadataIconProvider,
-                        profilePictureProvider
+                        profilePictureProvider,
+                        dateUtils
                 )
         );
     }
@@ -324,12 +329,24 @@ public class SearchTEModule {
                 mapDataRepository,
                 networkUtils,
                 new SearchDispatchers(),
-                new MapStyleConfiguration(d2, initialProgram, programConfigurationRepository),
+                new MapStyleConfiguration(
+                        d2,
+                        initialProgram,
+                        MapScope.PROGRAM,
+                        programConfigurationRepository
+                ),
                 resourceManager,
                 displayNameProvider,
                 filterManager,
                 basicPreferenceProvider
         );
+    }
+
+    @Provides
+    @PerActivity
+    DateUtils provideDateUtils(
+    ) {
+        return DateUtils.getInstance();
     }
 
     @Provides

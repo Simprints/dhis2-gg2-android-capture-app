@@ -7,11 +7,11 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.material.BackdropScaffold
 import androidx.compose.material.BackdropValue
 import androidx.compose.material.ExperimentalMaterialApi
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.ScaffoldState
 import androidx.compose.material.SnackbarDuration
 import androidx.compose.material.SnackbarResult
 import androidx.compose.material.rememberBackdropScaffoldState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,9 +35,9 @@ import org.dhis2.android.rtsm.ui.home.model.DataEntryStep
 import org.dhis2.android.rtsm.ui.home.model.EditionDialogResult
 import org.dhis2.android.rtsm.ui.home.model.SettingsUiState
 import org.dhis2.android.rtsm.ui.managestock.ManageStockViewModel
-import org.dhis2.ui.dialogs.bottomsheet.BottomSheetDialog
-import org.dhis2.ui.dialogs.bottomsheet.BottomSheetDialogUiModel
-import org.dhis2.ui.dialogs.bottomsheet.DialogButtonStyle
+import org.dhis2.commons.dialogs.bottomsheet.BottomSheetDialog
+import org.dhis2.commons.dialogs.bottomsheet.BottomSheetDialogUiModel
+import org.dhis2.commons.dialogs.bottomsheet.DialogButtonStyle
 
 @SuppressLint("CoroutineCreationDuringComposition")
 @OptIn(ExperimentalMaterialApi::class)
@@ -162,11 +162,11 @@ private fun getScrimColor(settingsUiState: SettingsUiState): Color {
         if (settingsUiState.hasFacilitySelected() && settingsUiState.hasDestinationSelected()) {
             Color.Unspecified
         } else {
-            MaterialTheme.colors.surface.copy(alpha = 0.60f)
+            MaterialTheme.colorScheme.surface.copy(alpha = 0.60f)
         }
     } else {
         if (!settingsUiState.hasFacilitySelected()) {
-            MaterialTheme.colors.surface.copy(alpha = 0.60f)
+            MaterialTheme.colorScheme.surface.copy(alpha = 0.60f)
         } else {
             Color.Unspecified
         }
@@ -204,6 +204,7 @@ private fun launchBottomSheet(
             onKeepEdition.invoke()
         },
         onSecondaryButtonClicked = { onDiscard.invoke() },
+        showTopDivider = true,
     ).apply {
         this.show(supportFragmentManager.beginTransaction(), "DIALOG")
         this.isCancelable = false

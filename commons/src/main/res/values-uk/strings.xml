@@ -16,7 +16,6 @@
     <string name="navigation_analytics">Аналітика</string>
     <string name="navigation_tasks">Завдання</string>
     <string name="navigation_programs">Програми</string>
-    <string name="navigation_events">Випадки</string>
     <string name="navigation_relationships">Зв\'язки</string>
     <string name="navigation_notes">Примітки</string>
     <string name="navigation_data_entry">Введення даних</string>
@@ -24,8 +23,6 @@
     <string name="event_overview">Деталі</string>
     <string name="select_option">Обрати опцію</string>
     <string name="search">Пошук</string>
-    <string name="jira_issue_sent">Надіслано сповіщення про проблему</string>
-    <string name="jira_issue_sent_error">Помилка при надсиланні сповіщення про проблему</string>
     <string name="events">випадки</string>
     <string name="data_sets">Набори даних</string>
     <string name="tei">Об’єкт, який відстежується</string>
@@ -42,12 +39,7 @@
     <string name="filters_title_state">Синхронізувати</string>
     <string name="filters_title_assigned">Призначено мені</string>
     <string name="filters_title_date">Дата</string>
-    <string name="filters_title_event_date">Дата випадку</string>
-    <string name="enrollment_date">Дата реєстрації</string>
-    <string name="filters_title_event_status">Статус випадку</string>
-    <string name="filters_title_enrollment_status">Статус реєстрації</string>
     <string name="filter_follow_up_label">Для подальших дій %s</string>
-
     <!-- State -->
     <string name="state_synced">Синхронізувати</string>
     <string name="state_to_post">Надіслати</string>
@@ -138,9 +130,6 @@
     <string name="section_indicators">Індикатори</string>
     <string name="section_charts">Діаграми</string>
     <string name="section_charts_indicators">Діаграми та індикатори</string>
-
-    <!-- Enrollment -->
-    <string name="enrolled_in">Зареєстровано в:</string>
 
     <!--SDK error codes-->
     <string name="login_error_null_pass">Пароль відсутній. Будь ласка, введіть пароль.</string>
@@ -234,4 +223,5 @@
         <item quantity="many">%d роками прострочені</item>
         <item quantity="other">%d років прострочено</item>
     </plurals>
-</resources>
+
+    </resources>

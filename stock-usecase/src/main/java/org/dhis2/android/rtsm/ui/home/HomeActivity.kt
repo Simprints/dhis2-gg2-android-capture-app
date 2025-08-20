@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.colorResource
-import com.google.android.material.composethemeadapter.MdcTheme
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanIntentResult
 import com.journeyapps.barcodescanner.ScanOptions
@@ -26,18 +25,19 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.dhis2.android.rtsm.R
-import org.dhis2.android.rtsm.commons.Constants.INTENT_EXTRA_APP_CONFIG
-import org.dhis2.android.rtsm.data.AppConfig
 import org.dhis2.android.rtsm.data.TransactionType
 import org.dhis2.android.rtsm.ui.home.screens.HomeScreen
 import org.dhis2.android.rtsm.ui.managestock.ManageStockViewModel
 import org.dhis2.android.rtsm.utils.NetworkUtils
+import org.dhis2.commons.Constants
 import org.dhis2.commons.filters.FilterManager
 import org.dhis2.commons.sync.OnDismissListener
 import org.dhis2.commons.sync.OnSyncNavigationListener
 import org.dhis2.commons.sync.SyncContext
 import org.dhis2.commons.sync.SyncDialog
 import org.dhis2.commons.sync.SyncStatusItem
+import org.dhis2.commons.ui.extensions.handleInsets
+import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
 
 @AndroidEntryPoint
 class HomeActivity : AppCompatActivity() {
@@ -57,16 +57,17 @@ class HomeActivity : AppCompatActivity() {
         }
 
         filterManager = FilterManager.getInstance()
-        intent.getParcelableExtra<AppConfig>(INTENT_EXTRA_APP_CONFIG)
+        intent.getStringExtra(Constants.PROGRAM_UID)
             ?.let { manageStockViewModel.setConfig(it) }
 
+        handleInsets()
         setContent {
             val settingsUiState by viewModel.settingsUiState.collectAsState()
             val helperText by viewModel.helperText.collectAsState()
             manageStockViewModel.setHelperText(helperText)
             updateTheme(settingsUiState.selectedTransactionItem.type)
             manageStockViewModel.setThemeColor(Color(colorResource(themeColor).toArgb()))
-            MdcTheme {
+            DHIS2Theme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = Color(colorResource(themeColor).toArgb()),

@@ -1,9 +1,16 @@
 include(
-    ":app", ":viewpagerdotsindicator", ":core",
+    ":app",":core",
     ":dhis_android_analytics", ":form", ":commons",
     ":dhis2_android_maps", ":compose-table", ":ui-components",
     ":stock-usecase"
 )
 include(":dhis2-mobile-program-rules")
 include(":tracker")
+include(":aggregates")
+include(":commonskmm")
+dependencyResolutionManagement {
+    repositories {
+        maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+    }
+}
 project(":core").projectDir = File("dhis2-android-sdk/core")

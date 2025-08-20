@@ -596,6 +596,7 @@ class RulesUtilsProviderImplTest {
 
         assertEquals(testFieldViewModels[testingUid]!!.warning, "content data")
         assertTrue(result.messageOnComplete == "content data")
+        assertTrue(result.fieldsWithWarnings.isNotEmpty())
         assertTrue(result.canComplete)
     }
 

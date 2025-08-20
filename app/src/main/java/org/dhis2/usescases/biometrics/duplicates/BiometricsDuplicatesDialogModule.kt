@@ -6,6 +6,7 @@ import dagger.Provides
 import dhis2.org.analytics.charts.Charts
 import org.dhis2.R
 import org.dhis2.commons.date.DateLabelProvider
+import org.dhis2.commons.date.DateUtils
 import org.dhis2.commons.filters.data.FilterPresenter
 import org.dhis2.commons.network.NetworkUtils
 import org.dhis2.commons.prefs.BasicPreferenceProvider
@@ -42,7 +43,6 @@ import org.dhis2.usescases.searchTrackEntity.SearchRepositoryImplKt
 import org.dhis2.usescases.searchTrackEntity.SearchRepositoryKt
 import org.dhis2.usescases.searchTrackEntity.ui.mapper.TEICardMapper
 import org.dhis2.usescases.tracker.TrackedEntityInstanceInfoProvider
-import org.dhis2.utils.DateUtils
 import org.hisp.dhis.android.core.D2
 
 @Module
@@ -96,6 +96,8 @@ class BiometricsDuplicatesDialogModule(
         metadataIconProvider: MetadataIconProvider,
         basicPreferenceProvider: BasicPreferenceProvider
     ): SearchRepository {
+        val profilePictureProvider = ProfilePictureProvider(d2)
+
         return SearchRepositoryImpl(
             teiType,
             initialProgram,
@@ -110,6 +112,7 @@ class BiometricsDuplicatesDialogModule(
             searchTEIRepository,
             themeManager,
             metadataIconProvider,
+            profilePictureProvider,
             basicPreferenceProvider
         )
     }
@@ -144,12 +147,12 @@ class BiometricsDuplicatesDialogModule(
         dispatcherProvider: DispatcherProvider,
         fieldViewModelFactory: FieldViewModelFactory,
         metadataIconProvider: MetadataIconProvider,
-        colorUtils:ColorUtils
+        colorUtils: ColorUtils
     ): SearchRepositoryKt {
         val resourceManager = ResourceManager(context, colorUtils)
         val dateLabelProvider =
             DateLabelProvider(context, ResourceManager(context, colorUtils))
-        val profilePictureProvider = ProfilePictureProvider(d2!!)
+        val profilePictureProvider = ProfilePictureProvider(d2)
 
         return SearchRepositoryImplKt(
             searchRepository,
@@ -168,7 +171,8 @@ class BiometricsDuplicatesDialogModule(
                 resourceManager,
                 dateLabelProvider,
                 metadataIconProvider,
-                profilePictureProvider
+                profilePictureProvider,
+                DateUtils.getInstance()
             )
         )
     }

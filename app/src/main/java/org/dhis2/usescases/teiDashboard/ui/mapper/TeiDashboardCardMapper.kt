@@ -291,6 +291,7 @@ class TeiDashboardCardMapper(
         this.filter { it.first.valueType() != ValueType.IMAGE }
             .filter { it.first.valueType() != ValueType.COORDINATE }
             .filter { it.first.valueType() != ValueType.FILE_RESOURCE }
+            .filter { it.second.value()?.isNotEmpty() == true }
             //EyeSeeTea customization
             .filter { it.first.displayFormName()?.isBiometricText() == false || (it.first.displayFormName() ?:"").isBiometricText()
             }.filter { it.first.uid() != firstNameAttrUid && it.first.uid() != middleNameAttrUid  && it.first.uid() != lastNameAttrUid }
