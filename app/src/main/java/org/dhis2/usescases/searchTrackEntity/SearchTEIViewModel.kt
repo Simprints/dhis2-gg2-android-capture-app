@@ -24,8 +24,16 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.dhis2.R
@@ -34,7 +42,6 @@ import org.dhis2.commons.extensions.toFriendlyDate
 import org.dhis2.commons.extensions.toFriendlyDateTime
 import org.dhis2.commons.extensions.toPercentage
 import org.dhis2.commons.filters.FilterManager
-import org.dhis2.commons.idlingresource.SearchIdlingResourceSingleton
 import org.dhis2.commons.network.NetworkUtils
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.resources.ResourceManager
@@ -48,7 +55,9 @@ import org.dhis2.form.ui.provider.DisplayNameProvider
 import org.dhis2.maps.extensions.toStringProperty
 import org.dhis2.maps.layer.MapLayer
 import org.dhis2.maps.layer.basemaps.BaseMapStyle
+import org.dhis2.maps.managers.MapManager
 import org.dhis2.maps.usecases.MapStyleConfiguration
+import org.dhis2.mobile.commons.coroutine.CoroutineTracker
 import org.dhis2.tracker.NavigationBarUIState
 import org.dhis2.usescases.biometrics.biometricAttributeId
 import org.dhis2.usescases.biometrics.containsAgeFilterAndIsUnderAgeThreshold
@@ -141,7 +150,29 @@ class SearchTEIViewModel(
 
     var uiState by mutableStateOf(SearchParametersUiState())
 
+    var mapManager: MapManager? = null
+
     private var fetchJob: Job? = null
+
+    private val onNewSearch = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+
+    val searchPagingData = onNewSearch.onStart { emit(Unit) }
+        .flatMapLatest {
+            flow {
+                CoroutineTracker.increment()
+                emitAll(
+                    when {
+                        searching -> loadSearchResults()
+                        displayFrontPageList() -> loadDisplayInListResults()
+                        else -> emptyFlow()
+                    },
+                )
+                CoroutineTracker.decrement()
+            }
+        }
+        .flowOn(dispatchers.io())
+        .cachedIn(viewModelScope)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PagingData.empty())
 
     private var searchChildren: Boolean = false
     private val uIds = mutableListOf<String>()
@@ -273,8 +304,7 @@ class SearchTEIViewModel(
                 previousSate = _screenState.value?.screenState ?: SearchScreenState.NONE,
                 listType = SearchScreenState.LIST,
                 displayFrontPageList = searchRepository.getProgram(initialProgramUid)
-                    ?.displayFrontPageList()
-                    ?: false,
+                    ?.displayFrontPageList() == true,
                 canCreateWithoutSearch = searchRepository.canCreateInProgramWithoutSearch(),
                 isSearching = searching,
                 searchForm = SearchForm(
@@ -444,28 +474,6 @@ class SearchTEIViewModel(
         uiState = uiState.copy(searchEnabled = queryData.isNotEmpty())
     }
 
-    fun fetchListResults(onPagedListReady: (Flow<PagingData<SearchTeiModel>>?) -> Unit) {
-        SearchIdlingResourceSingleton.increment()
-        _isDataLoaded.postValue(false)
-
-        viewModelScope.launch(dispatchers.io()) {
-            val resultPagedList = async {
-                when {
-                    searching -> loadSearchResults().cachedIn(viewModelScope)
-                    displayFrontPageList() -> loadDisplayInListResults().cachedIn(viewModelScope)
-                    else -> null
-                }
-            }
-            try {
-                onPagedListReady(resultPagedList.await())
-            } catch (e: Exception) {
-                Timber.e(e)
-            } finally {
-                SearchIdlingResourceSingleton.decrement()
-            }
-        }
-    }
-
     private suspend fun loadSearchResults() = withContext(dispatchers.io()) {
         val searchParametersModel = SearchParametersModel(
             selectedProgram = searchRepository.getProgram(initialProgramUid),
@@ -570,7 +578,7 @@ class SearchTEIViewModel(
     }
 
     fun fetchMapResults() {
-        SearchIdlingResourceSingleton.increment()
+        CoroutineTracker.increment()
         viewModelScope.launch {
             val result = async(context = dispatchers.io()) {
                 mapDataRepository.getTrackerMapData(
@@ -586,7 +594,7 @@ class SearchTEIViewModel(
             } catch (e: Exception) {
                 Timber.e(e)
             } finally {
-                SearchIdlingResourceSingleton.decrement()
+                CoroutineTracker.decrement()
             }
             searching = false
         }
@@ -647,16 +655,8 @@ class SearchTEIViewModel(
                     when (_screenState.value?.screenState) {
                         SearchScreenState.LIST -> {
                             setListScreen()
-                            fetchListResults { flow ->
-                                flow?.let {
-                                    fetchListResults { flow ->
-                                        flow?.let {
-                                            _refreshData.postValue(Unit)
-                                            SearchIdlingResourceSingleton.decrement()
-                                        }
-                                    }
-                                }
-                            }
+                            onNewSearch.emit(Unit)
+                            CoroutineTracker.decrement()
                         }
 
                         SearchScreenState.MAP -> {
@@ -679,9 +679,10 @@ class SearchTEIViewModel(
                     uiState.updateMinAttributeWarning(true)
                     setSearchScreen()
                     _refreshData.postValue(Unit)
+                    onNewSearch.emit(Unit)
                 }
             } catch (e: Exception) {
-                Timber.d(e.message)
+                Timber.d(e)
             }
         }
     }

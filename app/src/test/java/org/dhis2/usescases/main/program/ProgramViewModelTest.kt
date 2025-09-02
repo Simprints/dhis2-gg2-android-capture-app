@@ -20,7 +20,6 @@ import org.dhis2.data.service.SyncStatusController
 import org.dhis2.data.service.SyncStatusData
 import org.dhis2.ui.MetadataIconData
 import org.dhis2.ui.toColor
-import org.dhis2.usescases.biometrics.repositories.BiometricsConfigRepository
 import org.dhis2.usescases.biometrics.usecases.SelectBiometricsConfig
 import org.dhis2.utils.MainCoroutineScopeRule
 import org.hisp.dhis.android.core.common.State
@@ -58,7 +57,7 @@ class ProgramViewModelTest {
         on { isFeatureEnable(any()) } doReturn false
     }
 
-    private val biometricsConfigRepository: BiometricsConfigRepository = mock()
+    private val selectBiometricsConfig: SelectBiometricsConfig = mock()
 
     private val dispatcherProvider = object : DispatcherProvider {
         override fun io(): CoroutineDispatcher {
@@ -87,8 +86,10 @@ class ProgramViewModelTest {
             filterManager,
             syncStatusController,
             schedulerProvider,
-            SelectBiometricsConfig(biometricsConfigRepository),
+            selectBiometricsConfig,
         )
+
+        whenever(selectBiometricsConfig.invoke(any())) doReturn kotlinx.coroutines.flow.flow {}
     }
 
     @Test

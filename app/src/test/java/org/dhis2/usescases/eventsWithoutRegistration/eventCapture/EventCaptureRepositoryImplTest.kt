@@ -19,7 +19,6 @@ import org.hisp.dhis.android.core.program.ProgramStage
 import org.hisp.dhis.android.core.program.ProgramStageSection
 import org.hisp.dhis.android.core.settings.ProgramConfigurationSetting
 import org.junit.Assert.assertTrue
-import org.junit.Ignore
 import org.junit.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
@@ -198,11 +197,6 @@ class EventCaptureRepositoryImplTest {
         repository.orgUnit().test()
             .assertNoErrors()
             .assertValue { it.uid() == testEventOrgUnitUid }
-    }
-
-    @Ignore("Use EventCaptureFieldProvider in the list method of the repository")
-    @Test
-    fun `Should return list of fields`() {
     }
 
     @Test
