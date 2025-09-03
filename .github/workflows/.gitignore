@@ -1,0 +1,5 @@
+# Ignore all upstream workflows...
+*.yml
+# ...except these fork-specific ones
+!build-signed-apk-artifact.yml
+!sync-simprints-upstream-changes.yml
