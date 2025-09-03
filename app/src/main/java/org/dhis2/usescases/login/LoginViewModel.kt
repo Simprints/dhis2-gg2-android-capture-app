@@ -15,8 +15,6 @@ import org.dhis2.commons.Constants.PREFS_URLS
 import org.dhis2.commons.Constants.PREFS_USERS
 import org.dhis2.commons.Constants.USER_TEST_ANDROID
 import org.dhis2.commons.data.tuples.Trio
-import org.dhis2.commons.idlingresource.CountingIdlingResourceSingleton.decrement
-import org.dhis2.commons.idlingresource.CountingIdlingResourceSingleton.increment
 import org.dhis2.commons.network.NetworkUtils
 import org.dhis2.commons.prefs.Preference.Companion.PIN
 import org.dhis2.commons.prefs.Preference.Companion.SESSION_LOCKED
@@ -24,12 +22,12 @@ import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.prefs.SECURE_PASS
 import org.dhis2.commons.prefs.SECURE_SERVER_URL
 import org.dhis2.commons.prefs.SECURE_USER_NAME
-import org.dhis2.commons.reporting.CrashReportController
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.biometric.BiometricController
 import org.dhis2.data.server.UserManager
+import org.dhis2.mobile.commons.reporting.CrashReportController
 import org.dhis2.usescases.main.MainActivity
 import org.dhis2.utils.DEFAULT_URL
 import org.dhis2.utils.TestingCredential
@@ -60,6 +58,7 @@ class LoginViewModel(
     private val crashReportController: CrashReportController,
     private val network: NetworkUtils,
     private var userManager: UserManager?,
+    private val repository: LoginRepository,
     private val syncBiometricsConfig: SyncBiometricsConfig,
 ) : ViewModel() {
 
@@ -72,7 +71,7 @@ class LoginViewModel(
     val twoFactorCode = MutableLiveData<String>()
     val isDataComplete = MutableLiveData<Boolean>()
     val isTestingEnvironment = MutableLiveData<Trio<String, String, String>>()
-    var testingCredentials: MutableMap<String, TestingCredential>? = null
+    private var testingCredentials: List<TestingCredential> = emptyList()
     private val _loginProgressVisible = MutableLiveData(false)
     val loginProgressVisible: LiveData<Boolean> = _loginProgressVisible
 
@@ -84,6 +83,9 @@ class LoginViewModel(
 
     private val _displayMoreActions = MutableLiveData<Boolean>(true)
     val displayMoreActions: LiveData<Boolean> = _displayMoreActions
+
+    private val _autoCompleteData = MutableLiveData<Pair<List<String>, List<String>>>()
+    val autoCompleteData: LiveData<Pair<List<String>, List<String>>> = _autoCompleteData
 
     private val _twoFactorCodeVisible = MutableLiveData(false)
     val twoFactorCodeVisible: LiveData<Boolean> = _twoFactorCodeVisible
@@ -130,6 +132,11 @@ class LoginViewModel(
             )
         } ?: setAccountInfo(view.getDefaultServerProtocol(), null)
         displayManageAccount()
+
+        viewModelScope.launch {
+            testingCredentials = repository.getTestingCredentials()
+            loadAutoCompleteData(testingCredentials)
+        }
     }
 
     private fun trackServerVersion() {
@@ -189,10 +196,10 @@ class LoginViewModel(
     fun checkBiometricVisibility() {
         _canLoginWithBiometrics.value =
             biometricController.hasBiometric() &&
-                    userManager?.d2?.userModule()?.accountManager()?.getAccounts()?.count() == 1 &&
-                    preferenceProvider.getString(SECURE_SERVER_URL)
-                        ?.let { it == serverUrl.value } ?: false &&
-                    preferenceProvider.contains(SECURE_PASS)
+            userManager?.d2?.userModule()?.accountManager()?.getAccounts()?.count() == 1 &&
+            preferenceProvider.getString(SECURE_SERVER_URL)
+                ?.let { it == serverUrl.value } ?: false &&
+            preferenceProvider.contains(SECURE_PASS)
     }
 
     fun onLoginButtonClick() {
@@ -208,10 +215,10 @@ class LoginViewModel(
 
     private fun logIn() {
         _loginProgressVisible.postValue(true)
-        increment()
         disposable.add(
             Observable.just(view.initLogin())
                 .flatMap { userManager ->
+                    LoginIdlingResource.increment()
                     this.userManager = userManager
                     userManager.logIn(
                         userName.value!!.trim { it <= ' ' },
@@ -229,8 +236,11 @@ class LoginViewModel(
                             }
                         }
                 }
+                .doOnError {
+                    LoginIdlingResource.decrement()
+                }
                 .doOnTerminate {
-                    decrement()
+                    LoginIdlingResource.decrement()
                     _loginProgressVisible.postValue(false)
                 }
                 .subscribeOn(schedulers.io())
@@ -392,7 +402,7 @@ class LoginViewModel(
 
     fun authenticateWithBiometric() {
         biometricController.authenticate {
-            password.value = preferenceProvider.getString(SECURE_PASS)
+            password.value = preferenceProvider.getSecureValue(SECURE_PASS)
             logIn()
         }
     }
@@ -406,11 +416,11 @@ class LoginViewModel(
         }
     }
 
-    fun getAutocompleteData(
-        testingCredentials: List<TestingCredential>,
-    ): Pair<MutableList<String>, MutableList<String>> {
-        val urls = preferenceProvider.getSet(PREFS_URLS, emptySet())!!.toMutableList()
-        val users = preferenceProvider.getSet(PREFS_USERS, emptySet())!!.toMutableList()
+    private fun loadAutoCompleteData(testingCredentials: List<TestingCredential>) {
+        val urls =
+            preferenceProvider.getSet(PREFS_URLS, emptySet())?.toMutableList() ?: mutableListOf()
+        val users =
+            preferenceProvider.getSet(PREFS_USERS, emptySet())?.toMutableList() ?: mutableListOf()
 
         urls.let {
             for (testingCredential in testingCredentials) {
@@ -418,19 +428,19 @@ class LoginViewModel(
                     it.add(testingCredential.server_url)
                 }
             }
-        }
 
-        preferenceProvider.setValue(PREFS_URLS, HashSet(urls))
+            preferenceProvider.setValue(PREFS_URLS, HashSet(urls))
+        }
 
         users.let {
             if (!it.contains(USER_TEST_ANDROID)) {
                 it.add(USER_TEST_ANDROID)
             }
+
+            preferenceProvider.setValue(PREFS_USERS, HashSet(users))
         }
 
-        preferenceProvider.setValue(PREFS_USERS, HashSet(users))
-
-        return Pair(urls, users)
+        _autoCompleteData.value = Pair(urls, users)
     }
 
     fun displayManageAccount() {
@@ -497,8 +507,8 @@ class LoginViewModel(
 
     private fun checkData() {
         val newValue = !serverUrl.value.isNullOrEmpty() &&
-                !userName.value.isNullOrEmpty() &&
-                !password.value.isNullOrEmpty()
+            !userName.value.isNullOrEmpty() &&
+            !password.value.isNullOrEmpty()
         if (isDataComplete.value == null || isDataComplete.value != newValue) {
             isDataComplete.value = newValue
         }
@@ -506,19 +516,12 @@ class LoginViewModel(
     }
 
     private fun checkTestingEnvironment(serverUrl: String) {
-        testingCredentials?.get(serverUrl)?.let { credentials ->
+        testingCredentials.find { it.server_url == serverUrl }?.let { credentials ->
             isTestingEnvironment.value = Trio.create(
                 serverUrl,
                 credentials.user_name,
                 credentials.user_pass,
             )
-        }
-    }
-
-    fun setTestingCredentials(testingCredentials: List<TestingCredential>) {
-        this.testingCredentials = HashMap()
-        for (testingCredential in testingCredentials) {
-            this.testingCredentials!![testingCredential.server_url] = testingCredential
         }
     }
 
@@ -567,6 +570,6 @@ class LoginViewModel(
 
     fun shouldAskForBiometrics(): Boolean =
         biometricController.hasBiometric() &&
-                !preferenceProvider.areCredentialsSet() &&
-                hasAccounts.value == false
+            !preferenceProvider.areCredentialsSet() &&
+            hasAccounts.value == false
 }

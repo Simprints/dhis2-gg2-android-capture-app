@@ -27,10 +27,8 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import org.dhis2.App
-import org.dhis2.bindings.checkSMSPermission
-import org.dhis2.bindings.showSMS
 import org.dhis2.R
-
+import org.dhis2.bindings.checkSMSPermission
 import org.dhis2.commons.date.toDateSpan
 import org.dhis2.commons.dialogs.bottomsheet.BottomSheetDialogUi
 import org.dhis2.commons.dialogs.bottomsheet.BottomSheetDialogUiModel
@@ -184,7 +182,7 @@ class SyncStatusDialog : BottomSheetDialogFragment(), GranularSyncContracts.View
     private fun onSyncClick() {
         viewModel.serverAvailability.observe(viewLifecycleOwner) { isAvailable ->
             val canSendSMS = viewModel.canSendSMS()
-            val isSMSEnabled = viewModel.isSMSEnabled(context?.showSMS() == true)
+            val isSMSEnabled = viewModel.isSMSEnabled()
 
             when {
                 isAvailable -> syncGranular()
