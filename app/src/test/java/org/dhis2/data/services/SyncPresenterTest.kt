@@ -65,6 +65,8 @@ class SyncPresenterTest {
             biometricsConfigRepository,
             notificationRepository
         )
+
+        whenever(biometricsConfigRepository.sync()) doReturn kotlinx.coroutines.flow.flow {}
     }
 
     @Test

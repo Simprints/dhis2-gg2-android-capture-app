@@ -464,6 +464,7 @@ fun ProvideByValueType(
                 fieldUiModel = fieldUiModel,
                 intentHandler = intentHandler,
                 resources = resources,
+                onNextClicked = onNextClicked,
             )
         }
 

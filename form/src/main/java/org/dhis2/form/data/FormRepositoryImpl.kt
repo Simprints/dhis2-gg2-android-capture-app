@@ -481,6 +481,7 @@ class FormRepositoryImpl(
         } ?: emptyList(),
     )
 
+    @Synchronized
     private fun List<FieldUiModel>.applyRuleEffects(
         skipProgramRules: Boolean = false,
     ): List<FieldUiModel> {

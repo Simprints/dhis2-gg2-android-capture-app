@@ -48,9 +48,6 @@ class ProgramFragment : FragmentGlobalAbstract(), ProgramView, NotificationsView
    @Inject
     lateinit var notificationsPresenter: NotificationsPresenter
 
-    @Inject
-    lateinit var animation: ProgramAnimation
-
     private val getActivityContent =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         }
@@ -100,6 +97,11 @@ class ProgramFragment : FragmentGlobalAbstract(), ProgramView, NotificationsView
         programViewModel.init()
 
         notificationsPresenter.refresh()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        programViewModel.dispose()
     }
 
     //endregion
