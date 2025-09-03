@@ -87,13 +87,6 @@ class ProgramModule(
 
     @Provides
     @PerFragment
-    fun provideAnimations(): ProgramAnimation {
-        return ProgramAnimation()
-    }
-
-
-    @Provides
-    @PerFragment
     internal fun notificationsPresenter(
         getNotifications: GetNotifications,
         markNotificationAsRead: MarkNotificationAsRead

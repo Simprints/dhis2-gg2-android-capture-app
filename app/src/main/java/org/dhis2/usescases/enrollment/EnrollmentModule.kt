@@ -11,12 +11,12 @@ import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.network.NetworkUtils
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.prefs.PreferenceProviderImpl
-import org.dhis2.commons.reporting.CrashReportController
 import org.dhis2.commons.resources.DhisPeriodUtils
 import org.dhis2.commons.resources.EventResourcesProvider
 import org.dhis2.commons.resources.MetadataIconProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
+import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.biometrics.OrgUnitD2Repository
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
 import org.dhis2.data.forms.dataentry.SearchTEIRepository
@@ -42,6 +42,7 @@ import org.dhis2.form.ui.provider.KeyboardActionProviderImpl
 import org.dhis2.form.ui.provider.LegendValueProviderImpl
 import org.dhis2.form.ui.provider.UiEventTypesProviderImpl
 import org.dhis2.mobile.commons.providers.FieldErrorMessageProvider
+import org.dhis2.mobile.commons.reporting.CrashReportController
 import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.teiDashboard.TeiAttributesProvider
 import org.dhis2.utils.analytics.AnalyticsHelper
@@ -87,7 +88,8 @@ class EnrollmentModule(
     @PerActivity
     fun provideEnrollmentConfiguration(
         d2: D2,
-    ) = EnrollmentConfiguration(d2, enrollmentUid)
+        dispatcherProvider: DispatcherProvider,
+    ) = EnrollmentConfiguration(d2, enrollmentUid, dispatcherProvider)
 
     @Provides
     @PerActivity

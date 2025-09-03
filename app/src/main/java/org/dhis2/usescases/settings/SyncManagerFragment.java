@@ -139,7 +139,7 @@ public class SyncManagerFragment extends FragmentGlobalAbstract implements SyncM
         binding = DataBindingUtil.inflate(inflater, R.layout.fragment_settings, container, false);
         binding.setLifecycleOwner(this);
         binding.setPresenter(presenter);
-        binding.smsSettings.setVisibility(ContextExtensionsKt.showSMS(context) ? View.VISIBLE : View.GONE);
+        binding.smsSettings.setVisibility(View.VISIBLE);
         binding.setVersionName(BuildConfig.VERSION_NAME);
         FormFileProvider.INSTANCE.init(requireContext());
 
