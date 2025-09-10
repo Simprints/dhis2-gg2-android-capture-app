@@ -91,10 +91,6 @@ public interface SearchRepository {
 
     FilterManager getSavedFilters();
 
-    Observable<Boolean> programHasBiometrics();
-
-    String getBiometricAttributeUid();
-
     void updateAttributeValue(String teiUid, String biometricUid, String guid);
 
     List<String> getUserOrgUnits(String programUid);
