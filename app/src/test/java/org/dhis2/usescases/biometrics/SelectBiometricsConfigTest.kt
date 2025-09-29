@@ -90,7 +90,8 @@ val defaultConfig = BiometricsConfig(
     orgUnitLevelAsModuleId = 0,
     dateOfBirthAttribute = "S4eTdBrXPpj",
     ageThresholdMonths = 6,
-    biometricsMode = BiometricsMode.full
+    biometricsMode = BiometricsMode.full,
+    enableIdentificationForTET = null
 )
 
 val configs = listOf(
@@ -106,7 +107,8 @@ val configs = listOf(
         orgUnitLevelAsModuleId = 0,
         dateOfBirthAttribute = "S4eTdBrXPpj",
         ageThresholdMonths = 6,
-        biometricsMode = BiometricsMode.full
+        biometricsMode = BiometricsMode.full,
+        enableIdentificationForTET = null
     ),
     BiometricsConfig(
         orgUnitGroup = null,
@@ -119,7 +121,8 @@ val configs = listOf(
         orgUnitLevelAsModuleId = 0,
         dateOfBirthAttribute = "S4eTdBrXPpj",
         ageThresholdMonths = 6,
-        biometricsMode = BiometricsMode.full
+        biometricsMode = BiometricsMode.full,
+        enableIdentificationForTET = null
     ),
     BiometricsConfig(
         orgUnitGroup = "aAcGSF3p97c",
@@ -132,6 +135,7 @@ val configs = listOf(
         orgUnitLevelAsModuleId = 0,
         dateOfBirthAttribute = "S4eTdBrXPpj",
         ageThresholdMonths = 6,
-        biometricsMode = BiometricsMode.full
+        biometricsMode = BiometricsMode.full,
+        enableIdentificationForTET = null
     )
 )

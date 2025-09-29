@@ -154,7 +154,15 @@ class D2ErrorUtils(
 
             D2ErrorCode.DATABASE_IMPORT_FAILED -> "Database import failed"
             D2ErrorCode.DATABASE_IMPORT_INVALID_FILE -> "Invalid file"
-            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE -> context.getString(R.string.incorrect_two_factor_code)
+            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE,
+            D2ErrorCode.EMAIL_TWO_FACTOR_CODE_SENT,
+            D2ErrorCode.SMS_TWO_FACTOR_CODE_SENT,
+            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_EMAIL,
+            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_SMS,
+            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_TOTP,
+            D2ErrorCode.TWO_FACTOR_MANY_SEND_ATTEMPTS
+                 ->
+                context.getString(R.string.incorrect_two_factor_code)
         }
     }
 

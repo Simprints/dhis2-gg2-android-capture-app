@@ -23,7 +23,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.paging.LoadState
-import androidx.paging.map
 import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -36,7 +35,6 @@ import org.dhis2.commons.filters.workingLists.WorkingListViewModelFactory
 import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.databinding.FragmentSearchListBinding
 import org.dhis2.mobile.commons.coroutine.CoroutineTracker
-import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.ui.SequentialNextSearchActions
 import org.dhis2.usescases.biometrics.ui.SequentialSearch
 import org.dhis2.usescases.biometrics.ui.SequentialSearchAction
@@ -252,16 +250,14 @@ class SearchTEList : FragmentGlobalAbstract() {
                 val teTypeName by viewModel.teTypeName.observeAsState()
                 val sequentialSearch by viewModel.sequentialSearch.observeAsState(false)
                 val isLoaded by viewModel.isDataLoaded.observeAsState(false)
-                val screenState by viewModel.screenState.observeAsState(false)
+                val screenState by viewModel.screenState.observeAsState()
 
                 val seqSearch = (sequentialSearch as SequentialSearch?)
 
-
                 if (seqSearch == null && !teTypeName.isNullOrBlank() && isLoaded == true) {
 
-                    val isBiometricsFull =
-                        screenState is SearchList && (screenState as SearchList).biometricsMode == BiometricsMode.full
-
+                    val isSearchByBiometrics =
+                        if (screenState is SearchList) viewModel.isSearchByBiometricsEnabled() else false
 
                     val isFilterOpened by viewModel.filtersOpened.observeAsState(false)
                     val createButtonVisibility by viewModel
@@ -275,12 +271,12 @@ class SearchTEList : FragmentGlobalAbstract() {
                         modifier = Modifier,
                         createButtonVisible = createButtonVisibility,
                         closeFilterVisibility = isFilterOpened,
-                        isLandscape = isLandscape() && !isBiometricsFull,
+                        isLandscape = isLandscape() && !isSearchByBiometrics,
                         queryData = queryData,
                         onSearchClick = {
-                            if (isBiometricsFull) viewModel.sequentialSearchNextAction(
+                            if (isSearchByBiometrics) viewModel.sequentialSearchNextAction(
                                 SequentialSearchAction.SearchWithBiometrics
-                            ) else viewModel.setSearchScreen(fromRelationship)
+                            ) else viewModel.setSearchScreen()
                         },
                         onEnrollClick = { viewModel.onEnrollClick() },
                         onCloseFilters = { viewModel.onFiltersClick(isLandscape()) },
@@ -332,7 +328,7 @@ class SearchTEList : FragmentGlobalAbstract() {
                         extended = !isScrollingDown,
                         onClick = { viewModel.sequentialSearchNextAction(newPatientAction) },
                         teTypeName = teTypeName!!,
-                        )
+                    )
                 }
             }
         }

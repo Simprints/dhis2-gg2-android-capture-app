@@ -970,37 +970,6 @@ public class SearchRepositoryImpl implements SearchRepository {
 
     // EyeSeeTea customizations
     @Override
-    public Observable<Boolean> programHasBiometrics() {
-        String biometricAttributeUid = getBiometricAttributeUid();
-
-        if (biometricAttributeUid != null && BIOMETRICS_ENABLED) {
-            return Observable.just(true);
-        } else {
-            return Observable.just(false);
-        }
-    }
-
-    @Override
-    public String getBiometricAttributeUid() {
-        String programUid = currentProgram();
-
-        if (programUid != null) {
-            List<ProgramTrackedEntityAttribute> attributeList =
-                    d2.programModule().programTrackedEntityAttributes().byProgram().eq(
-                            programUid).blockingGet();
-
-            for (ProgramTrackedEntityAttribute attribute : attributeList) {
-                if (isBiometricAttribute(attribute) && BIOMETRICS_ENABLED) {
-                    return attribute.trackedEntityAttribute().uid();
-                }
-            }
-
-        }
-
-        return null;
-    }
-
-    @Override
     public void updateAttributeValue(String teiUid, String biometricUid, String guid) {
         updateBiometricsAttributeValue(d2, preferenceProvider, teiUid, guid);
     }
@@ -1011,9 +980,19 @@ public class SearchRepositoryImpl implements SearchRepository {
         if (programUid != null) {
             programs.add(programUid);
         }
-        return d2.organisationUnitModule().organisationUnits()
-                .byOrganisationUnitScope(OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
-                .byProgramUids(programs).blockingGetUids();
+
+        if (programs.isEmpty()) {
+            List<String> uids = d2.organisationUnitModule().organisationUnits()
+                    .byOrganisationUnitScope(OrganisationUnit.Scope.SCOPE_DATA_CAPTURE).blockingGetUids();
+
+            return uids;
+        } else {
+            List<String> uids = d2.organisationUnitModule().organisationUnits()
+                    .byOrganisationUnitScope(OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
+                    .byProgramUids(programs).blockingGetUids();
+
+            return uids;
+        }
     }
 }
 
