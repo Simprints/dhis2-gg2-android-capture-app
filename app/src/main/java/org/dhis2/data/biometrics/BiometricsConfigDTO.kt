@@ -21,5 +21,6 @@ data class BiometricsConfigDTO(
     val orgUnitLevelAsModuleId: Int?,
     val ageThresholdMonths: Int,
     val dateOfBirthAttribute: String,
-    val biometricsMode: BiometricsModeDTO
+    val biometricsMode: BiometricsModeDTO,
+    val enableIdentificationForTET: String?
 )
