@@ -7,6 +7,7 @@ import static org.dhis2.commons.matomo.Actions.SYNC_TEI;
 import static org.dhis2.commons.matomo.Categories.SEARCH;
 import static org.dhis2.commons.matomo.Categories.TRACKER_LIST;
 import static org.dhis2.commons.matomo.Labels.CLICK;
+import static org.dhis2.usescases.biometrics.BiometricAttributesKt.biometricAttributeId;
 import static org.dhis2.usescases.biometrics.OrgUnitAsModuleIdByListKt.getOrgUnitAsModuleIdByList;
 import static org.dhis2.usescases.biometrics.OrgUnitAsModuleIdKt.getOrgUnitAsModuleId;
 import static org.dhis2.usescases.teiDashboard.dashboardfragments.relationships.RelationshipFragment.TEI_A_UID;
@@ -82,6 +83,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     private final FilterRepository filterRepository;
     private final ResourceManager resourceManager;
     private Program selectedProgram;
+    private String initialProgramUid;
 
     private final CompositeDisposable compositeDisposable;
     private final TrackedEntityType trackedEntity;
@@ -99,7 +101,6 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
 
     private boolean biometricsSearchStatus = false;
     private String sessionId;
-    private String biometricUid;
 
     public SearchTEPresenter(SearchTEContractsModule.View view,
                              D2 d2,
@@ -128,6 +129,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
         this.syncStatusController = syncStatusController;
         this.resourceManager = resourceManager;
         compositeDisposable = new CompositeDisposable();
+        this.initialProgramUid = initialProgram;
         selectedProgram = initialProgram != null ? d2.programModule().programs().uid(initialProgram).blockingGet() : null;
         currentProgram = BehaviorSubject.createDefault(initialProgram != null ? initialProgram : "");
         this.trackedEntityType = teTypeUid;
@@ -210,8 +212,6 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
                                 Timber::e
                         )
         );
-
-        biometricUid = searchRepository.getBiometricAttributeUid();
     }
 
     @Override
@@ -400,7 +400,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
 
             String guid = getBiometricsValueFromTEI(tei);
 
-            searchRepository.updateAttributeValue(teiUid, biometricUid, guid);
+            searchRepository.updateAttributeValue(teiUid, biometricAttributeId, guid);
 
             view.sendBiometricsConfirmIdentity(sessionId, guid, teiUid, enrollmentUid, isOnline);
         }
@@ -418,7 +418,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
 
     @Override
     public void onBiometricsClick() {
-        List<String> userOrgUnits = searchRepository.getUserOrgUnits(selectedProgram.uid());
+        List<String> userOrgUnits = searchRepository.getUserOrgUnits(initialProgramUid);
 
         if (userOrgUnits.size() > 1) {
             String orgUnitAsModuleId = getOrgUnitAsModuleIdByList(userOrgUnits, d2);
@@ -435,7 +435,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
         String guid = "";
 
         for (TrackedEntityAttributeValue att : tei.trackedEntityAttributeValues()) {
-            if (att.trackedEntityAttribute().equals(biometricUid)) {
+            if (att.trackedEntityAttribute().equals(biometricAttributeId)) {
                 guid = att.value();
                 break;
             }
@@ -675,7 +675,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
 
             biometricsSearchStatus = true;
 
-            biometricsSearchListener.onBiometricsSearch(simprintsItems, biometricUid, sb.toString(), sessionId, ageNotSupported);
+            biometricsSearchListener.onBiometricsSearch(simprintsItems, biometricAttributeId, sb.toString(), sessionId, ageNotSupported);
         }
     }
 

@@ -123,6 +123,11 @@ class BiometricsConfigRepositoryImpl(
             config.biometricsMode.name
         )
 
+        preferenceProvider.setValue(
+            BiometricsPreference.ENABLE_IDENTIFICATION_FOR_TET,
+            config.enableIdentificationForTET
+        )
+
         Timber.d("downloadBiometricsConfig!")
         Timber.d("orgUnitGroup: ${config.orgUnitGroup}")
         Timber.d("program: ${config.program}")
@@ -135,6 +140,7 @@ class BiometricsConfigRepositoryImpl(
         Timber.d("ageThresholdMonths: ${config.ageThresholdMonths}")
         Timber.d("dateOfBirthAttribute: ${config.dateOfBirthAttribute}")
         Timber.d("biometricsMode: ${config.biometricsMode.name}")
+        Timber.d("enableIdentificationForTET: ${config.enableIdentificationForTET}")
 
         emit(Unit)
     }
@@ -162,7 +168,8 @@ class BiometricsConfigRepositoryImpl(
             orgUnitLevelAsModuleId = dto.orgUnitLevelAsModuleId,
             ageThresholdMonths = dto.ageThresholdMonths,
             dateOfBirthAttribute = dto.dateOfBirthAttribute,
-            biometricsMode = BiometricsMode.valueOf(dto.biometricsMode.name.lowercase())
+            biometricsMode = BiometricsMode.valueOf(dto.biometricsMode.name.lowercase()),
+            enableIdentificationForTET = dto.enableIdentificationForTET
         )
     }
 }
