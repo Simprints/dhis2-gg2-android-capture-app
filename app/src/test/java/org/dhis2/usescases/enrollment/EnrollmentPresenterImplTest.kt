@@ -419,7 +419,8 @@ class EnrollmentPresenterImplTest {
                 lastDeclinedEnrolDuration = 0,
                 orgUnitLevelAsModuleId = 0,
                 dateOfBirthAttribute = "S4eTdBrXPpj",
-                ageThresholdMonths = 6
+                ageThresholdMonths = 6,
+                enableIdentificationForTET = null
                 )))
 
         whenever(programRepository.blockingGet()).thenReturn(Program.builder().uid(program).build())
