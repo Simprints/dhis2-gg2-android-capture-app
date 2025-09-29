@@ -28,6 +28,10 @@ fun getBiometricsConfig(preferenceProvider: BasicPreferenceProvider): Biometrics
         preferenceProvider.getString(BiometricsPreference.BIOMETRICS_MODE, BiometricsMode.full.name)
             ?: BiometricsMode.full.name
 
+
+    val enableIdentificationForTET =
+        preferenceProvider.getString(BiometricsPreference.ENABLE_IDENTIFICATION_FOR_TET, null)
+
     return BiometricsConfig(
         orgUnitGroup,
         projectId,
@@ -39,7 +43,8 @@ fun getBiometricsConfig(preferenceProvider: BasicPreferenceProvider): Biometrics
         orgUnitLevelAsModuleId,
         ageThresholdMonths,
         dateOfBirthAttribute,
-        BiometricsMode.valueOf(biometricsMode)
+        BiometricsMode.valueOf(biometricsMode),
+        enableIdentificationForTET
     )
 }
 
