@@ -5,8 +5,6 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.processors.FlowableProcessor
 import io.reactivex.processors.PublishProcessor
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import org.dhis2.bindings.profilePicturePath
 import org.dhis2.commons.bindings.trackedEntityTypeForTei
 import org.dhis2.commons.biometrics.BIOMETRICS_FAILURE_PATTERN
@@ -20,7 +18,7 @@ import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.defaultSubscribe
-import org.dhis2.data.biometrics.SimprintsItem
+import org.dhis2.data.biometrics.SimprintsIdentifiedItem
 import org.dhis2.data.biometrics.getBiometricsConfigByProgram
 import org.dhis2.data.biometrics.utils.getTeiByUid
 import org.dhis2.data.biometrics.utils.updateVerification
@@ -354,7 +352,7 @@ class EnrollmentPresenterImpl(
     }
 
     fun onBiometricsPossibleDuplicates(
-        possibleDuplicates: List<SimprintsItem>,
+        possibleDuplicates: List<SimprintsIdentifiedItem>,
         sessionId: String,
         enrollNewVisible: Boolean = true
     ) {

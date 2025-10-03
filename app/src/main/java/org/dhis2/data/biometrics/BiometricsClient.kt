@@ -24,8 +24,8 @@ import org.dhis2.commons.biometrics.BIOMETRICS_VERIFY_REQUEST
 import timber.log.Timber
 
 sealed class RegisterResult {
-    data class Completed(val guid: String) : RegisterResult()
-    data class PossibleDuplicates(val items: List<SimprintsItem>, val sessionId: String) :
+    data class Completed(val item: SimprintsRegisteredItem) : RegisterResult()
+    data class PossibleDuplicates(val items: List<SimprintsIdentifiedItem>, val sessionId: String) :
         RegisterResult()
 
     data object Failure : RegisterResult()
@@ -33,13 +33,26 @@ sealed class RegisterResult {
     data object AgeGroupNotSupported : RegisterResult()
 }
 
-data class SimprintsItem(
+data class SimprintsRegisteredItem(
     val guid: String,
-    val confidence: Float
+    val hasCredential: Boolean,
+    val scannedCredential: BiometricsCredential?
+)
+
+data class BiometricsCredential(
+    val credentialType: String,
+    val value: String,
+)
+
+data class SimprintsIdentifiedItem(
+    val guid: String,
+    val confidence: Float,
+    val isLinkedToCredential: Boolean,
+    val isVerified: Boolean?,
 )
 
 sealed class IdentifyResult {
-    data class Completed(val items: List<SimprintsItem>, val sessionId: String) : IdentifyResult()
+    data class Completed(val items: List<SimprintsIdentifiedItem>, val sessionId: String) : IdentifyResult()
     data object BiometricsDeclined : IdentifyResult()
     data class UserNotFound(val sessionId: String) : IdentifyResult()
     data object Failure : IdentifyResult()
@@ -192,13 +205,16 @@ class BiometricsClient(
         val biometricsCompleted = checkBiometricsCompleted(data)
 
         val handleRegister = {
-            val registration: Registration? =
+            val registration: Registration ? =
                 data.getParcelableExtra(Constants.SIMPRINTS_REGISTRATION)
 
             if (registration == null) {
                 RegisterResult.Failure
             } else {
-                RegisterResult.Completed(registration.guid)
+                RegisterResult.Completed( SimprintsRegisteredItem(guid = registration.guid,
+                    hasCredential = false,
+                    scannedCredential = null
+                ))
             }
         }
 
@@ -217,7 +233,7 @@ class BiometricsClient(
                 }
 
                 is IdentifyResult.UserNotFound -> {
-                    val items = listOf<SimprintsItem>()
+                    val items = listOf<SimprintsIdentifiedItem>()
 
                     Timber.d("Possible duplicates but IdentifyResult is UserNotFound")
                     RegisterResult.PossibleDuplicates(
@@ -287,9 +303,11 @@ class BiometricsClient(
                     IdentifyResult.UserNotFound(sessionId)
                 } else {
                     IdentifyResult.Completed(finalIdentifications.map {
-                        SimprintsItem(
+                        SimprintsIdentifiedItem(
                             it.guid,
-                            it.confidence
+                            it.confidence,
+                            isLinkedToCredential = false,
+                            isVerified = null
                         )
                     }, sessionId)
                 }
@@ -327,7 +345,7 @@ class BiometricsClient(
         Timber.d("Biometrics confirmIdentify!")
         Timber.d("sessionId: $sessionId")
         Timber.d("guid: $guid")
-        Timber.d(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId)
+        Timber.d("$SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID: $trackedEntityInstanceUId")
 
         val metadata = Metadata().put(SIMPRINTS_FORK_VERSION, forkVersion)
             .put(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId)
@@ -348,7 +366,7 @@ class BiometricsClient(
         Timber.d("Biometrics confirmIdentify!")
         Timber.d("sessionId: $sessionId")
         Timber.d("guid: $guid")
-        Timber.d(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId)
+        Timber.d("$SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID: $trackedEntityInstanceUId")
 
         val metadata = Metadata().put(SIMPRINTS_FORK_VERSION, forkVersion)
             .put(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId)

@@ -24,7 +24,7 @@ import org.dhis2.commons.dialogs.imagedetail.ImageDetailActivity
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.data.biometrics.BiometricsClientFactory
 import org.dhis2.data.biometrics.RegisterResult
-import org.dhis2.data.biometrics.SimprintsItem
+import org.dhis2.data.biometrics.SimprintsIdentifiedItem
 import org.dhis2.databinding.EnrollmentActivityBinding
 import org.dhis2.form.data.GeometryController
 import org.dhis2.form.data.GeometryParserImpl
@@ -192,7 +192,7 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
                             resultCode, data
                         )) {
                             is RegisterResult.Completed -> {
-                                presenter.onBiometricsCompleted(result.guid)
+                                presenter.onBiometricsCompleted(result.item.guid)
                             }
 
                             is RegisterResult.PossibleDuplicates -> {
@@ -222,7 +222,7 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
                             BiometricsClientFactory.get(this)
                                 .handleRegisterResponse(resultCode, data)) {
                             is RegisterResult.Completed -> {
-                                presenter.onBiometricsCompleted(result.guid)
+                                presenter.onBiometricsCompleted(result.item.guid)
                             }
 
                             is RegisterResult.AgeGroupNotSupported -> {
@@ -445,7 +445,7 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
     }
 
     override fun showPossibleDuplicatesDialog(
-        possibleDuplicates: List<SimprintsItem>, sessionId: String,
+        possibleDuplicates: List<SimprintsIdentifiedItem>, sessionId: String,
         programUid: String,
         trackedEntityTypeUid: String,
         biometricsAttributeUid: String,

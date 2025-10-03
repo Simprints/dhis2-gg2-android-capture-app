@@ -30,7 +30,7 @@ import org.dhis2.commons.schedulers.SingleEventEnforcer
 import org.dhis2.commons.schedulers.get
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.biometrics.RegisterResult
-import org.dhis2.data.biometrics.SimprintsItem
+import org.dhis2.data.biometrics.SimprintsIdentifiedItem
 import org.dhis2.data.biometrics.VerifyResult
 import org.dhis2.data.biometrics.getBiometricsConfig
 import org.dhis2.data.biometrics.utils.getVerification
@@ -624,7 +624,7 @@ class TEIDataPresenter(
 
         when (result) {
             is RegisterResult.Completed -> {
-                val biometricsValue = result.guid
+                val biometricsValue = result.item.guid
                 teiDataRepository.updateBiometricsAttributeValueInTei(biometricsValue)
                 lastRegisterResult = null
                 lastVerificationResult = VerifyResult.Match
@@ -715,7 +715,7 @@ class TEIDataPresenter(
 
 
     private fun onBiometricsPossibleDuplicates(
-        possibleDuplicates: List<SimprintsItem>, sessionId: String,
+        possibleDuplicates: List<SimprintsIdentifiedItem>, sessionId: String,
         enrollNewVisible: Boolean = true
     ) {
         lastRegisterResult = null

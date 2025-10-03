@@ -59,7 +59,7 @@ import org.dhis2.data.biometrics.BiometricsClientFactory
 import org.dhis2.data.biometrics.IdentifyResult
 import org.dhis2.data.biometrics.IdentifyResult.BiometricsDeclined
 import org.dhis2.data.biometrics.IdentifyResult.UserNotFound
-import org.dhis2.data.biometrics.SimprintsItem
+import org.dhis2.data.biometrics.SimprintsIdentifiedItem
 import org.dhis2.data.forms.dataentry.ProgramAdapter
 import org.dhis2.databinding.ActivitySearchBinding
 import org.dhis2.form.ui.intent.FormIntent.OnSave
@@ -899,7 +899,7 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
 
     private fun simulateNotFoundBiometricsSearch(sessionId: String?) {
         presenter.searchOnBiometrics(
-            listOf<SimprintsItem>(SimprintsItem(BIOMETRICS_USER_NOT_FOUND, 0f)),
+            listOf<SimprintsIdentifiedItem>(SimprintsIdentifiedItem(BIOMETRICS_USER_NOT_FOUND, 0f,false,false)),
             sessionId, false
         )
     }

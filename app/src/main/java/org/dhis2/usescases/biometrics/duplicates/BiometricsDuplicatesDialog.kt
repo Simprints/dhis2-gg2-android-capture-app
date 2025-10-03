@@ -40,7 +40,7 @@ import org.dhis2.bindings.app
 import org.dhis2.commons.biometrics.BIOMETRICS_CONFIRM_IDENTITY_REQUEST
 import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.data.biometrics.BiometricsClientFactory.get
-import org.dhis2.data.biometrics.SimprintsItem
+import org.dhis2.data.biometrics.SimprintsIdentifiedItem
 import org.dhis2.databinding.DialogBiometricsDuplicatesBinding
 import org.dhis2.usescases.biometrics.ui.buttons.TealBorderButton
 import org.dhis2.usescases.biometrics.ui.buttons.TealGradientButton
@@ -101,10 +101,10 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
         )
 
 
-        val possibleDuplicates: List<SimprintsItem> =
+        val possibleDuplicates: List<SimprintsIdentifiedItem> =
             requireArguments().getParcelableArrayList<SimprintsItemParcelable>(POSSIBLE_DUPLICATES)
                 ?.toList()?.map {
-                SimprintsItem(it.guid, it.confidence)
+                SimprintsIdentifiedItem(it.guid, it.confidence, it.isLinkedToCredential, it.isVerified)
             } ?: emptyList()
 
 
@@ -291,7 +291,7 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
 
         @JvmStatic
         fun newInstance(
-            possibleDuplicates: List<SimprintsItem>,
+            possibleDuplicates: List<SimprintsIdentifiedItem>,
             sessionId: String,
             programUid: String,
             trackedEntityTypeUid: String,
@@ -303,7 +303,7 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
             val args = Bundle()
 
             val possibleDuplicatesParcelable = possibleDuplicates.map {
-                SimprintsItemParcelable(it.guid, it.confidence)
+                SimprintsItemParcelable(it.guid, it.confidence, it.isLinkedToCredential, it.isVerified)
             }
 
             args.putParcelableArrayList(
@@ -324,17 +324,34 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
 
 data class SimprintsItemParcelable(
     val guid: String,
-    val confidence: Float
+    val confidence: Float,
+    val isLinkedToCredential: Boolean,
+    val isVerified: Boolean?,
+
 ) : Parcelable {
     constructor(parcel: Parcel) : this(
         parcel.readString() ?: "",
-        parcel.readFloat()
+        parcel.readFloat(),
+        parcel.readByte() != 0.toByte(),
+        when (val value = parcel.readByte()) {
+            1.toByte() -> true
+            0.toByte() -> false
+            else -> null // e.g., -1 means null
+        }
     ) {
     }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
         parcel.writeString(guid)
         parcel.writeFloat(confidence)
+        parcel.writeByte(if (isLinkedToCredential) 1 else 0)
+        parcel.writeByte(
+            when (isVerified) {
+                true -> 1
+                false -> 0
+                null -> -1
+            }
+        )
     }
 
     override fun describeContents(): Int {

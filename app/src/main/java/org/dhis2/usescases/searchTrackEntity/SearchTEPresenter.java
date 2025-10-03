@@ -40,9 +40,7 @@ import org.dhis2.commons.resources.ResourceManager;
 import org.dhis2.commons.schedulers.SchedulerProvider;
 import org.dhis2.commons.schedulers.SingleEventEnforcer;
 import org.dhis2.commons.schedulers.SingleEventEnforcerImpl;
-import org.dhis2.data.biometrics.BiometricsClient;
-import org.dhis2.data.biometrics.BiometricsClientFactory;
-import org.dhis2.data.biometrics.SimprintsItem;
+import org.dhis2.data.biometrics.SimprintsIdentifiedItem;
 import org.dhis2.data.service.SyncStatusController;
 import org.dhis2.maps.model.StageStyle;
 import org.dhis2.usescases.biometrics.ui.SequentialSearch;
@@ -653,10 +651,10 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     }
 
     @Override
-    public void searchOnBiometrics(List<SimprintsItem> simprintsItems, String sessionId, Boolean ageNotSupported) {
+    public void searchOnBiometrics(List<SimprintsIdentifiedItem> simprintsIdentifiedItems, String sessionId, Boolean ageNotSupported) {
         if (biometricsSearchListener != null) {
             this.sessionId = sessionId;
-            List<String> guids = simprintsItems.stream().map(SimprintsItem::getGuid).collect(Collectors.toList());
+            List<String> guids = simprintsIdentifiedItems.stream().map(SimprintsIdentifiedItem::getGuid).collect(Collectors.toList());
 
             if (guids.size() == 0) return;
 
@@ -675,7 +673,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
 
             biometricsSearchStatus = true;
 
-            biometricsSearchListener.onBiometricsSearch(simprintsItems, biometricAttributeId, sb.toString(), sessionId, ageNotSupported);
+            biometricsSearchListener.onBiometricsSearch(simprintsIdentifiedItems, biometricAttributeId, sb.toString(), sessionId, ageNotSupported);
         }
     }
 
@@ -724,6 +722,6 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     }
 
     public interface BiometricsSearchListener {
-        void onBiometricsSearch(List<SimprintsItem> simprintsItems, String biometricAttributeUid, String filterValue, @Nullable String sessionId, Boolean ageNotSupported);
+        void onBiometricsSearch(List<SimprintsIdentifiedItem> simprintsIdentifiedItems, String biometricAttributeUid, String filterValue, @Nullable String sessionId, Boolean ageNotSupported);
     }
 }

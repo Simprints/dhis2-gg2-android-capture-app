@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.map
 import org.dhis2.commons.filters.FilterManager
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.schedulers.SchedulerProvider
-import org.dhis2.data.biometrics.SimprintsItem
+import org.dhis2.data.biometrics.SimprintsIdentifiedItem
 import org.dhis2.data.search.SearchParametersModel
 import org.dhis2.usescases.searchTrackEntity.SearchRepository
 import org.dhis2.usescases.searchTrackEntity.SearchRepositoryKt
@@ -24,7 +24,7 @@ class BiometricsDuplicatesDialogPresenter(
     private val basicPreferenceProvider: BasicPreferenceProvider
 ) {
     lateinit var view: BiometricsDuplicatesDialogView
-    lateinit var possibleDuplicates: List<SimprintsItem>
+    lateinit var possibleDuplicates: List<SimprintsIdentifiedItem>
     lateinit var biometricsSessionId: String
     lateinit var programUid: String
     lateinit var trackedEntityTypeUid: String
@@ -36,7 +36,7 @@ class BiometricsDuplicatesDialogPresenter(
 
     fun init(
         view: BiometricsDuplicatesDialogView,
-        possibleDuplicates: List<SimprintsItem>,
+        possibleDuplicates: List<SimprintsIdentifiedItem>,
         biometricsSessionId: String,
         programUid: String,
         trackedEntityTypeUid: String,

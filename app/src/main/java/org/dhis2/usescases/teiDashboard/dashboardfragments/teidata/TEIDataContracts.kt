@@ -9,7 +9,7 @@ import io.reactivex.functions.Consumer
 import org.dhis2.commons.data.EventCreationType
 import org.dhis2.commons.data.EventViewModel
 import org.dhis2.commons.data.StageSection
-import org.dhis2.data.biometrics.SimprintsItem
+import org.dhis2.data.biometrics.SimprintsIdentifiedItem
 import org.dhis2.form.model.EventMode
 import org.dhis2.usescases.general.AbstractActivityContracts
 import org.hisp.dhis.android.core.program.Program
@@ -78,7 +78,7 @@ class TEIDataContracts {
         )
 
         fun showPossibleDuplicatesDialog(
-            possibleDuplicates: List<SimprintsItem>, sessionId: String, programUid: String,
+            possibleDuplicates: List<SimprintsIdentifiedItem>, sessionId: String, programUid: String,
             trackedEntityTypeUid: String, biometricsAttributeUid: String,
             enrollNewVisible: Boolean,
             moduleId: String,
