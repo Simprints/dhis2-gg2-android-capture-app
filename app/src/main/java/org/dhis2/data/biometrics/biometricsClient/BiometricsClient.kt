@@ -1,4 +1,4 @@
-package org.dhis2.data.biometrics
+package org.dhis2.data.biometrics.biometricsClient
 
 import android.app.Activity
 import android.content.ActivityNotFoundException
@@ -21,51 +21,12 @@ import org.dhis2.commons.biometrics.BIOMETRICS_ENROLL_LAST_REQUEST
 import org.dhis2.commons.biometrics.BIOMETRICS_ENROLL_REQUEST
 import org.dhis2.commons.biometrics.BIOMETRICS_IDENTIFY_REQUEST
 import org.dhis2.commons.biometrics.BIOMETRICS_VERIFY_REQUEST
+import org.dhis2.data.biometrics.biometricsClient.models.IdentifyResult
+import org.dhis2.data.biometrics.biometricsClient.models.RegisterResult
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsRegisteredItem
+import org.dhis2.data.biometrics.biometricsClient.models.VerifyResult
 import timber.log.Timber
-
-sealed class RegisterResult {
-    data class Completed(val item: SimprintsRegisteredItem) : RegisterResult()
-    data class PossibleDuplicates(val items: List<SimprintsIdentifiedItem>, val sessionId: String) :
-        RegisterResult()
-
-    data object Failure : RegisterResult()
-    data object RegisterLastFailure : RegisterResult()
-    data object AgeGroupNotSupported : RegisterResult()
-}
-
-data class SimprintsRegisteredItem(
-    val guid: String,
-    val hasCredential: Boolean,
-    val scannedCredential: BiometricsCredential?
-)
-
-data class BiometricsCredential(
-    val credentialType: String,
-    val value: String,
-)
-
-data class SimprintsIdentifiedItem(
-    val guid: String,
-    val confidence: Float,
-    val isLinkedToCredential: Boolean,
-    val isVerified: Boolean?,
-)
-
-sealed class IdentifyResult {
-    data class Completed(val items: List<SimprintsIdentifiedItem>, val sessionId: String) : IdentifyResult()
-    data object BiometricsDeclined : IdentifyResult()
-    data class UserNotFound(val sessionId: String) : IdentifyResult()
-    data object Failure : IdentifyResult()
-    data object AgeGroupNotSupported : IdentifyResult()
-
-}
-
-sealed class VerifyResult {
-    data object Match : VerifyResult()
-    data object NoMatch : VerifyResult()
-    data object Failure : VerifyResult()
-    data object AgeGroupNotSupported : VerifyResult()
-}
 
 class BiometricsClient(
     projectId: String,
@@ -211,10 +172,13 @@ class BiometricsClient(
             if (registration == null) {
                 RegisterResult.Failure
             } else {
-                RegisterResult.Completed( SimprintsRegisteredItem(guid = registration.guid,
-                    hasCredential = false,
-                    scannedCredential = null
-                ))
+                RegisterResult.Completed(
+                    SimprintsRegisteredItem(
+                        guid = registration.guid,
+                        hasCredential = false,
+                        scannedCredential = null
+                    )
+                )
             }
         }
 

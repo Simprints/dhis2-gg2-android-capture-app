@@ -56,10 +56,9 @@ import org.dhis2.commons.sync.OnDismissListener
 import org.dhis2.commons.sync.SyncContext
 import org.dhis2.commons.sync.SyncContext.TrackerProgramTei
 import org.dhis2.data.biometrics.BiometricsClientFactory
-import org.dhis2.data.biometrics.IdentifyResult
-import org.dhis2.data.biometrics.IdentifyResult.BiometricsDeclined
-import org.dhis2.data.biometrics.IdentifyResult.UserNotFound
-import org.dhis2.data.biometrics.SimprintsIdentifiedItem
+import org.dhis2.data.biometrics.biometricsClient.models.IdentifyResult
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
+
 import org.dhis2.data.forms.dataentry.ProgramAdapter
 import org.dhis2.databinding.ActivitySearchBinding
 import org.dhis2.form.ui.intent.FormIntent.OnSave
@@ -852,7 +851,7 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
                         completedResult.items,
                         completedResult.sessionId, false
                     )
-                } else if (result is BiometricsDeclined) {
+                } else if (result is IdentifyResult.BiometricsDeclined) {
                     Toast.makeText(
                         context, R.string.biometrics_declined,
                         Toast.LENGTH_SHORT
@@ -861,7 +860,7 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
                     simulateNotFoundBiometricsSearch(null)
 
                     launchSearchFormIfRequired()
-                } else if (result is UserNotFound) {
+                } else if (result is IdentifyResult.UserNotFound) {
                     Toast.makeText(
                         context, R.string.biometrics_user_not_found,
                         Toast.LENGTH_SHORT
@@ -899,7 +898,7 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
 
     private fun simulateNotFoundBiometricsSearch(sessionId: String?) {
         presenter.searchOnBiometrics(
-            listOf<SimprintsIdentifiedItem>(SimprintsIdentifiedItem(BIOMETRICS_USER_NOT_FOUND, 0f,false,false)),
+            listOf(SimprintsIdentifiedItem(BIOMETRICS_USER_NOT_FOUND, 0f,false,false)),
             sessionId, false
         )
     }

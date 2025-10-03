@@ -5,6 +5,7 @@ import org.dhis2.BuildConfig
 import org.dhis2.commons.biometrics.BiometricsPreference.Companion.CONFIDENCE_SCORE_FILTER
 import org.dhis2.commons.biometrics.BiometricsPreference.Companion.PROJECT_ID
 import org.dhis2.commons.prefs.BasicPreferenceProviderImpl
+import org.dhis2.data.biometrics.biometricsClient.BiometricsClient
 import org.hisp.dhis.android.core.D2Manager
 
 object BiometricsClientFactory {

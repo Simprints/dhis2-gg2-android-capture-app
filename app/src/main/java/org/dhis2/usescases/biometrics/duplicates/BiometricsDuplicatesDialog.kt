@@ -40,7 +40,7 @@ import org.dhis2.bindings.app
 import org.dhis2.commons.biometrics.BIOMETRICS_CONFIRM_IDENTITY_REQUEST
 import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.data.biometrics.BiometricsClientFactory.get
-import org.dhis2.data.biometrics.SimprintsIdentifiedItem
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 import org.dhis2.databinding.DialogBiometricsDuplicatesBinding
 import org.dhis2.usescases.biometrics.ui.buttons.TealBorderButton
 import org.dhis2.usescases.biometrics.ui.buttons.TealGradientButton

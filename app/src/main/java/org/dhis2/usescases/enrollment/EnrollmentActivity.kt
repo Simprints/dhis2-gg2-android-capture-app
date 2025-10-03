@@ -23,8 +23,8 @@ import org.dhis2.commons.dialogs.bottomsheet.DialogButtonStyle
 import org.dhis2.commons.dialogs.imagedetail.ImageDetailActivity
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.data.biometrics.BiometricsClientFactory
-import org.dhis2.data.biometrics.RegisterResult
-import org.dhis2.data.biometrics.SimprintsIdentifiedItem
+import org.dhis2.data.biometrics.biometricsClient.models.RegisterResult
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 import org.dhis2.databinding.EnrollmentActivityBinding
 import org.dhis2.form.data.GeometryController
 import org.dhis2.form.data.GeometryParserImpl

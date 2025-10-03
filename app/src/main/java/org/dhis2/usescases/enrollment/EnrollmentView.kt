@@ -1,7 +1,7 @@
 package org.dhis2.usescases.enrollment
 
 import org.dhis2.commons.data.TeiAttributesInfo
-import org.dhis2.data.biometrics.SimprintsIdentifiedItem
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 import org.dhis2.usescases.general.AbstractActivityContracts
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 
