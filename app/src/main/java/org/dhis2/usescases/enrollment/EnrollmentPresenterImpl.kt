@@ -20,8 +20,10 @@ import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.defaultSubscribe
 import org.dhis2.data.biometrics.biometricsClient.models.RegisterResult
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsRegisteredItem
 import org.dhis2.data.biometrics.getBiometricsConfigByProgram
 import org.dhis2.data.biometrics.utils.getTeiByUid
+import org.dhis2.data.biometrics.utils.updateNHISNumberAttributeValue
 import org.dhis2.data.biometrics.utils.updateVerification
 import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.RowAction
@@ -313,7 +315,7 @@ class EnrollmentPresenterImpl(
     fun handleRegisterResponse(result: RegisterResult) {
         when (result) {
             is RegisterResult.Completed -> {
-                onBiometricsCompleted(result.item.guid)
+                onBiometricsCompleted(result.item)
             }
 
             is RegisterResult.Failure -> {
@@ -341,9 +343,18 @@ class EnrollmentPresenterImpl(
     }
 
 
-    private fun onBiometricsCompleted(guid: String) {
+    private fun onBiometricsCompleted(item: SimprintsRegisteredItem ) {
         lastPossibleDuplicates = null
-        saveBiometricValue(guid)
+        saveBiometricValue(item.guid)
+
+        // TODO: Add condition by credential type
+        if (item.hasCredential && item.scannedCredential?.credentialType != null){
+            updateNHISNumberAttributeValue(
+                d2,
+                teiRepository.blockingGet()?.uid() ?: "",
+                item.scannedCredential.value
+            )
+        }
     }
 
     private fun onBiometricsFailure() {

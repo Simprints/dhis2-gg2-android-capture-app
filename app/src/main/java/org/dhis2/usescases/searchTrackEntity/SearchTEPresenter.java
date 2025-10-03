@@ -7,7 +7,7 @@ import static org.dhis2.commons.matomo.Actions.SYNC_TEI;
 import static org.dhis2.commons.matomo.Categories.SEARCH;
 import static org.dhis2.commons.matomo.Categories.TRACKER_LIST;
 import static org.dhis2.commons.matomo.Labels.CLICK;
-import static org.dhis2.usescases.biometrics.BiometricAttributesKt.biometricAttributeId;
+import static org.dhis2.usescases.biometrics.AttributesKt.biometricAttributeId;
 import static org.dhis2.usescases.biometrics.OrgUnitAsModuleIdByListKt.getOrgUnitAsModuleIdByList;
 import static org.dhis2.usescases.biometrics.OrgUnitAsModuleIdKt.getOrgUnitAsModuleId;
 import static org.dhis2.usescases.teiDashboard.dashboardfragments.relationships.RelationshipFragment.TEI_A_UID;

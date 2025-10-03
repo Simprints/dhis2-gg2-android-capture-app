@@ -31,10 +31,12 @@ import org.dhis2.commons.schedulers.get
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.biometrics.biometricsClient.models.RegisterResult
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsRegisteredItem
 import org.dhis2.data.biometrics.biometricsClient.models.VerifyResult
 
 import org.dhis2.data.biometrics.getBiometricsConfig
 import org.dhis2.data.biometrics.utils.getVerification
+import org.dhis2.data.biometrics.utils.updateNHISNumberAttributeValue
 import org.dhis2.form.data.FormValueStore
 import org.dhis2.form.data.OptionsRepository
 import org.dhis2.form.data.RulesUtilsProviderImpl
@@ -625,11 +627,7 @@ class TEIDataPresenter(
 
         when (result) {
             is RegisterResult.Completed -> {
-                val biometricsValue = result.item.guid
-                teiDataRepository.updateBiometricsAttributeValueInTei(biometricsValue)
-                lastRegisterResult = null
-                lastVerificationResult = VerifyResult.Match
-                lastPossibleDuplicates = null
+                onBiometricsCompleted(result.item)
             }
 
             is RegisterResult.Failure -> {
@@ -777,6 +775,23 @@ class TEIDataPresenter(
                 orgUnit.name() ?:"",
                 userOrgUnits.map { it.uid() }
 
+            )
+        }
+    }
+
+    private fun onBiometricsCompleted(item: SimprintsRegisteredItem ) {
+        val biometricsValue = item.guid
+        teiDataRepository.updateBiometricsAttributeValueInTei(biometricsValue)
+        lastRegisterResult = null
+        lastVerificationResult = VerifyResult.Match
+        lastPossibleDuplicates = null
+
+        // TODO: Add condition by credential type
+        if (item.hasCredential && item.scannedCredential?.credentialType != null){
+            updateNHISNumberAttributeValue(
+                d2,
+                teiUid,
+                item.scannedCredential.value
             )
         }
     }
