@@ -57,4 +57,6 @@ interface EnrollmentView : AbstractActivityContracts.View {
     )
 
     fun markAsPendingSave()
+    fun showUnableSaveBiometricsMessage()
+    fun showBiometricsAgeGroupNotSupported()
 }
