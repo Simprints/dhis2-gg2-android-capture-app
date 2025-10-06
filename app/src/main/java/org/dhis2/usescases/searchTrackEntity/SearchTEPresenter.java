@@ -7,6 +7,7 @@ import static org.dhis2.commons.matomo.Actions.SYNC_TEI;
 import static org.dhis2.commons.matomo.Categories.SEARCH;
 import static org.dhis2.commons.matomo.Categories.TRACKER_LIST;
 import static org.dhis2.commons.matomo.Labels.CLICK;
+import static org.dhis2.data.biometrics.utils.VerificationKt.updateBiometricsAttributeValue;
 import static org.dhis2.usescases.biometrics.AttributesKt.biometricAttributeId;
 import static org.dhis2.usescases.biometrics.OrgUnitAsModuleIdByListKt.getOrgUnitAsModuleIdByList;
 import static org.dhis2.usescases.biometrics.OrgUnitAsModuleIdKt.getOrgUnitAsModuleId;
@@ -393,17 +394,21 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     @Override
     public void sendBiometricsConfirmIdentity(String teiUid, String enrollmentUid, boolean isOnline) {
         if (sessionId != null) {
-            TrackedEntityInstance tei =
-                    d2.trackedEntityModule().trackedEntityInstances()
-                            .withTrackedEntityAttributeValues().uid(teiUid).blockingGet();
+            String guid = updateBiometricsAttributeValue(teiUid);
 
-            String guid = getBiometricsValueFromTEI(tei);
-
-            searchRepository.updateAttributeValue(teiUid, biometricAttributeId, guid);
-
-            view.sendBiometricsConfirmIdentity(sessionId, guid, teiUid, enrollmentUid, isOnline);
+            view.sendBiometricsConfirmIdentity(sessionId, guid, teiUid);
         }
     }
+
+    @Override
+    public void sendAutomaticBiometricsConfirmIdentity(SearchTeiModel item) {
+        if (sessionId != null) {
+            String guid = updateBiometricsAttributeValue(item.uid());
+
+            view.sendAutomaticBiometricsConfirmIdentity(sessionId, guid, item);
+        }
+    }
+
 
     @Override
     public String getLastBiometricsSessionId() {
@@ -655,26 +660,10 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     public void searchOnBiometrics(List<SimprintsIdentifiedItem> simprintsIdentifiedItems, String sessionId, Boolean ageNotSupported) {
         if (biometricsSearchListener != null) {
             this.sessionId = sessionId;
-            List<String> guids = simprintsIdentifiedItems.stream().map(SimprintsIdentifiedItem::getGuid).collect(Collectors.toList());
-
-            if (guids.size() == 0) return;
-
-            StringBuilder sb = new StringBuilder();
-
-            for (int i = 0; i < guids.size(); i++) {
-
-                sb.append(guids.get(i));
-
-                // if not the last item
-                if (i != guids.size() - 1) {
-                    sb.append(";");
-                }
-
-            }
 
             biometricsSearchStatus = true;
 
-            biometricsSearchListener.onBiometricsSearch(simprintsIdentifiedItems, biometricAttributeId, sb.toString(), sessionId, ageNotSupported);
+            biometricsSearchListener.onBiometricsSearch(simprintsIdentifiedItems, biometricAttributeId, simprintsIdentifiedItems, sessionId, ageNotSupported);
         }
     }
 
@@ -723,6 +712,19 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     }
 
     public interface BiometricsSearchListener {
-        void onBiometricsSearch(List<SimprintsIdentifiedItem> simprintsIdentifiedItems, String biometricAttributeUid, String filterValue, @Nullable String sessionId, Boolean ageNotSupported);
+        void onBiometricsSearch(List<SimprintsIdentifiedItem> simprintsIdentifiedItems, String biometricAttributeUid, List<SimprintsIdentifiedItem> items, @Nullable String sessionId, Boolean ageNotSupported);
     }
+
+    private String updateBiometricsAttributeValue(String teiUid) {
+        TrackedEntityInstance tei =
+                d2.trackedEntityModule().trackedEntityInstances()
+                        .withTrackedEntityAttributeValues().uid(teiUid).blockingGet();
+
+        String guid = getBiometricsValueFromTEI(tei);
+
+        searchRepository.updateAttributeValue(teiUid, biometricAttributeId, guid);
+
+        return guid;
+    }
+
 }

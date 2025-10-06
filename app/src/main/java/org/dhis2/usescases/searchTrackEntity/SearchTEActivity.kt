@@ -825,17 +825,30 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
     }
 
     override fun sendBiometricsConfirmIdentity(
-        sessionId: String, guid: String, teiUid: String,
-        enrollmentUid: String, isOnline: Boolean
+        sessionId: String, guid: String, teiUid: String
     ) {
-        if (lastSelection != null) {
-            BiometricsClientFactory.get(this).confirmIdentify(
-                this,
-                sessionId, guid, lastSelection!!.tei.uid()
-            )
-            viewModel.clearQueryData()
-        }
+        BiometricsClientFactory.get(this).confirmIdentify(
+            this,
+            sessionId, guid, teiUid
+        )
+        viewModel.clearQueryData()
     }
+
+    override fun sendAutomaticBiometricsConfirmIdentity(
+        sessionId: String,
+        guid: String,
+        item: SearchTeiModel
+    ) {
+        viewModel.resetSequentialSearch()
+        lastSelection = item
+
+        BiometricsClientFactory.get(this).confirmIdentify(
+            this,
+            sessionId, guid, item.tei.uid()
+        )
+        viewModel.clearQueryData()
+    }
+
 
     public override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when (requestCode) {

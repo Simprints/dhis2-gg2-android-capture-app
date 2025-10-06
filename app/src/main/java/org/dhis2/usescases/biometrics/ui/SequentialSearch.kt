@@ -1,6 +1,7 @@
 package org.dhis2.usescases.biometrics.ui
 
 import org.dhis2.commons.biometrics.BIOMETRICS_SEARCH_PATTERN
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 import org.dhis2.usescases.biometrics.biometricAttributeId
 
 const val failedBiometricsSessionId = "NA"
@@ -54,6 +55,7 @@ sealed class SequentialSearch(
         val biometricUid: String,
         val sessionId: String?,
         val isAgeNotSupported: Boolean,
+        val simprintsItems: List<SimprintsIdentifiedItem>
     ) : SequentialSearch(previousSearch, nextActions)
 
     data class AttributeSearch(

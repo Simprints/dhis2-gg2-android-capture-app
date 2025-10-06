@@ -8,6 +8,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityOptionsCompat;
 
+import org.dhis2.usescases.searchTrackEntity.SearchTeiModel;
 import org.dhis2.utils.OnDialogClickListener;
 import org.dhis2.utils.analytics.AnalyticsHelper;
 import org.dhis2.utils.granularsync.SyncStatusDialog;
@@ -54,7 +55,7 @@ public class AbstractActivityContracts {
         void showSyncDialog(SyncStatusDialog dialog);
 
         @Deprecated
-        AnalyticsHelper analyticsHelper();
+        AnalyticsHelper analyticsHelper();;
     }
 
     public interface Presenter {

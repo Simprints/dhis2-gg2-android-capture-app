@@ -66,11 +66,11 @@ public class SearchTEContractsModule {
 
         void showSyncDialog(String teiUid);
 
-        void sendBiometricsConfirmIdentity(String sessionId, String guid, String teiUid,
-                String enrollmentUid, boolean isOnline);
+        void sendBiometricsConfirmIdentity(String sessionId, String guid, String teiUid);
 
         void showBiometricsSearchConfirmation(SearchTeiModel item);
         void launchBiometricsIdentify(String moduleId, List<String> userOrgUnits);
+        void sendAutomaticBiometricsConfirmIdentity(String sessionId, String guid, SearchTeiModel item);
     }
 
     public interface Presenter {
@@ -147,6 +147,8 @@ public class SearchTEContractsModule {
         void setBiometricListener(SearchTEPresenter.BiometricsSearchListener biometricsSearchListener);
 
         void sendBiometricsConfirmIdentity(String teiUid, String enrollmentUid, boolean isOnline);
+
+        void sendAutomaticBiometricsConfirmIdentity(SearchTeiModel item);
 
         String getLastBiometricsSessionId();
 
