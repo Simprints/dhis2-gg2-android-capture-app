@@ -348,7 +348,7 @@ class EnrollmentPresenterImpl(
         saveBiometricValue(item.guid)
 
         // TODO: Add condition by credential type
-        if (item.hasCredential && item.scannedCredential?.credentialType != null){
+        if (item.hasCredential && item.scannedCredential?.type != null){
             updateNHISNumberAttributeValue(
                 d2,
                 teiRepository.blockingGet()?.uid() ?: "",

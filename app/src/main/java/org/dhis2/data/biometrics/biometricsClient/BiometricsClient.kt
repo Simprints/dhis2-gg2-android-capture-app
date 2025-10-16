@@ -7,8 +7,8 @@ import android.os.Build
 import android.os.Parcelable
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import com.google.gson.Gson
 import com.simprints.libsimprints.Constants
-import com.simprints.libsimprints.Identification
 import com.simprints.libsimprints.Metadata
 import com.simprints.libsimprints.RefusalForm
 import com.simprints.libsimprints.Registration
@@ -23,10 +23,17 @@ import org.dhis2.commons.biometrics.BIOMETRICS_IDENTIFY_REQUEST
 import org.dhis2.commons.biometrics.BIOMETRICS_VERIFY_REQUEST
 import org.dhis2.data.biometrics.biometricsClient.models.IdentifyResult
 import org.dhis2.data.biometrics.biometricsClient.models.RegisterResult
+import org.dhis2.data.biometrics.biometricsClient.models.ScannedCredential
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsRegisteredItem
 import org.dhis2.data.biometrics.biometricsClient.models.VerifyResult
+import org.dhis2.data.biometrics.biometricsClient.models.sid.IdentificationSID
+import org.dhis2.data.biometrics.biometricsClient.models.sid.ScannedCredentialSID
 import timber.log.Timber
+
+// TODO: This constants should be in libsimprints
+private const val SIMPRINTS_HAS_CREDENTIALS = "hasCredential"
+private const val SIMPRINTS_SCANNED_CREDENTIAL = "scannedCredential"
 
 class BiometricsClient(
     projectId: String,
@@ -166,8 +173,18 @@ class BiometricsClient(
         val biometricsCompleted = checkBiometricsCompleted(data)
 
         val handleRegister = {
-            val registration: Registration ? =
-                data.getParcelableExtra(Constants.SIMPRINTS_REGISTRATION)
+            val registration: Registration? =
+                data.extractParcelableExtra(
+                    Constants.SIMPRINTS_REGISTRATION,
+                    Registration::class.java
+                )
+
+            val hasCredential: Boolean? = data.getBooleanExtra(SIMPRINTS_HAS_CREDENTIALS, false)
+
+            val scannedCredentialJson = data.getStringExtra(SIMPRINTS_SCANNED_CREDENTIAL)
+            val scannedCredential: ScannedCredentialSID? = scannedCredentialJson?.let {
+                Gson().fromJson(it, ScannedCredentialSID::class.java)
+            }
 
             if (registration == null) {
                 RegisterResult.Failure
@@ -175,8 +192,11 @@ class BiometricsClient(
                 RegisterResult.Completed(
                     SimprintsRegisteredItem(
                         guid = registration.guid,
-                        hasCredential = false,
-                        scannedCredential = null
+                        hasCredential = hasCredential ?: false,
+                        scannedCredential = if (scannedCredential == null) null else ScannedCredential(
+                            scannedCredential.type,
+                            scannedCredential.value
+                        )
                     )
                 )
             }
@@ -245,9 +265,11 @@ class BiometricsClient(
         val biometricsCompleted = checkBiometricsCompleted(data)
 
         if (biometricsCompleted) {
-            val identifications =
-                data.extractParcelableArrayExtra<Identification>(Constants.SIMPRINTS_IDENTIFICATIONS)
-                    ?: data.extractParcelableArrayListExtra<Identification>(Constants.SIMPRINTS_IDENTIFICATIONS)
+
+            val identificationsJson = data.getStringExtra(Constants.SIMPRINTS_IDENTIFICATIONS)
+            val identifications: List<IdentificationSID>? = identificationsJson?.let {
+                Gson().fromJson(it, Array<IdentificationSID>::class.java)?.toList()
+            }
 
             val refusalForm: RefusalForm? =
                 data.getParcelableExtra(Constants.SIMPRINTS_REFUSAL_FORM)
@@ -270,8 +292,8 @@ class BiometricsClient(
                         SimprintsIdentifiedItem(
                             it.guid,
                             it.confidence,
-                            isLinkedToCredential = false,
-                            isVerified = null
+                            it.isLinkedToCredential,
+                            it.isVerified
                         )
                     }, sessionId)
                 }
@@ -562,23 +584,10 @@ class BiometricsClient(
     }
 }
 
-inline fun <reified T : Parcelable> Intent.extractParcelableArrayListExtra(
-    key: String,
-): List<T>? = when {
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
-        getParcelableArrayListExtra(key, T::class.java)
-
-    else ->
-        @Suppress("DEPRECATION") getParcelableArrayListExtra(key)
-}
-
-inline fun <reified T : Parcelable> Intent.extractParcelableArrayExtra(
-    key: String,
-): List<out T>? = when {
-    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
-        getParcelableArrayExtra(key, T::class.java)?.asList()
-
-    else ->
-        @Suppress("DEPRECATION") getParcelableArrayExtra(key)?.mapNotNull { it as? T }
-            ?.toTypedArray()?.asList()
-}
+fun <T : Parcelable> Intent.extractParcelableExtra(key: String, clazz: Class<T>): T? =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        getParcelableExtra(key, clazz)
+    } else {
+        @Suppress("DEPRECATION")
+        getParcelableExtra(key) as? T
+    }

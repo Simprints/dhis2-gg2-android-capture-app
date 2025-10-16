@@ -3,10 +3,10 @@ package org.dhis2.data.biometrics.biometricsClient.models
 data class SimprintsRegisteredItem(
     val guid: String,
     val hasCredential: Boolean,
-    val scannedCredential: BiometricsCredential?
+    val scannedCredential: ScannedCredential?
 )
 
-data class BiometricsCredential(
-    val credentialType: String,
+data class ScannedCredential(
+    val type: String,
     val value: String,
 )
