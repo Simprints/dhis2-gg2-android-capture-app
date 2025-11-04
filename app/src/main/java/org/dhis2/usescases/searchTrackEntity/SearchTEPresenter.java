@@ -7,6 +7,7 @@ import static org.dhis2.commons.matomo.Actions.SYNC_TEI;
 import static org.dhis2.commons.matomo.Categories.SEARCH;
 import static org.dhis2.commons.matomo.Categories.TRACKER_LIST;
 import static org.dhis2.commons.matomo.Labels.CLICK;
+import static org.dhis2.data.biometrics.utils.UpdateNHISNumberAttributeValueKt.updateNHISNumberAttributeValue;
 import static org.dhis2.data.biometrics.utils.VerificationKt.updateBiometricsAttributeValue;
 import static org.dhis2.usescases.biometrics.AttributesKt.biometricAttributeId;
 import static org.dhis2.usescases.biometrics.OrgUnitAsModuleIdByListKt.getOrgUnitAsModuleIdByList;
@@ -42,6 +43,7 @@ import org.dhis2.commons.schedulers.SchedulerProvider;
 import org.dhis2.commons.schedulers.SingleEventEnforcer;
 import org.dhis2.commons.schedulers.SingleEventEnforcerImpl;
 
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsConfirmIdentityItem;
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem;
 import org.dhis2.data.service.SyncStatusController;
 import org.dhis2.maps.model.StageStyle;
@@ -432,6 +434,19 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
             String orgUnitAsModuleId = getOrgUnitAsModuleId(userOrgUnits.get(0), d2, basicPreferenceProvider);
 
             view.launchBiometricsIdentify(orgUnitAsModuleId, userOrgUnits);
+        }
+    }
+
+    @Override
+    public void updateTEICredentials(String uid, SimprintsConfirmIdentityItem item) {
+        // TODO: Add condition by credential type
+        if (item.getHasCredential() && item.getScannedCredential() != null) {
+
+            updateNHISNumberAttributeValue(
+                    d2,
+                    uid,
+                    item.getScannedCredential().getValue()
+            );
         }
     }
 

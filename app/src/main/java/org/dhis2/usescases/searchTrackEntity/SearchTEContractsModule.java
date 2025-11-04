@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 import org.dhis2.commons.filters.FilterItem;
 import org.dhis2.commons.filters.FilterManager;
 import org.dhis2.commons.filters.Filters;
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsConfirmIdentityItem;
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem;
 import org.dhis2.maps.model.StageStyle;
 import org.dhis2.usescases.biometrics.ui.SequentialSearch;
@@ -23,6 +24,7 @@ import java.util.List;
 import io.reactivex.Observable;
 import io.reactivex.functions.Consumer;
 import kotlin.Pair;
+import kotlin.Unit;
 
 /**
  * QUADRAM. Created by ppajuelo on 02/11/2017.
@@ -155,5 +157,7 @@ public class SearchTEContractsModule {
         void resetLastBiometricsSessionId();
 
         void onBiometricsClick();
+
+        void updateTEICredentials(String uid, SimprintsConfirmIdentityItem item);
     }
 }

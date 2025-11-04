@@ -21,9 +21,11 @@ import org.dhis2.commons.biometrics.BIOMETRICS_ENROLL_LAST_REQUEST
 import org.dhis2.commons.biometrics.BIOMETRICS_ENROLL_REQUEST
 import org.dhis2.commons.biometrics.BIOMETRICS_IDENTIFY_REQUEST
 import org.dhis2.commons.biometrics.BIOMETRICS_VERIFY_REQUEST
+import org.dhis2.data.biometrics.biometricsClient.models.ConfirmIdentityResult
 import org.dhis2.data.biometrics.biometricsClient.models.IdentifyResult
 import org.dhis2.data.biometrics.biometricsClient.models.RegisterResult
 import org.dhis2.data.biometrics.biometricsClient.models.ScannedCredential
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsConfirmIdentityItem
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsRegisteredItem
 import org.dhis2.data.biometrics.biometricsClient.models.VerifyResult
@@ -321,6 +323,36 @@ class BiometricsClient(
             VerifyResult.Failure
         }
     }
+
+    fun handleConfirmIdentityResponse(resultCode: Int, data: Intent?): ConfirmIdentityResult {
+        Timber.d("Result code: $resultCode")
+
+        if (data == null) {
+            return ConfirmIdentityResult.Completed
+        }
+
+        val hasCredential: Boolean? = data.getBooleanExtra(SIMPRINTS_HAS_CREDENTIALS, false)
+
+        val scannedCredentialJson = data.getStringExtra(SIMPRINTS_SCANNED_CREDENTIAL)
+        val scannedCredential: ScannedCredentialSID? = scannedCredentialJson?.let {
+            Gson().fromJson(it, ScannedCredentialSID::class.java)
+        }
+
+        return if (hasCredential == true && scannedCredential != null) {
+            ConfirmIdentityResult.CompletedWithCredentials(
+                SimprintsConfirmIdentityItem(
+                    hasCredential = hasCredential,
+                    scannedCredential = ScannedCredential(
+                        scannedCredential.type,
+                        scannedCredential.value
+                    )
+                )
+            )
+        } else {
+            ConfirmIdentityResult.Completed
+        }
+    }
+
 
     fun confirmIdentify(
         activity: Activity,

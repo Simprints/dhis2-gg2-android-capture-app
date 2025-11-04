@@ -56,6 +56,7 @@ import org.dhis2.commons.sync.OnDismissListener
 import org.dhis2.commons.sync.SyncContext
 import org.dhis2.commons.sync.SyncContext.TrackerProgramTei
 import org.dhis2.data.biometrics.BiometricsClientFactory
+import org.dhis2.data.biometrics.biometricsClient.models.ConfirmIdentityResult
 import org.dhis2.data.biometrics.biometricsClient.models.IdentifyResult
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 
@@ -900,7 +901,22 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
             }
 
             BIOMETRICS_CONFIRM_IDENTITY_REQUEST -> {
+                val result = BiometricsClientFactory.get(
+                    this
+                ).handleConfirmIdentityResponse(resultCode, data)
+
                 if (lastSelection != null) {
+                when(result) {
+                    is ConfirmIdentityResult.CompletedWithCredentials -> {
+                        presenter.updateTEICredentials(
+                            lastSelection?.uid(),
+                            result.item,
+                        )
+                    }
+                    is ConfirmIdentityResult.Completed -> {}
+                }
+
+
                     presenter.onSearchTEIModelClick(lastSelection, viewModel.sequentialSearch.value)
                     lastSelection = null
                 }
