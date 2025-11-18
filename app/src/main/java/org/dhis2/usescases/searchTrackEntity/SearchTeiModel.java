@@ -1,5 +1,7 @@
 package org.dhis2.usescases.searchTrackEntity;
 
+import static org.dhis2.usescases.biometrics.AttributesKt.biometricAttributeId;
+
 import org.dhis2.commons.data.CarouselItemModel;
 import org.dhis2.commons.data.tuples.Trio;
 import org.dhis2.tracker.relationships.model.RelationshipModel;
@@ -299,5 +301,16 @@ public class SearchTeiModel implements CarouselItemModel {
 
     public void addToAllAttributes(String attributeName, TrackedEntityAttributeValue attributeValues) {
         this.allAttributeValues.put(attributeName, attributeValues);
+    }
+
+    public String biometricsGuid() {
+        if (tei != null && tei.trackedEntityAttributeValues() != null) {
+            for (TrackedEntityAttributeValue attr : tei.trackedEntityAttributeValues()) {
+                if (biometricAttributeId.equals(attr.trackedEntityAttribute())) {
+                    return attr.value();
+                }
+            }
+        }
+        return null;
     }
 }

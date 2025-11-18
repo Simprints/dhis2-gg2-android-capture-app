@@ -2,7 +2,8 @@ package org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics
 
 import org.dhis2.R
 import org.dhis2.commons.resources.ResourceManager
-import org.dhis2.data.biometrics.VerifyResult
+
+import org.dhis2.data.biometrics.biometricsClient.models.VerifyResult
 
 class TeiDashboardBioVerificationMapper(
     val resourceManager: ResourceManager,

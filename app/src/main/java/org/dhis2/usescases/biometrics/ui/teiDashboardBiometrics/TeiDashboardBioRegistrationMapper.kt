@@ -6,7 +6,7 @@ import org.dhis2.commons.biometrics.defaultButtonColor
 import org.dhis2.commons.biometrics.failedButtonColor
 import org.dhis2.commons.biometrics.successButtonColor
 import org.dhis2.commons.resources.ResourceManager
-import org.dhis2.data.biometrics.RegisterResult
+import org.dhis2.data.biometrics.biometricsClient.models.RegisterResult
 
 class TeiDashboardBioRegistrationMapper(
     val resourceManager: ResourceManager,

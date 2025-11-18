@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import org.dhis2.commons.data.EventCreationType
 import org.dhis2.usescases.biometrics.addAttrBiometricsEmojiIfRequired
+import org.dhis2.usescases.biometrics.addAttrNHISNumberEmojiIfRequired
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioButton
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioModel
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioStatus
@@ -69,7 +70,9 @@ fun TeiDetailDashboard(
                 TeiDashboardBioStatus(teiDashboardBioModel.statusModel)
             }
 
-            val additionalInfoList = addAttrBiometricsEmojiIfRequired(card.additionalInfo, isUnderAgeThreshold)
+            val additionalInfoListWithBiometricsIcons = addAttrBiometricsEmojiIfRequired(card.additionalInfo, isUnderAgeThreshold)
+
+            val additionalInfoList = addAttrNHISNumberEmojiIfRequired(additionalInfoListWithBiometricsIcons).toMutableList()
 
             CardDetail(
                 title = card.title,
