@@ -1,6 +1,6 @@
 package org.dhis2.usescases.biometrics
 
-import org.dhis2.data.biometrics.BiometricsClient
+import org.dhis2.data.biometrics.biometricsClient.BiometricsClient
 import org.hisp.dhis.android.core.D2
 
 fun getOrgUnitAsModuleIdByList(

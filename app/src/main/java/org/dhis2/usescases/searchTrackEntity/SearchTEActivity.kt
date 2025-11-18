@@ -56,10 +56,10 @@ import org.dhis2.commons.sync.OnDismissListener
 import org.dhis2.commons.sync.SyncContext
 import org.dhis2.commons.sync.SyncContext.TrackerProgramTei
 import org.dhis2.data.biometrics.BiometricsClientFactory
-import org.dhis2.data.biometrics.IdentifyResult
-import org.dhis2.data.biometrics.IdentifyResult.BiometricsDeclined
-import org.dhis2.data.biometrics.IdentifyResult.UserNotFound
-import org.dhis2.data.biometrics.SimprintsItem
+import org.dhis2.data.biometrics.biometricsClient.models.ConfirmIdentityResult
+import org.dhis2.data.biometrics.biometricsClient.models.IdentifyResult
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
+
 import org.dhis2.data.forms.dataentry.ProgramAdapter
 import org.dhis2.databinding.ActivitySearchBinding
 import org.dhis2.form.ui.intent.FormIntent.OnSave
@@ -826,17 +826,30 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
     }
 
     override fun sendBiometricsConfirmIdentity(
-        sessionId: String, guid: String, teiUid: String,
-        enrollmentUid: String, isOnline: Boolean
+        sessionId: String, guid: String, teiUid: String
     ) {
-        if (lastSelection != null) {
-            BiometricsClientFactory.get(this).confirmIdentify(
-                this,
-                sessionId, guid, lastSelection!!.tei.uid()
-            )
-            viewModel.clearQueryData()
-        }
+        BiometricsClientFactory.get(this).confirmIdentify(
+            this,
+            sessionId, guid, teiUid
+        )
+        viewModel.clearQueryData()
     }
+
+    override fun sendAutomaticBiometricsConfirmIdentity(
+        sessionId: String,
+        guid: String,
+        item: SearchTeiModel
+    ) {
+        viewModel.resetSequentialSearch()
+        lastSelection = item
+
+        BiometricsClientFactory.get(this).confirmIdentify(
+            this,
+            sessionId, guid, item.tei.uid()
+        )
+        viewModel.clearQueryData()
+    }
+
 
     public override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         when (requestCode) {
@@ -852,7 +865,7 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
                         completedResult.items,
                         completedResult.sessionId, false
                     )
-                } else if (result is BiometricsDeclined) {
+                } else if (result is IdentifyResult.BiometricsDeclined) {
                     Toast.makeText(
                         context, R.string.biometrics_declined,
                         Toast.LENGTH_SHORT
@@ -861,7 +874,7 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
                     simulateNotFoundBiometricsSearch(null)
 
                     launchSearchFormIfRequired()
-                } else if (result is UserNotFound) {
+                } else if (result is IdentifyResult.UserNotFound) {
                     Toast.makeText(
                         context, R.string.biometrics_user_not_found,
                         Toast.LENGTH_SHORT
@@ -888,7 +901,22 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
             }
 
             BIOMETRICS_CONFIRM_IDENTITY_REQUEST -> {
+                val result = BiometricsClientFactory.get(
+                    this
+                ).handleConfirmIdentityResponse(resultCode, data)
+
                 if (lastSelection != null) {
+                when(result) {
+                    is ConfirmIdentityResult.CompletedWithCredentials -> {
+                        presenter.updateTEICredentials(
+                            lastSelection?.uid(),
+                            result.item,
+                        )
+                    }
+                    is ConfirmIdentityResult.Completed -> {}
+                }
+
+
                     presenter.onSearchTEIModelClick(lastSelection, viewModel.sequentialSearch.value)
                     lastSelection = null
                 }
@@ -899,7 +927,7 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
 
     private fun simulateNotFoundBiometricsSearch(sessionId: String?) {
         presenter.searchOnBiometrics(
-            listOf<SimprintsItem>(SimprintsItem(BIOMETRICS_USER_NOT_FOUND, 0f)),
+            listOf(SimprintsIdentifiedItem(BIOMETRICS_USER_NOT_FOUND, 0f,false,false)),
             sessionId, false
         )
     }
