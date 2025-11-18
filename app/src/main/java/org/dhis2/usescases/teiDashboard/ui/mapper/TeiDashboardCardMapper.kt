@@ -12,6 +12,7 @@ import org.dhis2.R
 import org.dhis2.commons.biometrics.isBiometricText
 import org.dhis2.commons.date.toUi
 import org.dhis2.commons.resources.ResourceManager
+import org.dhis2.form.extensions.isNhisNumberText
 import org.dhis2.usescases.teiDashboard.DashboardEnrollmentModel
 import org.dhis2.usescases.teiDashboard.DashboardModel
 import org.dhis2.usescases.teiDashboard.DashboardTEIModel
@@ -82,20 +83,20 @@ class TeiDashboardCardMapper(
 
     private fun getTitle(item: DashboardModel): String {
         // EyeSeeTea customization
-   /*     return when {
-            item.teiHeader != null -> item.teiHeader!!
-            item is DashboardEnrollmentModel -> item.trackedEntityAttributes.takeIf { it.isNotEmpty() }
-                ?.let {
-                    val attribute = it.filterAttributes().firstOrNull()
-                    val key = attribute?.first?.displayFormName()
-                    val value = attribute?.second?.value()?.takeIf { attrValue ->
-                        attrValue.isNotEmpty()
-                    } ?: "-"
-                    "$key: $value"
-                } ?: "-"
+        /*     return when {
+                 item.teiHeader != null -> item.teiHeader!!
+                 item is DashboardEnrollmentModel -> item.trackedEntityAttributes.takeIf { it.isNotEmpty() }
+                     ?.let {
+                         val attribute = it.filterAttributes().firstOrNull()
+                         val key = attribute?.first?.displayFormName()
+                         val value = attribute?.second?.value()?.takeIf { attrValue ->
+                             attrValue.isNotEmpty()
+                         } ?: "-"
+                         "$key: $value"
+                     } ?: "-"
 
-            else -> "-"
-        }*/
+                 else -> "-"
+             }*/
 
         return if (item.trackedEntityAttributeValues.isEmpty()) {
             item.teiHeader ?: "-"
@@ -114,7 +115,6 @@ class TeiDashboardCardMapper(
             "$firsNameValue $middleNameValue $lastNameValue"
         }
     }
-
 
 
     private fun getAdditionalInfo(
@@ -165,9 +165,9 @@ class TeiDashboardCardMapper(
         }.toMutableList()
 
         // // EyeSeeTea customization - not remove first item
-/*        if (item.teiHeader == null) {
-            attributesList.removeFirstOrNull()
-        }*/
+        /*        if (item.teiHeader == null) {
+                    attributesList.removeFirstOrNull()
+                }*/
 
         return when (item) {
             is DashboardEnrollmentModel ->
@@ -291,8 +291,12 @@ class TeiDashboardCardMapper(
         this.filter { it.first.valueType() != ValueType.IMAGE }
             .filter { it.first.valueType() != ValueType.COORDINATE }
             .filter { it.first.valueType() != ValueType.FILE_RESOURCE }
-            .filter { it.second.value()?.isNotEmpty() == true }
+            //.filter { it.second.value()?.isNotEmpty() == true }
             //EyeSeeTea customization
-            .filter { it.first.displayFormName()?.isBiometricText() == false || (it.first.displayFormName() ?:"").isBiometricText()
-            }.filter { it.first.uid() != firstNameAttrUid && it.first.uid() != middleNameAttrUid  && it.first.uid() != lastNameAttrUid }
+            .filter {
+                it.second.value()?.isNotEmpty() == true || it.first.displayFormName()
+                    ?.isBiometricText() == true || it.first.displayFormName()
+                    ?.isNhisNumberText() == true
+            }
+            .filter { it.first.uid() != firstNameAttrUid && it.first.uid() != middleNameAttrUid && it.first.uid() != lastNameAttrUid }
 }
