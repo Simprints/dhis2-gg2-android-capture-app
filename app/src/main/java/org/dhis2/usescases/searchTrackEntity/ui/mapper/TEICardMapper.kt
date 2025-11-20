@@ -26,7 +26,9 @@ import org.dhis2.commons.prefs.BasicPreferenceProviderImpl
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.ui.model.ListCardUiModel
 import org.dhis2.form.extensions.isNotBiometricText
+import org.dhis2.form.extensions.isNotNhisNumberText
 import org.dhis2.usescases.biometrics.addAttrBiometricsEmojiIfRequired
+import org.dhis2.usescases.biometrics.addAttrNHISNumberEmojiIfRequired
 import org.dhis2.usescases.biometrics.isUnderAgeThreshold
 import org.dhis2.usescases.searchTrackEntity.SearchTeiModel
 import org.hisp.dhis.android.core.common.State
@@ -148,7 +150,7 @@ class TEICardMapper(
 
         // EyeSeeTea customization - only remove non biometric empty attributes
         //attributeList.removeIf { it.value.isEmpty() || it.value == "-" }
-        attributeList.removeIf { it.key!!.isNotBiometricText() && (it.value.isEmpty() || it.value == "-") }
+        attributeList.removeIf { it.key!!.isNotBiometricText() && it.key!!.isNotNhisNumberText() && (it.value.isEmpty() || it.value == "-") }
 
         val isUnderAgeThreshold = isUnderAgeThreshold(
             BasicPreferenceProviderImpl(context),
@@ -156,10 +158,12 @@ class TEICardMapper(
         )
 
         // EyeSeeTea customization
-        val finalAttributeList =
+        val listWithBiometricsIcons =
             addAttrBiometricsEmojiIfRequired(attributeList, isUnderAgeThreshold).toMutableList()
 
-        return finalAttributeList.also { list ->
+        val listWithNHISIcons = addAttrNHISNumberEmojiIfRequired(listWithBiometricsIcons).toMutableList()
+
+        return listWithNHISIcons.also { list ->
             if (searchTEIModel.displayOrgUnit) {
                 checkEnrolledIn(
                     list = list,
@@ -467,11 +471,13 @@ class TEICardMapper(
     private val registrationNumberAttrUid = "IJggqTs7hxL"
     private val sexAttrUid = "jgfoabWymU9"
     private val traceableAddressAttrUid = "fj7Vthq2xGU"
+    private val nhisNumberAttributeUId = "irp5o9EQS4d"
 
     private val attributeUIdsToShow = listOf(
         dateOfBirthUid,
         phoneNumberUid,
         biometricsAttrUid,
+        nhisNumberAttributeUId,
         registrationNumberAttrUid,
         sexAttrUid,
         traceableAddressAttrUid,
@@ -546,7 +552,9 @@ class TEICardMapper(
             searchTEIModel.allAttributeValues.values.toList(),
         )
 
-        return addAttrBiometricsEmojiIfRequired(attributeList, isUnderAgeThreshold).toMutableList()
+        val listWithBiometricsIcons = addAttrBiometricsEmojiIfRequired(attributeList, isUnderAgeThreshold).toMutableList()
+
+        return addAttrNHISNumberEmojiIfRequired(listWithBiometricsIcons).toMutableList()
     }
 
 }

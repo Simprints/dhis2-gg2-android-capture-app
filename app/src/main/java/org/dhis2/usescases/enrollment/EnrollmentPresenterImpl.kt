@@ -5,8 +5,6 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.disposables.Disposable
 import io.reactivex.processors.FlowableProcessor
 import io.reactivex.processors.PublishProcessor
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import org.dhis2.bindings.profilePicturePath
 import org.dhis2.commons.bindings.trackedEntityTypeForTei
 import org.dhis2.commons.biometrics.BIOMETRICS_FAILURE_PATTERN
@@ -20,9 +18,12 @@ import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.schedulers.defaultSubscribe
-import org.dhis2.data.biometrics.SimprintsItem
+import org.dhis2.data.biometrics.biometricsClient.models.RegisterResult
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsRegisteredItem
 import org.dhis2.data.biometrics.getBiometricsConfigByProgram
 import org.dhis2.data.biometrics.utils.getTeiByUid
+import org.dhis2.data.biometrics.utils.updateNHISNumberAttributeValue
 import org.dhis2.data.biometrics.utils.updateVerification
 import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.RowAction
@@ -311,12 +312,52 @@ class EnrollmentPresenterImpl(
     private fun isBiometricsAvailable(): Boolean =
         BIOMETRICS_ENABLED && biometricsUiModel != null
 
-    fun onBiometricsCompleted(guid: String) {
-        lastPossibleDuplicates = null
-        saveBiometricValue(guid)
+    fun handleRegisterResponse(result: RegisterResult) {
+        when (result) {
+            is RegisterResult.Completed -> {
+                onBiometricsCompleted(result.item)
+            }
+
+            is RegisterResult.Failure -> {
+                onBiometricsFailure()
+            }
+
+            is RegisterResult.RegisterLastFailure -> {
+                registerLastFailure()
+
+                view.showUnableSaveBiometricsMessage()
+            }
+
+            is RegisterResult.AgeGroupNotSupported -> {
+                view.showBiometricsAgeGroupNotSupported()
+            }
+
+            is RegisterResult.PossibleDuplicates -> {
+                onBiometricsPossibleDuplicates(
+                    result.items,
+                    result.sessionId,
+                    enrollNewVisible = true
+                )
+            }
+        }
     }
 
-    fun onBiometricsFailure() {
+
+    private fun onBiometricsCompleted(item: SimprintsRegisteredItem ) {
+        lastPossibleDuplicates = null
+        saveBiometricValue(item.guid)
+
+        // TODO: Add condition by credential type
+        if (item.hasCredential && item.scannedCredential?.type != null){
+            updateNHISNumberAttributeValue(
+                d2,
+                teiRepository.blockingGet()?.uid() ?: "",
+                item.scannedCredential.value
+            )
+        }
+    }
+
+    private fun onBiometricsFailure() {
         pendingSave = false
 
         val uuid: UUID = UUID.randomUUID()
@@ -334,27 +375,8 @@ class EnrollmentPresenterImpl(
         }
     }
 
-    private fun saveBiometricValue(value: String?) {
-        biometricsUiModel!!.onTextChange(value)
-        biometricsUiModel!!.onSave(value)
-
-        if (value != null) {
-            val teiUid = teiRepository.blockingGet()?.uid() ?: ""
-
-            updateVerification(basicPreferenceProvider, teiUid)
-        }
-
-        if (pendingSave) {
-            pendingSave = false
-
-            view.markAsPendingSave()
-
-            return
-        }
-    }
-
-    fun onBiometricsPossibleDuplicates(
-        possibleDuplicates: List<SimprintsItem>,
+    private fun onBiometricsPossibleDuplicates(
+        possibleDuplicates: List<SimprintsIdentifiedItem>,
         sessionId: String,
         enrollNewVisible: Boolean = true
     ) {
@@ -423,6 +445,25 @@ class EnrollmentPresenterImpl(
                 orgUnitName,
                 userOrgUnits.map { it.uid() }
             )
+        }
+    }
+
+    private fun saveBiometricValue(value: String?) {
+        biometricsUiModel!!.onTextChange(value)
+        biometricsUiModel!!.onSave(value)
+
+        if (value != null) {
+            val teiUid = teiRepository.blockingGet()?.uid() ?: ""
+
+            updateVerification(basicPreferenceProvider, teiUid)
+        }
+
+        if (pendingSave) {
+            pendingSave = false
+
+            view.markAsPendingSave()
+
+            return
         }
     }
 

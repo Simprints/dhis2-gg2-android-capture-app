@@ -23,8 +23,7 @@ import org.dhis2.commons.dialogs.bottomsheet.DialogButtonStyle
 import org.dhis2.commons.dialogs.imagedetail.ImageDetailActivity
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.data.biometrics.BiometricsClientFactory
-import org.dhis2.data.biometrics.RegisterResult
-import org.dhis2.data.biometrics.SimprintsItem
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 import org.dhis2.databinding.EnrollmentActivityBinding
 import org.dhis2.form.data.GeometryController
 import org.dhis2.form.data.GeometryParserImpl
@@ -188,67 +187,23 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
 
                 BIOMETRICS_ENROLL_REQUEST -> {
                     if (data != null) {
-                        when (val result = BiometricsClientFactory.get(this).handleRegisterResponse(
+                        val result = BiometricsClientFactory.get(this).handleRegisterResponse(
                             resultCode, data
-                        )) {
-                            is RegisterResult.Completed -> {
-                                presenter.onBiometricsCompleted(result.guid)
-                            }
+                        )
 
-                            is RegisterResult.PossibleDuplicates -> {
-                                presenter.onBiometricsPossibleDuplicates(
-                                    result.items,
-                                    result.sessionId
-                                )
-                            }
-
-                            is RegisterResult.AgeGroupNotSupported -> {
-                                Toast.makeText(
-                                    context, getString(R.string.age_group_not_supported),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-
-                            else -> {
-                                presenter.onBiometricsFailure()
-                            }
-                        }
+                        presenter.handleRegisterResponse(result)
                     }
                 }
 
                 BIOMETRICS_ENROLL_LAST_REQUEST -> {
                     if (data != null) {
-                        when (val result =
-                            BiometricsClientFactory.get(this)
-                                .handleRegisterResponse(resultCode, data)) {
-                            is RegisterResult.Completed -> {
-                                presenter.onBiometricsCompleted(result.guid)
-                            }
+                        val result = BiometricsClientFactory.get(this).handleRegisterResponse(
+                            resultCode, data
+                        )
 
-                            is RegisterResult.AgeGroupNotSupported -> {
-                                Toast.makeText(
-                                    context, getString(R.string.age_group_not_supported),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-
-                            is RegisterResult.RegisterLastFailure -> {
-                                presenter.registerLastFailure()
-
-                                Toast.makeText(
-                                    context, getString(R.string.unable_save_biometrics),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-
-                            else -> {
-                                presenter.onBiometricsFailure()
-                            }
-                        }
+                        presenter.handleRegisterResponse(result)
                     }
-
                 }
-
             }
         }
         super.onActivityResult(requestCode, resultCode, data)
@@ -445,7 +400,7 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
     }
 
     override fun showPossibleDuplicatesDialog(
-        possibleDuplicates: List<SimprintsItem>, sessionId: String,
+        possibleDuplicates: List<SimprintsIdentifiedItem>, sessionId: String,
         programUid: String,
         trackedEntityTypeUid: String,
         biometricsAttributeUid: String,
@@ -523,5 +478,16 @@ class EnrollmentActivity : ActivityGlobalAbstract(), EnrollmentView {
 
     override fun markAsPendingSave() {
         pendingSave = true
+    }
+
+    override fun showUnableSaveBiometricsMessage() {
+        TODO("Not yet implemented")
+    }
+
+    override fun showBiometricsAgeGroupNotSupported() {
+        Toast.makeText(
+            context, getString(R.string.age_group_not_supported),
+            Toast.LENGTH_SHORT
+        ).show()
     }
 }

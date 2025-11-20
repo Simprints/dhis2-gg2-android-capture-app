@@ -421,6 +421,9 @@ class SearchTEList : FragmentGlobalAbstract() {
                 viewModel.searchPagingData.collect { data ->
                     liveAdapter.addOnPagesUpdatedListener {
                         onInitDataLoaded()
+
+                        viewModel.verifyAutoNavigateToTEI(liveAdapter.snapshot().items)
+
                         CoroutineTracker.decrement()
                     }
                     liveAdapter.submitData(lifecycle, data)

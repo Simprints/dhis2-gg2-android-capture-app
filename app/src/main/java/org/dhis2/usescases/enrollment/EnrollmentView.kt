@@ -1,7 +1,7 @@
 package org.dhis2.usescases.enrollment
 
 import org.dhis2.commons.data.TeiAttributesInfo
-import org.dhis2.data.biometrics.SimprintsItem
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 import org.dhis2.usescases.general.AbstractActivityContracts
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
 
@@ -32,7 +32,7 @@ interface EnrollmentView : AbstractActivityContracts.View {
     )
 
     fun showPossibleDuplicatesDialog(
-        guids: List<SimprintsItem>,
+        guids: List<SimprintsIdentifiedItem>,
         sessionId: String,
         programUid: String,
         trackedEntityTypeUid: String,
@@ -57,4 +57,6 @@ interface EnrollmentView : AbstractActivityContracts.View {
     )
 
     fun markAsPendingSave()
+    fun showUnableSaveBiometricsMessage()
+    fun showBiometricsAgeGroupNotSupported()
 }

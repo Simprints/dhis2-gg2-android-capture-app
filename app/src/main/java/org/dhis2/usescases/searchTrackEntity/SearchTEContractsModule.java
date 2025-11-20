@@ -8,7 +8,8 @@ import androidx.annotation.Nullable;
 import org.dhis2.commons.filters.FilterItem;
 import org.dhis2.commons.filters.FilterManager;
 import org.dhis2.commons.filters.Filters;
-import org.dhis2.data.biometrics.SimprintsItem;
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsConfirmIdentityItem;
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem;
 import org.dhis2.maps.model.StageStyle;
 import org.dhis2.usescases.biometrics.ui.SequentialSearch;
 import org.dhis2.usescases.general.AbstractActivityContracts;
@@ -23,6 +24,7 @@ import java.util.List;
 import io.reactivex.Observable;
 import io.reactivex.functions.Consumer;
 import kotlin.Pair;
+import kotlin.Unit;
 
 /**
  * QUADRAM. Created by ppajuelo on 02/11/2017.
@@ -66,11 +68,11 @@ public class SearchTEContractsModule {
 
         void showSyncDialog(String teiUid);
 
-        void sendBiometricsConfirmIdentity(String sessionId, String guid, String teiUid,
-                String enrollmentUid, boolean isOnline);
+        void sendBiometricsConfirmIdentity(String sessionId, String guid, String teiUid);
 
         void showBiometricsSearchConfirmation(SearchTeiModel item);
         void launchBiometricsIdentify(String moduleId, List<String> userOrgUnits);
+        void sendAutomaticBiometricsConfirmIdentity(String sessionId, String guid, SearchTeiModel item);
     }
 
     public interface Presenter {
@@ -140,7 +142,7 @@ public class SearchTEContractsModule {
 
         void trackSearchMapVisualization();
 
-        void searchOnBiometrics(List <SimprintsItem> simprintsItems, String sessionId, Boolean ageNotSupported);
+        void searchOnBiometrics(List <SimprintsIdentifiedItem> simprintsIdentifiedItems, String sessionId, Boolean ageNotSupported);
 
         boolean getBiometricsSearchStatus();
 
@@ -148,10 +150,14 @@ public class SearchTEContractsModule {
 
         void sendBiometricsConfirmIdentity(String teiUid, String enrollmentUid, boolean isOnline);
 
+        void sendAutomaticBiometricsConfirmIdentity(SearchTeiModel item);
+
         String getLastBiometricsSessionId();
 
         void resetLastBiometricsSessionId();
 
         void onBiometricsClick();
+
+        void updateTEICredentials(String uid, SimprintsConfirmIdentityItem item);
     }
 }
