@@ -394,9 +394,13 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     }
 
     @Override
-    public void sendBiometricsConfirmIdentity(String teiUid, String enrollmentUid, boolean isOnline) {
+    public void sendBiometricsConfirmIdentity(String teiUid, String enrollmentUid, boolean isOnline, boolean isMatchByCredentials) {
         if (sessionId != null) {
-            String guid = updateBiometricsAttributeValue(teiUid);
+            String guid = getBiometricsAttributeValue(teiUid);
+
+            if (!isMatchByCredentials) {
+                searchRepository.updateAttributeValue(teiUid, biometricAttributeId, guid);
+            }
 
             view.sendBiometricsConfirmIdentity(sessionId, guid, teiUid);
         }
@@ -405,7 +409,9 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     @Override
     public void sendAutomaticBiometricsConfirmIdentity(SearchTeiModel item) {
         if (sessionId != null) {
-            String guid = updateBiometricsAttributeValue(item.uid());
+            String guid = getBiometricsAttributeValue(item.uid());
+
+            searchRepository.updateAttributeValue(item.uid(), biometricAttributeId, guid);
 
             view.sendAutomaticBiometricsConfirmIdentity(sessionId, guid, item);
         }
@@ -730,14 +736,12 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
         void onBiometricsSearch(List<SimprintsIdentifiedItem> simprintsIdentifiedItems, String biometricAttributeUid, List<SimprintsIdentifiedItem> items, @Nullable String sessionId, Boolean ageNotSupported);
     }
 
-    private String updateBiometricsAttributeValue(String teiUid) {
+    private String getBiometricsAttributeValue(String teiUid) {
         TrackedEntityInstance tei =
                 d2.trackedEntityModule().trackedEntityInstances()
                         .withTrackedEntityAttributeValues().uid(teiUid).blockingGet();
 
         String guid = getBiometricsValueFromTEI(tei);
-
-        searchRepository.updateAttributeValue(teiUid, biometricAttributeId, guid);
 
         return guid;
     }
