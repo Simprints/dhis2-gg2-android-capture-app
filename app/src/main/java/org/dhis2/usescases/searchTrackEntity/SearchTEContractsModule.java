@@ -148,7 +148,7 @@ public class SearchTEContractsModule {
 
         void setBiometricListener(SearchTEPresenter.BiometricsSearchListener biometricsSearchListener);
 
-        void sendBiometricsConfirmIdentity(String teiUid, String enrollmentUid, boolean isOnline);
+        void sendBiometricsConfirmIdentity(String teiUid, String enrollmentUid, boolean isOnline, boolean isMatchByCredentials);
 
         void sendAutomaticBiometricsConfirmIdentity(SearchTeiModel item);
 

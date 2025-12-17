@@ -284,7 +284,8 @@ class BiometricsClient(
                 IdentifyResult.UserNotFound(sessionId)
             } else {
                 val finalIdentifications =
-                    identifications.filter { it.confidence >= confidenceScoreFilter }
+                    identifications.filter { it.confidence >= confidenceScoreFilter && !it.isLinkedToCredential } +
+                            identifications.filter {  it.isLinkedToCredential }
 
                 if (finalIdentifications.isEmpty()) {
                     Timber.w("Identify returns data but no match with confidence score filter")
