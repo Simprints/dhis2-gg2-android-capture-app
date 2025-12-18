@@ -65,6 +65,7 @@ import org.dhis2.databinding.ActivitySearchBinding
 import org.dhis2.form.ui.intent.FormIntent.OnSave
 import org.dhis2.tracker.NavigationBarUIState
 import org.dhis2.ui.ThemeManager
+import org.dhis2.usescases.biometrics.ui.SequentialSearch
 import org.dhis2.usescases.biometrics.ui.SequentialSearchAction.SearchWithAttributes
 import org.dhis2.usescases.biometrics.ui.SequentialSearchAction.SearchWithBiometrics
 import org.dhis2.usescases.biometrics.ui.confirmationDialog.BIOMETRICS_SEARCH_CONFIRMATION_DIALOG_TAG
@@ -586,8 +587,10 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
                 when (legacyInteraction.id) {
                     LegacyInteractionID.ON_ENROLL_CLICK -> {
                         val interaction = legacyInteraction as OnEnrollClick
-                        presenter.onEnrollClick(HashMap(interaction.queryData),
-                            viewModel.sequentialSearch.value)
+                        presenter.onEnrollClick(
+                            HashMap(interaction.queryData),
+                            viewModel.sequentialSearch.value
+                        )
                     }
 
                     LegacyInteractionID.ON_ADD_RELATIONSHIP -> {
@@ -622,6 +625,7 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
                             interaction.online,
                         )*/
                     }
+
                     LegacyInteractionID.ON_SEARCH_TEI_MODEL_CLICK -> {
                         val interaction = legacyInteraction as OnSearchTeiModelClick
                         presenter.onSearchTEIModelClick(
@@ -755,13 +759,20 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
 
     override fun showPeriodRequest(periodRequest: Pair<PeriodRequest, Filters>) {
         if (periodRequest.first == PeriodRequest.FROM_TO) {
-            FilterPeriodsDialog.newPeriodsFilter(periodRequest.second, isFromToFilter = true).show(supportFragmentManager, FILTER_DIALOG)
+            FilterPeriodsDialog.newPeriodsFilter(periodRequest.second, isFromToFilter = true)
+                .show(supportFragmentManager, FILTER_DIALOG)
         } else {
-            FilterPeriodsDialog.newPeriodsFilter(periodRequest.second).show(supportFragmentManager, FILTER_DIALOG)
+            FilterPeriodsDialog.newPeriodsFilter(periodRequest.second)
+                .show(supportFragmentManager, FILTER_DIALOG)
         }
     }
 
-    override fun openDashboard(teiUid: String, programUid: String?, enrollmentUid: String?, sessionId: String?) {
+    override fun openDashboard(
+        teiUid: String,
+        programUid: String?,
+        enrollmentUid: String?,
+        sessionId: String?
+    ) {
         searchNavigator.openDashboard(teiUid, programUid, enrollmentUid, sessionId)
         viewModel.resetSequentialSearch()
         viewModel.clearQueryData()
@@ -813,11 +824,25 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
                 Unit
             },
             {
-                viewModel.resetSequentialSearch()
+                val isMatchByCredentials =
+                    if (viewModel.sequentialSearch.value is SequentialSearch.BiometricsSearch) {
+                        val simprintsItems =
+                            (viewModel.sequentialSearch.value as SequentialSearch.BiometricsSearch).simprintsItems
+
+                        simprintsItems.find { it.guid == item.biometricsGuid() }?.isLinkedToCredential
+                            ?: false
+                    } else {
+                        false
+                    }
+
                 presenter.sendBiometricsConfirmIdentity(
                     lastSelection!!.tei.uid(),
-                    lastSelection!!.selectedEnrollment.uid(), lastSelection!!.isOnline
+                    lastSelection!!.selectedEnrollment.uid(),
+                    lastSelection!!.isOnline,
+                    isMatchByCredentials
                 )
+                viewModel.resetSequentialSearch()
+
                 Unit
             }
         )
@@ -906,15 +931,16 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
                 ).handleConfirmIdentityResponse(resultCode, data)
 
                 if (lastSelection != null) {
-                when(result) {
-                    is ConfirmIdentityResult.CompletedWithCredentials -> {
-                        presenter.updateTEICredentials(
-                            lastSelection?.uid(),
-                            result.item,
-                        )
+                    when (result) {
+                        is ConfirmIdentityResult.CompletedWithCredentials -> {
+                            presenter.updateTEICredentials(
+                                lastSelection?.uid(),
+                                result.item,
+                            )
+                        }
+
+                        is ConfirmIdentityResult.Completed -> {}
                     }
-                    is ConfirmIdentityResult.Completed -> {}
-                }
 
 
                     presenter.onSearchTEIModelClick(lastSelection, viewModel.sequentialSearch.value)
@@ -927,7 +953,7 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
 
     private fun simulateNotFoundBiometricsSearch(sessionId: String?) {
         presenter.searchOnBiometrics(
-            listOf(SimprintsIdentifiedItem(BIOMETRICS_USER_NOT_FOUND, 0f,false,false)),
+            listOf(SimprintsIdentifiedItem(BIOMETRICS_USER_NOT_FOUND, 0f, false, false)),
             sessionId, false
         )
     }
