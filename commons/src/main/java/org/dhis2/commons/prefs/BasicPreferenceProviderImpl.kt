@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import org.dhis2.mobile.commons.providers.BASIC_SHARE_PREFS
+
 class BasicPreferenceProviderImpl(private val context: Context) : BasicPreferenceProvider {
 
     private val sharedPreferences: SharedPreferences =

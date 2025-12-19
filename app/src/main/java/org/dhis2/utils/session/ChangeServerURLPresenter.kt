@@ -6,7 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.dhis2.commons.Constants
 import org.dhis2.commons.prefs.PreferenceProvider
-import org.dhis2.commons.prefs.SECURE_SERVER_URL
+import org.dhis2.mobile.commons.providers.SECURE_SERVER_URL
 import org.dhis2.usescases.general.ActivityGlobalAbstract
 import org.hisp.dhis.android.core.D2
 import timber.log.Timber
@@ -61,21 +61,26 @@ class ChangeServerURLPresenter(
     private fun saveInTheStore() {
         view.showLoginProgress()
 
-        try {
-            updateUrlInPreference()
-            updateCredentialsAndDataBaseConfigurations()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                updateUrlInPreference()
+                updateCredentialsAndDataBaseConfigurations()
 
-            d2.databaseAdapter().execSQL("DELETE FROM SystemInfo")
+                d2.databaseAdapter().execSQL("DELETE FROM SystemInfo")
 
-            CoroutineScope(Dispatchers.IO).launch {
-                d2.systemInfoModule().systemInfo().download().blockingAwait()
+                CoroutineScope(Dispatchers.IO).launch {
+                    d2.systemInfoModule().systemInfo().download().blockingAwait()
+                }
+
+                launch(Dispatchers.Main) {
+                    view.renderSuccess("Change realized successfully to$newServerURL")
+                    view.closeDialog()
+                }
+            } catch (e: Exception) {
+                launch(Dispatchers.Main) {
+                    handleError(e)
+                }
             }
-
-            view.renderSuccess("Change realized successfully to$newServerURL")
-
-            view.closeDialog()
-        } catch (e: Exception) {
-            handleError(e)
         }
     }
 
