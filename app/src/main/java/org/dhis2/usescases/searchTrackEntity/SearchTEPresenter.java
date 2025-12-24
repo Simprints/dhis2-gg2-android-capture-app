@@ -32,7 +32,7 @@ import org.dhis2.commons.filters.FilterManager;
 import org.dhis2.commons.filters.data.FilterRepository;
 import org.dhis2.commons.matomo.MatomoAnalyticsController;
 import org.dhis2.commons.orgunitselector.OUTreeFragment;
-import org.dhis2.commons.orgunitselector.OrgUnitSelectorScope;
+import org.dhis2.mobile.commons.orgunit.OrgUnitSelectorScope;
 import org.dhis2.commons.prefs.BasicPreferenceProvider;
 import org.dhis2.commons.prefs.Preference;
 import org.dhis2.commons.prefs.PreferenceProvider;
@@ -60,9 +60,11 @@ import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance;
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -289,8 +291,8 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
 
 
     @Override
-    public void onEnrollClick(HashMap<String, String> queryData, SequentialSearch sequentialSearch) {
-        HashMap<String, String> finalQueryData = getQueryData(queryData, sequentialSearch);
+    public void onEnrollClick(HashMap<String, List<String>> queryData, SequentialSearch sequentialSearch) {
+        HashMap<String, List<String>> finalQueryData = getQueryData(queryData, sequentialSearch);
 
         singleEventEnforcer.processEvent(() -> {
             manageEnrollClick(finalQueryData);
@@ -298,7 +300,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
         });
     }
 
-    public void manageEnrollClick(HashMap<String, String> queryData) {
+    public void manageEnrollClick(HashMap<String, List<String>> queryData) {
         if (selectedProgram != null)
             if (canCreateTei())
                 enroll(selectedProgram.uid(), null, queryData);
@@ -317,7 +319,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     }
 
     @Override
-    public void enroll(String programUid, String uid, HashMap<String, String> queryData) {
+    public void enroll(String programUid, String uid, HashMap<String, List<String>> queryData) {
 
         compositeDisposable.add(getOrgUnits()
                 .subscribeOn(schedulerProvider.io())
@@ -343,7 +345,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
         );
     }
 
-    private void enrollInOrgUnit(String orgUnitUid, String programUid, String uid, HashMap<String, String> queryData) {
+    private void enrollInOrgUnit(String orgUnitUid, String programUid, String uid,  HashMap<String, List<String>> queryData) {
         compositeDisposable.add(
                 searchRepository.saveToEnroll(trackedEntity.uid(), orgUnitUid, programUid, uid, queryData, view.fromRelationshipTEI())
                         .subscribeOn(schedulerProvider.computation())
@@ -351,7 +353,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
                         .subscribe(enrollmentAndTEI -> {
                                     analyticsHelper.setEvent(CREATE_ENROLL, CLICK, CREATE_ENROLL);
                                     view.goToEnrollment(
-                                            enrollmentAndTEI.val0(),
+                                            enrollmentAndTEI.getFirst(),
                                             selectedProgram.uid()
                                     );
                                 },
@@ -720,11 +722,16 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
 
     private BiometricsSearchListener biometricsSearchListener;
 
-    private HashMap<String, String> getQueryData(HashMap<String, String> queryData, SequentialSearch sequentialSearch) {
+    private HashMap<String, List<String>> getQueryData(HashMap<String, List<String>> queryData, SequentialSearch sequentialSearch) {
         if (sequentialSearch == null) {
             return queryData;
         } else {
-            return sequentialSearch.getFinalQueryData();
+            return sequentialSearch.getFinalQueryData().entrySet().stream()
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            entry -> Arrays.asList(entry.getValue().split(";")),(prev, next) -> next,
+                            HashMap::new
+                    ));
         }
     }
 

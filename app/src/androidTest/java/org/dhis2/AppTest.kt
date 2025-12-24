@@ -22,16 +22,8 @@ class AppTest : App() {
 
     val mutableWorkInfoStatuses = MutableLiveData<List<WorkInfo>>()
 
-    @Override
-    override fun onCreate() {
-        populateDBIfNeeded()
-        super.onCreate()
-    }
+    fun restoreDB() {
 
-    private fun populateDBIfNeeded() {
-        TestingInjector.provideDBImporter(applicationContext).apply {
-            copyDatabaseFromAssetsIfNeeded()
-        }
     }
 
     fun restoreDB() {
@@ -43,6 +35,9 @@ class AppTest : App() {
 
     @Override
     override fun setUpServerComponent() {
+        TestingInjector.provideDBImporter(applicationContext).apply {
+            copyDatabaseFromAssetsIfNeeded(true)
+        }
         D2Manager.setTestingDatabase(MOCK_SERVER_URL, DB_TO_IMPORT, USERNAME)
         val keystoreRobot = TestingInjector.providesKeyStoreRobot(applicationContext)
         keystoreRobot.apply {
@@ -80,8 +75,6 @@ class AppTest : App() {
             .schedulerModule(SchedulerModule(SchedulersProviderImpl()))
             .analyticsModule(AnalyticsModule())
             .preferenceModule(PreferencesTestingModule())
-            //.coroutineDispatchers(DispatcherTestingModule())
-            .customDispatcher(CustomDispatcherModule())
             .workManagerController(
                 MockedWorkManagerModule(
                     MockedWorkManagerController(

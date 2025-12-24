@@ -64,6 +64,7 @@
     <string name="copied_text">Đã sao chép</string>
     <string name="empty_description">Không có thông tin cho trường dữ liệu này</string>
     <string name="take_photo">Chụp ảnh</string>
+    <string name="from_gallery_v2">Từ thư viện ảnh</string>
     <string name="warning_error_on_complete_title">Kiểm tra cái này!</string>
     <string name="action_do_not_show_again">Không hiển thị lại</string>
     <string name="data_values_save_error">Các Giá trị dữ liệu không thể được lưu bằng những đối số này. Vui lòng sử dụng đối số khác.</string>
@@ -87,4 +88,5 @@
     <string name="category_combo">Tổ hợp phân loại</string>
     <string name="no_options">Không có tùy chọn</string>
     <string name="cat_combo">Tổ hợp Phân Loại</string>
+    <string name="storage_permission_denied">Quyền lưu trữ không được cấp.\nBạn phải cấp quyền để sử dụng tính năng này.</string>
     </resources>

@@ -10,10 +10,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Icon
-import androidx.compose.material.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -45,7 +45,7 @@ internal fun RegistrationResult(
         Button(
             modifier = modifier,
             colors = ButtonDefaults.buttonColors(
-                backgroundColor = if (background is BiometricsBackground.Solid) background.value else Color.Transparent
+                containerColor = if (background is BiometricsBackground.Solid) background.value else Color.Transparent
             ),
             contentPadding = PaddingValues(),
             onClick = {
@@ -81,7 +81,7 @@ internal fun RegistrationResult(
                 modifier = Modifier.width(200.dp)
                     .height(50.dp),
                 colors = ButtonDefaults.buttonColors(
-                    backgroundColor = Color(
+                    containerColor = Color(
                         android.graphics.Color.parseColor(
                             "#4d4d4d"
                         )

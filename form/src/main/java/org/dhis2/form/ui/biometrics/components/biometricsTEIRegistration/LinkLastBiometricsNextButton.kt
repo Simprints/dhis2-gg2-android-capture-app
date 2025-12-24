@@ -5,9 +5,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,13 +24,16 @@ internal fun LinkLastBiometricsNextButton(
     onClick: (() -> Unit),
 ) {
     val background = getColor(enabled)
+    val backgroundColor =
+        if (background is BiometricsBackground.Solid) background.value else Color.Transparent
 
     val modifier = Modifier.fillMaxWidth().height(50.dp)
 
     Button(
         modifier = modifier,
-        colors = ButtonDefaults.buttonColors(backgroundColor = if (background is BiometricsBackground.Solid) background.value else Color.Transparent),
-        contentPadding = PaddingValues(),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = backgroundColor
+        ), contentPadding = PaddingValues(),
         onClick = onClick,
         enabled = enabled
     ) {

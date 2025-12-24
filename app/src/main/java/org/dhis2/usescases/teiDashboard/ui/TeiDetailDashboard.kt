@@ -40,25 +40,28 @@ fun TeiDetailDashboard(
     isUnderAgeThreshold:Boolean
 ) {
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = 16.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             infoBarModels.forEach { infoBar ->
                 if (infoBar.showInfoBar) {
                     InfoBar(
-                        modifier = Modifier
-                            .padding(start = 8.dp, end = 8.dp)
-                            .testTag(INFO_BAR_TEST_TAG + infoBar.type.name),
-                        infoBarData = InfoBarData(
-                            text = infoBar.text,
-                            icon = infoBar.icon,
-                            color = infoBar.textColor,
-                            backgroundColor = infoBar.backgroundColor,
-                            actionText = infoBar.actionText,
-                            onClick = infoBar.onActionClick,
-                        ),
+                        modifier =
+                            Modifier
+                                .padding(start = 8.dp, end = 8.dp)
+                                .testTag(INFO_BAR_TEST_TAG + infoBar.type.name),
+                        infoBarData =
+                            InfoBarData(
+                                text = infoBar.text,
+                                icon = infoBar.icon,
+                                color = infoBar.textColor,
+                                backgroundColor = infoBar.backgroundColor,
+                                actionText = infoBar.actionText,
+                                onClick = infoBar.onActionClick,
+                            ),
                     )
                 }
             }

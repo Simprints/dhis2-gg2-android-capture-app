@@ -3,9 +3,8 @@ package org.dhis2.usescases.searchTrackEntity;
 import static org.dhis2.usescases.biometrics.AttributesKt.biometricAttributeId;
 
 import org.dhis2.commons.data.CarouselItemModel;
-import org.dhis2.commons.data.tuples.Trio;
 import org.dhis2.tracker.relationships.model.RelationshipModel;
-import org.dhis2.ui.MetadataIconData;
+import org.dhis2.mobile.commons.model.MetadataIconData;
 import org.hisp.dhis.android.core.enrollment.Enrollment;
 import org.hisp.dhis.android.core.maintenance.D2ErrorCode;
 import org.hisp.dhis.android.core.program.Program;
@@ -22,6 +21,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Objects;
 
+import kotlin.Triple;
+
 public class SearchTeiModel implements CarouselItemModel {
 
     private LinkedHashMap<String, TrackedEntityAttributeValue> attributeValues;
@@ -30,7 +31,7 @@ public class SearchTeiModel implements CarouselItemModel {
 
     private LinkedHashMap<String, TrackedEntityAttributeValue> textAttributeValues;
 
-    private List<Trio<String, String, String>> enrollmentsInfo;
+    private List<Triple<String, String, String>> enrollmentsInfo;
     private List<Program> programInfo;
     private HashMap<String, MetadataIconData> metadataIconDataMap;
     private boolean hasOverdue;
@@ -76,7 +77,7 @@ public class SearchTeiModel implements CarouselItemModel {
         this.allAttributeValues = new LinkedHashMap<>();
     }
 
-    public void addEnrollmentInfo(Trio<String, String, String> enrollmentInfo) {
+    public void addEnrollmentInfo(Triple<String, String, String> enrollmentInfo) {
         enrollmentsInfo.add(enrollmentInfo);
     }
 

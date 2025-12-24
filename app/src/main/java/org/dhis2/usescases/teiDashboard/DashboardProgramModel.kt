@@ -1,7 +1,7 @@
 package org.dhis2.usescases.teiDashboard
 
+import org.dhis2.mobile.commons.model.MetadataIconData
 import org.dhis2.commons.biometrics.isBiometricAttribute
-import org.dhis2.ui.MetadataIconData
 import org.dhis2.usescases.biometrics.BIOMETRICS_ENABLED
 import org.hisp.dhis.android.core.enrollment.Enrollment
 import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
@@ -21,13 +21,12 @@ sealed class DashboardModel(
     open val avatarPath: String?,
     open val ownerOrgUnit: OrganisationUnit?,
 ) {
-    open fun getTrackedEntityAttributeValueBySortOrder(sortOrder: Int): String? {
-        return if (sortOrder <= trackedEntityAttributeValues.size) {
+    open fun getTrackedEntityAttributeValueBySortOrder(sortOrder: Int): String? =
+        if (sortOrder <= trackedEntityAttributeValues.size) {
             trackedEntityAttributeValues[sortOrder - 1].value()
         } else {
             ""
         }
-    }
 }
 
 data class DashboardEnrollmentModel(
@@ -43,27 +42,23 @@ data class DashboardEnrollmentModel(
     override val ownerOrgUnit: OrganisationUnit?,
     val quickActions: List<String>,
 ) : DashboardModel(
-    trackedEntityInstance,
-    trackedEntityAttributeValues,
-    enrollmentPrograms,
-    orgUnits,
-    teiHeader,
-    avatarPath,
-    ownerOrgUnit,
-) {
-    fun currentProgram(): Program {
-        return enrollmentPrograms.first { it.first.uid() == currentEnrollment.program() }.first
-    }
+        trackedEntityInstance,
+        trackedEntityAttributeValues,
+        enrollmentPrograms,
+        orgUnits,
+        teiHeader,
+        avatarPath,
+        ownerOrgUnit,
+    ) {
+    fun currentProgram(): Program = enrollmentPrograms.first { it.first.uid() == currentEnrollment.program() }.first
 
-    fun getCurrentOrgUnit(): OrganisationUnit {
-        return orgUnits.first { it.uid() == currentEnrollment.organisationUnit() }
-    }
+    fun getCurrentOrgUnit(): OrganisationUnit = orgUnits.first { it.uid() == currentEnrollment.organisationUnit() }
 
-    fun getEnrollmentActivePrograms(): List<Program> {
-        return enrollmentPrograms.sortedBy { it.first.displayName()?.lowercase() }
-            .filter { it.first.uid() != currentEnrollment.program() }.map { it.first }
-    }
-
+    fun getEnrollmentActivePrograms(): List<Program> =
+        enrollmentPrograms
+            .sortedBy { it.first.displayName()?.lowercase() }
+            .filter { it.first.uid() != currentEnrollment.program() }
+            .map { it.first }
 
     // EyeSeeTea customizations
     fun getBiometricValue(): String? {
@@ -81,14 +76,6 @@ data class DashboardEnrollmentModel(
         val biometricUid = getBiometricsAttributeUid()
         return BIOMETRICS_ENABLED && biometricUid != null
     }
-
-    fun isTrackedBiometricEntityExistAndHasValue(): Boolean {
-        val biometricValue = trackedEntityAttributeValues
-            .firstOrNull { it.trackedEntityAttribute() == getBiometricsAttributeUid() }
-
-        return biometricValue?.value() != null &&
-                biometricValue.value()!!.isNotEmpty()
-    }
 }
 
 data class DashboardTEIModel(
@@ -101,24 +88,24 @@ data class DashboardTEIModel(
     override val avatarPath: String?,
     override val ownerOrgUnit: OrganisationUnit?,
 ) : DashboardModel(
-    trackedEntityInstance,
-    trackedEntityAttributeValues,
-    enrollmentPrograms,
-    orgUnits,
-    teiHeader,
-    avatarPath,
-    ownerOrgUnit,
-) {
-    fun getProgramsWithActiveEnrollment(): List<Program>? {
-        return enrollmentPrograms.sortedBy { it.first.displayName()?.lowercase() }
-            .filter { getEnrollmentForProgram(it.first.uid()) != null }.map { it.first }
-    }
+        trackedEntityInstance,
+        trackedEntityAttributeValues,
+        enrollmentPrograms,
+        orgUnits,
+        teiHeader,
+        avatarPath,
+        ownerOrgUnit,
+    ) {
+    fun getProgramsWithActiveEnrollment(): List<Program>? =
+        enrollmentPrograms
+            .sortedBy { it.first.displayName()?.lowercase() }
+            .filter { getEnrollmentForProgram(it.first.uid()) != null }
+            .map { it.first }
 
-    fun getEnrollmentForProgram(uid: String): Enrollment? {
-        return teiEnrollments.firstOrNull { it.program() == uid && it.status() == EnrollmentStatus.ACTIVE }
-    }
+    fun getEnrollmentForProgram(uid: String): Enrollment? =
+        teiEnrollments.firstOrNull {
+            it.program() == uid && it.status() == EnrollmentStatus.ACTIVE
+        }
 
-    fun getIconForProgram(programUid: String): MetadataIconData? {
-        return enrollmentPrograms.firstOrNull { it.first.uid() == programUid }?.second
-    }
+    fun getIconForProgram(programUid: String): MetadataIconData? = enrollmentPrograms.firstOrNull { it.first.uid() == programUid }?.second
 }

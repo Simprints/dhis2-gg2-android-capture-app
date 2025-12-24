@@ -88,7 +88,7 @@ class BiometricsConfigRepositoryImpl(
 
         val icon =
             BiometricsIcon.values()
-                .firstOrNull { it.name == config.icon?.toUpperCase() }?.name
+                .firstOrNull { it.name == config.icon?.uppercase() }?.name
                 ?: BiometricsIcon.FINGERPRINT.name
 
         preferenceProvider.setValue(BiometricsPreference.ICON, icon)

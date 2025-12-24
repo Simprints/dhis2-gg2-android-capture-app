@@ -1,10 +1,15 @@
-# Release notes - Android App for DHIS2 - 3.2.1.1
+# Release notes - Android App for DHIS2 - 3.3.0.1
+
+This patch release includes updated translations and a hotfix.
+
+## Bugs fixed
+
+* [ANDROSDK-2219](https://dhis2.atlassian.net/browse/ANDROSDK-2219) Tracker sync fail due to null properties in Note
+
+* [ANDROSDK-2221](https://dhis2.atlassian.net/browse/ANDROSDK-2221) Data set with default cat combo can't be edited
+
+* [ANDROSDK-2223](https://dhis2.atlassian.net/browse/ANDROSDK-2223) openingDate and closedDate from DataInputPeriod are nullable
 
 ### Translations
 
-A translations-only patch. This version does not introduce any new features,
-UI changes, or bug fixes. It simply updates the app's translations based on recent
-contributions from the community via Transifex.
-This patch is particularly important for countries and implementations
-that rely on up-to-date local language support for end users.
-If your project depends on recent translation updates, we recommend deploying this APK.
+This release also includes updated translations contributed by the community.

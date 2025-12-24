@@ -25,7 +25,7 @@ sealed class SequentialSearch(
         get() = when (this) {
             is BiometricsSearch -> {
                 val biometricsQueryData = sequentialSessionId?.let {
-                    hashMapOf(biometricAttributeId to BIOMETRICS_SEARCH_PATTERN + sequentialSessionId + "_" + biometricUid)
+                    hashMapOf(biometricAttributeId to BIOMETRICS_SEARCH_PATTERN + sequentialSessionId + "_" + biometricUids.joinToString { ";" })
                 }
                     ?: emptyMap()
 
@@ -41,7 +41,7 @@ sealed class SequentialSearch(
                 val biometricsQueryData =
                     (previousSearch as? BiometricsSearch)?.let {
                         sequentialSessionId?.let { sessionId ->
-                            hashMapOf(biometricAttributeId to BIOMETRICS_SEARCH_PATTERN + sessionId + "_" + it.biometricUid)
+                            hashMapOf(biometricAttributeId to BIOMETRICS_SEARCH_PATTERN + sessionId + "_" + it.biometricUids.joinToString { ";" })
                         } ?: emptyMap()
                     } ?: emptyMap()
 
@@ -52,7 +52,7 @@ sealed class SequentialSearch(
     data class BiometricsSearch(
         override val previousSearch: SequentialSearch?,
         override val nextActions: List<SequentialSearchAction>,
-        val biometricUid: String,
+        val biometricUids: List<String>,
         val sessionId: String?,
         val isAgeNotSupported: Boolean,
         val simprintsItems: List<SimprintsIdentifiedItem>

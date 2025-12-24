@@ -45,7 +45,13 @@ class EnrollmentRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag(PROGRAM_TO_ENROLL.format(program), useUnmergedTree = true)
             .performClick()
+        composeTestRule.waitForIdle()
     }
+
+    fun checkEnrollmentListActivityIsLaunched() {
+        Intents.intended(allOf(hasComponent(TeiProgramListActivity::class.java.name)))
+    }
+
 
     fun checkEnrollmentListActivityIsLaunched() {
         Intents.intended(allOf(hasComponent(TeiProgramListActivity::class.java.name)))
@@ -123,13 +129,15 @@ class EnrollmentRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
             dateTextFieldNode.performTextReplacement(dateValue)
             dateTextFieldNode.performImeAction()
         }
+        Espresso.closeSoftKeyboard()
     }
 
     @OptIn(ExperimentalTestApi::class)
     fun openFormSection(personAttribute: String) {
         composeTestRule.waitForIdle()
-        composeTestRule.waitUntilAtLeastOneExists(hasText(personAttribute, true))
+        composeTestRule.waitUntilAtLeastOneExists(hasText(personAttribute, true), TIMEOUT)
         composeTestRule.onNodeWithText(personAttribute).performClick()
+        composeTestRule.waitForIdle()
     }
 
     fun typeOnInputDateField(dateValue: String, title: String) {

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
 import androidx.databinding.DataBindingUtil
 import androidx.paging.PagingDataAdapter
 import com.google.android.material.card.MaterialCardView
@@ -18,9 +19,14 @@ import org.dhis2.databinding.ItemSearchTrackedEntityBinding
 import org.dhis2.usescases.searchTrackEntity.SearchTeiModel
 import org.dhis2.usescases.searchTrackEntity.adapters.SearchAdapterDiffCallback
 import org.dhis2.usescases.searchTrackEntity.ui.mapper.TEICardMapper
+import org.hisp.dhis.mobile.ui.designsystem.component.AdditionalInfoItem
 import org.hisp.dhis.mobile.ui.designsystem.component.ListCard
+import org.hisp.dhis.mobile.ui.designsystem.component.ListCardDescriptionModel
 import org.hisp.dhis.mobile.ui.designsystem.component.ListCardTitleModel
+import org.hisp.dhis.mobile.ui.designsystem.component.state.rememberAdditionalInfoColumnState
+import org.hisp.dhis.mobile.ui.designsystem.component.state.rememberListCardState
 import org.hisp.dhis.mobile.ui.designsystem.theme.Spacing
+import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
 
 class BiometricsDuplicatesDialogAdapter(
     private val cardMapper: TEICardMapper,
@@ -64,14 +70,32 @@ class BiometricsDuplicatesDialogAdapter(
                     if (position == 0) {
                         Spacer(modifier = Modifier.size(Spacing.Spacing8))
                     }
+
+
+                    val description = ListCardDescriptionModel(text = card.description)
+
                     ListCard(
                         listAvatar = card.avatar,
-                        title = ListCardTitleModel(text = card.title),
-                        lastUpdated = card.lastUpdated,
-                        additionalInfoList = card.additionalInfo,
+                        listCardState =
+                            rememberListCardState(
+                                ListCardTitleModel(text = card.title),
+                                description = description,
+                                lastUpdated = card.lastUpdated,
+                                additionalInfoColumnState =
+                                    rememberAdditionalInfoColumnState(
+                                        additionalInfoList = card.additionalInfo,
+                                        syncProgressItem =
+                                            AdditionalInfoItem(
+                                                key = stringResource(id = R.string.syncing),
+                                                value = "",
+                                            ),
+                                        expandLabelText = card.expandLabelText,
+                                        shrinkLabelText = card.shrinkLabelText,
+                                        minItemsToShow = 0,
+                                    ),
+                                expandable = true,
+                            ),
                         actionButton = card.actionButton,
-                        expandLabelText = card.expandLabelText,
-                        shrinkLabelText = card.shrinkLabelText,
                         onCardClick = card.onCardCLick,
                     )
                 }

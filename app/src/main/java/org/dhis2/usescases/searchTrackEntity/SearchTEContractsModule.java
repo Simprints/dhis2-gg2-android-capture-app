@@ -26,10 +26,6 @@ import io.reactivex.functions.Consumer;
 import kotlin.Pair;
 import kotlin.Unit;
 
-/**
- * QUADRAM. Created by ppajuelo on 02/11/2017.
- */
-
 public class SearchTEContractsModule {
 
     public interface View extends AbstractActivityContracts.View {
@@ -87,9 +83,9 @@ public class SearchTEContractsModule {
 
         void onBackClick();
 
-        void onEnrollClick(HashMap<String, String> queryData, SequentialSearch sequentialSearch);
+        void onEnrollClick(HashMap<String,  List<String>> queryData, SequentialSearch sequentialSearch);
 
-        void enroll(String programUid, String teiUid, HashMap<String, String> queryData);
+        void enroll(String programUid, String teiUid, HashMap<String, List<String>> queryData);
 
         void onTEIClick(String teiUid, String enrollmentUid, boolean isOnline);
         void onSearchTEIModelClick(SearchTeiModel item, SequentialSearch sequentialSearch);

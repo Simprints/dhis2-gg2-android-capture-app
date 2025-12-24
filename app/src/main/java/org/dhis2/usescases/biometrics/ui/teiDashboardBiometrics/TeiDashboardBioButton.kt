@@ -7,9 +7,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,7 +31,7 @@ fun TeiDashboardBioButton(
 
         Button(
             modifier = modifier,
-            colors = ButtonDefaults.buttonColors(backgroundColor = if (model.backgroundColor != null) Color(android.graphics.Color.parseColor(model.backgroundColor)) else Color.Transparent),
+            colors = ButtonDefaults.buttonColors(containerColor = if (model.backgroundColor != null) Color(android.graphics.Color.parseColor(model.backgroundColor)) else Color.Transparent),
             contentPadding = PaddingValues(),
             onClick = model.onActionClick,
         ) {
