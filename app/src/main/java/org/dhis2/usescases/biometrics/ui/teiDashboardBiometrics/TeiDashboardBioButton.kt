@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -34,6 +35,7 @@ fun TeiDashboardBioButton(
             colors = ButtonDefaults.buttonColors(containerColor = if (model.backgroundColor != null) Color(android.graphics.Color.parseColor(model.backgroundColor)) else Color.Transparent),
             contentPadding = PaddingValues(),
             onClick = model.onActionClick,
+            shape = RoundedCornerShape(4.dp),
         ) {
             val boxModifier = if (model.backgroundColor == null) Modifier
                 .background(gradientButtonColor)
@@ -55,7 +57,7 @@ fun TeiDashboardBioButton(
 fun TeiDashboardBioButtonPreview() {
     TeiDashboardBioButton(model = BioButtonModel(
         text = "Biometrics",
-        backgroundColor = "#4d4d4d",
+        backgroundColor = null,
         onActionClick = {})
     )
 }

@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -35,6 +36,7 @@ fun TealGradientButton(
         colors = ButtonDefaults.buttonColors(contentColor = Color.Transparent),
         contentPadding = PaddingValues(),
         onClick = { onClick() },
+        shape = RoundedCornerShape(4.dp),
     ) {
         Box(
             modifier = Modifier
