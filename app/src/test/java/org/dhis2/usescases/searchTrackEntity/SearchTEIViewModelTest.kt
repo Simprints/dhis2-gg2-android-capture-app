@@ -90,6 +90,7 @@ class SearchTEIViewModelTest {
             SearchTEIViewModel(
                 initialProgram,
                 initialQuery,
+                presenter = presenter,
                 repository,
                 repositoryKt,
                 pageConfigurator,
@@ -107,6 +108,7 @@ class SearchTEIViewModelTest {
                 displayNameProvider = displayNameProvider,
                 filterManager = filterManager,
                 basicPreferenceProvider = basicPreferenceProvider,
+
             )
         testingDispatcher.scheduler.advanceUntilIdle()
     }
@@ -527,9 +529,8 @@ class SearchTEIViewModelTest {
 
             // EyeSeeTea customization - Avoid show search outside
             //assertTrue(size == 1)
-            //assertTrue(first().type == SearchResultType.SEARCH_OUTSIDE)
             assertTrue(size == 2)
-            assertTrue(first().type == SearchResultType.NO_MORE_RESULTS)
+            assertTrue(first().type == SearchResultType.SEARCH_OUTSIDE)
         }
     }
 

@@ -23,10 +23,6 @@ class AppTest : App() {
     val mutableWorkInfoStatuses = MutableLiveData<List<WorkInfo>>()
 
     fun restoreDB() {
-
-    }
-
-    fun restoreDB() {
         TestingInjector.provideDBImporter(applicationContext).apply {
             copyDatabaseFromAssetsIfNeeded(true)
         }

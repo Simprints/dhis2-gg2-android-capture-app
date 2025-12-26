@@ -56,7 +56,9 @@ class ProgramViewModelTest {
         mock {
             on { isFeatureEnable(any()) } doReturn false
         }
-    private val selectBiometricsConfig: SelectBiometricsConfig = mock()
+    private val selectBiometricsConfig: SelectBiometricsConfig = mock {
+        onBlocking { invoke(any()) } doReturn mock()
+    }
 
     private val dispatcherProvider =
         object : DispatcherProvider {

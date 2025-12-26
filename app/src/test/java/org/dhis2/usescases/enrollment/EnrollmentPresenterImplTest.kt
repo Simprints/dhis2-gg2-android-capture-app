@@ -375,7 +375,7 @@ class EnrollmentPresenterImplTest {
                 .enrollmentModule()
                 .enrollmentService()
                 .blockingGetEnrollmentAccess(tei.uid(), program.uid()),
-        ) doReturn EnrollmentAccess.NO_ACCESS
+        ) doReturn access
     }
 
     private fun givenATei(uid: String, syncState: State) {
@@ -508,7 +508,8 @@ class EnrollmentPresenterImplTest {
                 periodSelector = null,
                 url = null,
                 editable = true,
-                ageUnderThreshold = false
+                ageUnderThreshold = false,
+                customIntent = null
             )
         )
     }

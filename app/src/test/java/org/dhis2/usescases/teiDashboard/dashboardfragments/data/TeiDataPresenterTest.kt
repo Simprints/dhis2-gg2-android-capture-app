@@ -29,7 +29,6 @@ import org.dhis2.form.model.EventMode
 import org.dhis2.mobile.commons.model.MetadataIconData
 import org.dhis2.mobileProgramRules.RuleEngineHelper
 import org.dhis2.tracker.events.CreateEventUseCase
-import org.dhis2.ui.MetadataIconData
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.teiDashboard.DashboardEnrollmentModel
@@ -118,9 +117,11 @@ class TeiDataPresenterTest {
                 dispatcherProvider,
                 createEventUseCase,
                 d2ErrorUtils,
+                preferences,
                 basicPreferenceProvider,
+                resourceManager,
                 null,
-                orgUnitRepository
+                orgUnitRepository,
             )
     }
 
@@ -447,6 +448,7 @@ class TeiDataPresenterTest {
             dispatcherProvider,
             createEventUseCase,
             d2ErrorUtils,
+            preferences,
             basicPreferenceProvider,
             resourceManager,
             null,
