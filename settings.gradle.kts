@@ -36,7 +36,51 @@ include(":tracker")
 include(":aggregates")
 include(":commonskmm")
 include(":login")
+
 // EyeSeeTea customization - Include SDK's modules
-//project(":core").projectDir = File("dhis2-android-sdk/core")
-//project(":processor").projectDir = File("dhis2-android-sdk/processor")
-//project(":annotations").projectDir = File("dhis2-android-sdk/annotations")
+// 🔗 Composite Build: use local SDK local o JitPack according to gradle.properties or local.properties
+
+// Helper function to read property from local.properties
+fun readLocalProperty(key: String): String? {
+    val localPropsFile = file("local.properties")
+    if (localPropsFile.exists()) {
+        val props = java.util.Properties()
+        localPropsFile.inputStream().use { props.load(it) }
+        return props.getProperty(key)
+    }
+    return null
+}
+
+// Read from gradle.properties first, then fallback to local.properties
+val useLocalSdkFromGradle = providers.gradleProperty("dhis2.useLocalSdk").orNull
+val useLocalSdkFromLocal = readLocalProperty("dhis2.useLocalSdk")
+val useLocalSdk = (useLocalSdkFromGradle ?: useLocalSdkFromLocal)
+    ?.toBoolean()
+    ?: false  // by default use jitpack
+
+val sdkPathFromGradle = providers.gradleProperty("dhis2.sdkPath").orNull
+val sdkPathFromLocal = readLocalProperty("dhis2.sdkPath")
+val sdkPathFromProps = sdkPathFromGradle ?: sdkPathFromLocal
+
+val sdkPaths = listOfNotNull(
+    sdkPathFromProps?.let { file(it) },  // 1. Path from gradle.properties
+    file("../dhis2-android-sdk"),         // 2. Common relative path
+    file("../../dhis2-android-sdk"),      // 3. alternative path
+    file(System.getProperty("user.home") + "/Workspace/dhis2-android-sdk"), // 4. Common absolute patch
+).firstOrNull { it.exists() && it.isDirectory && it.resolve("settings.gradle.kts").exists() }
+
+if (useLocalSdk && sdkPaths != null) {
+    println("🔗 Using local SDK from: ${sdkPaths.absolutePath}")
+    includeBuild(sdkPaths) {
+        dependencySubstitution {
+            substitute(module("com.github.EyeSeeTea:dhis2-android-sdk:android-core"))
+                .using(project(":core"))
+        }
+    }
+} else {
+    if (!useLocalSdk) {
+        println("📦 Using JitPack (dhis2.useLocalSdk=false or not set in gradle.properties/local.properties)")
+    } else {
+        println("📦 Local SDK not found, using JitPack")
+    }
+}
