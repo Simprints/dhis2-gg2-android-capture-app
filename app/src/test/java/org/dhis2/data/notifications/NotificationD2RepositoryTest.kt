@@ -1,18 +1,17 @@
 package org.dhis2.data.notifications
 
 
-import NotificationsApi
-import UserGroupsApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.prefs.Preference.Companion.NOTIFICATIONS
 import org.dhis2.usescases.notifications.domain.Notification
+import org.dhis2.usescases.notifications.domain.Permissions
 import org.dhis2.usescases.notifications.domain.ReadBy
 import org.dhis2.usescases.notifications.domain.Recipients
 import org.dhis2.usescases.notifications.domain.Ref
-import org.dhis2.usescases.notifications.domain.UserGroups
 import org.hisp.dhis.android.core.D2
+import org.hisp.dhis.android.core.common.BaseIdentifiableObject
 import org.hisp.dhis.android.core.user.User
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -26,7 +25,6 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
-import java.util.Date
 
 @RunWith(MockitoJUnitRunner::class)
 class NotificationD2RepositoryTest {
@@ -45,7 +43,7 @@ class NotificationD2RepositoryTest {
 
     @Test
     fun `Should sync empty notifications if it's empty in remote`()  = runBlocking {
-        val repository = givenTestData(user, listOf(), UserGroups(userGroups = listOf()))
+        val repository = givenTestData(user, listOf(), UserGroupsDTO(userGroups = listOf()))
 
         repository.sync().first()
 
@@ -59,13 +57,13 @@ class NotificationD2RepositoryTest {
     fun `Should sync notifications with all receivers`() = runBlocking {
         val notifications = listOf(givenANotification(wildcard = "ALL"))
 
-        val repository = givenTestData(user, notifications, UserGroups(userGroups = listOf()))
+        val repository = givenTestData(user, notifications, UserGroupsDTO(userGroups = listOf()))
 
         repository.sync().first()
 
         verify(basicPreferenceProvider).saveAsJson(
             NOTIFICATIONS,
-            notifications,
+            notifications.map { mapNotification(it) },
         )
     }
 
@@ -74,17 +72,17 @@ class NotificationD2RepositoryTest {
         val notifications = listOf(
             givenANotification(
                 wildcard = "Android",
-                users = listOf(Ref(id = user.uid(), name = null))
+                users = listOf(RefDTO(id = user.uid(), name = null))
             )
         )
 
-        val repository = givenTestData(user, notifications, UserGroups(userGroups = listOf()))
+        val repository = givenTestData(user, notifications, UserGroupsDTO(userGroups = listOf()))
 
         repository.sync().first()
 
         verify(basicPreferenceProvider).saveAsJson(
             NOTIFICATIONS,
-            notifications,
+            notifications.map { mapNotification(it) },
         )
     }
 
@@ -93,21 +91,21 @@ class NotificationD2RepositoryTest {
         val notifications = listOf(
             givenANotification(
                 wildcard = "Android",
-                userGroups = arrayListOf(Ref(id = "userGroup1", name = null))
+                userGroups = arrayListOf(RefDTO(id = "userGroup1", name = null))
             )
         )
 
         val repository = givenTestData(
             user,
             notifications,
-            UserGroups(userGroups = listOf(Ref(id = "userGroup1", name = null)))
+            UserGroupsDTO(userGroups = listOf(RefDTO(id = "userGroup1", name = null)))
         )
 
         repository.sync().first()
 
         verify(basicPreferenceProvider).saveAsJson(
             NOTIFICATIONS,
-            notifications,
+            notifications.map { mapNotification(it) },
         )
     }
 
@@ -116,17 +114,17 @@ class NotificationD2RepositoryTest {
         val notifications = listOf(
             givenANotification(
                 wildcard = "Both",
-                users = listOf(Ref(id = user.uid(), name = null))
+                users = listOf(RefDTO(id = user.uid(), name = null))
             )
         )
 
-        val repository = givenTestData(user, notifications, UserGroups(userGroups = listOf()))
+        val repository = givenTestData(user, notifications, UserGroupsDTO(userGroups = listOf()))
 
         repository.sync().first()
 
         verify(basicPreferenceProvider).saveAsJson(
             NOTIFICATIONS,
-            notifications,
+            notifications.map { mapNotification(it) },
         )
     }
 
@@ -135,21 +133,21 @@ class NotificationD2RepositoryTest {
         val notifications = listOf(
             givenANotification(
                 wildcard = "both",
-                userGroups = arrayListOf(Ref(id = "userGroup1", name = null))
+                userGroups = arrayListOf(RefDTO(id = "userGroup1", name = null))
             )
         )
 
         val repository = givenTestData(
             user,
             notifications,
-            UserGroups(userGroups = listOf(Ref(id = "userGroup1", name = null)))
+            UserGroupsDTO(userGroups = listOf(RefDTO(id = "userGroup1", name = null)))
         )
 
         repository.sync().first()
 
         verify(basicPreferenceProvider).saveAsJson(
             NOTIFICATIONS,
-            notifications,
+            notifications.map { mapNotification(it) },
         )
     }
 
@@ -158,11 +156,11 @@ class NotificationD2RepositoryTest {
         val notifications = listOf(
             givenANotification(
                 wildcard = "Web",
-                users = listOf(Ref(id = user.uid(), name = null))
+                users = listOf(RefDTO(id = user.uid(), name = null))
             )
         )
 
-        val repository = givenTestData(user, notifications, UserGroups(userGroups = listOf()))
+        val repository = givenTestData(user, notifications, UserGroupsDTO(userGroups = listOf()))
 
         repository.sync().first()
 
@@ -177,14 +175,14 @@ class NotificationD2RepositoryTest {
         val notifications = listOf(
             givenANotification(
                 wildcard = "web",
-                userGroups = arrayListOf(Ref(id = "userGroup1", name = null))
+                userGroups = arrayListOf(RefDTO(id = "userGroup1", name = null))
             )
         )
 
         val repository = givenTestData(
             user,
             notifications,
-            UserGroups(userGroups = listOf(Ref(id = "userGroup1", name = null)))
+            UserGroupsDTO(userGroups = listOf(RefDTO(id = "userGroup1", name = null)))
         )
 
         repository.sync().first()
@@ -199,27 +197,27 @@ class NotificationD2RepositoryTest {
     fun `Should only sync expected notifications`() = runBlocking {
         val forWebByUserGroup = givenANotification(
             wildcard = "web",
-            userGroups = arrayListOf(Ref(id = "userGroup1", name = null))
+            userGroups = arrayListOf(RefDTO(id = "userGroup1", name = null))
         )
         val forWebByUser = givenANotification(
             wildcard = "WEB",
-            users = listOf(Ref(id = user.uid(), name = null))
+            users = listOf(RefDTO(id = user.uid(), name = null))
         )
         val forBothByUserGroup = givenANotification(
             wildcard = "Both",
-            userGroups = arrayListOf(Ref(id = "userGroup1", name = null))
+            userGroups = arrayListOf(RefDTO(id = "userGroup1", name = null))
         )
         val forBothByUser = givenANotification(
             wildcard = "both",
-            users = listOf(Ref(id = user.uid(), name = null))
+            users = listOf(RefDTO(id = user.uid(), name = null))
         )
         val forAndroidByUserGroup = givenANotification(
             wildcard = "Android",
-            userGroups = arrayListOf(Ref(id = "userGroup1", name = null))
+            userGroups = arrayListOf(RefDTO(id = "userGroup1", name = null))
         )
         val forAndroidByUser = givenANotification(
             wildcard = "android",
-            users = listOf(Ref(id = user.uid(), name = null))
+            users = listOf(RefDTO(id = user.uid(), name = null))
         )
         val forAll = givenANotification(
             wildcard = "All",
@@ -238,7 +236,7 @@ class NotificationD2RepositoryTest {
         val repository = givenTestData(
             user,
             notifications,
-            UserGroups(userGroups = listOf(Ref(id = "userGroup1", name = null)))
+            UserGroupsDTO(userGroups = listOf(RefDTO(id = "userGroup1", name = null)))
         )
 
         repository.sync().first()
@@ -254,8 +252,8 @@ class NotificationD2RepositoryTest {
 
     private fun givenTestData(
         user: User,
-        notifications: List<Notification>,
-        userGroups: UserGroups
+        notifications: List<NotificationDTO>,
+        userGroups: UserGroupsDTO
     ): NotificationD2Repository {
         whenever(
             d2.userModule().user()
@@ -290,31 +288,32 @@ class NotificationD2RepositoryTest {
     }
 
     private fun givenANotification(
-        readBy: List<ReadBy> = listOf(),
-        userGroups: ArrayList<Ref> = ArrayList(),
-        users: List<Ref> = listOf(),
+        readBy: List<ReadByDTO> = listOf(),
+        userGroups: ArrayList<RefDTO> = ArrayList(),
+        users: List<RefDTO> = listOf(),
         wildcard: String = ""
-    ): Notification {
-        return Notification(
+    ): NotificationDTO {
+        return NotificationDTO(
             content = "test",
             id = "1",
-            createdAt = Date(),
+            createdAt = "2025-12-26T12:00:00.000",
             readBy = readBy,
-            recipients = Recipients(
+            recipients = RecipientsDTO(
                 userGroups = userGroups,
                 users = users,
                 wildcard = wildcard
             ),
-            permissions = null
+            permissions = null,
+            translations = null
         )
     }
 
     private fun verifySyncedNotifications(
-        forBothByUserGroup: Notification,
-        forBothByUser: Notification,
-        forAndroidByUserGroup: Notification,
-        forAndroidByUser: Notification,
-        forAll: Notification
+        forBothByUserGroup: NotificationDTO,
+        forBothByUser: NotificationDTO,
+        forAndroidByUserGroup: NotificationDTO,
+        forAndroidByUser: NotificationDTO,
+        forAll: NotificationDTO
     ) {
         val captor = argumentCaptor<List<Notification>>()
         verify(basicPreferenceProvider).saveAsJson(eq(NOTIFICATIONS), captor.capture())
@@ -325,9 +324,48 @@ class NotificationD2RepositoryTest {
             forAndroidByUserGroup,
             forAndroidByUser,
             forAll
-        )
+        ).map { mapNotification(it) }
 
         assertEquals(expectedNotifications.size, captor.firstValue.size)
         assertTrue(captor.firstValue.containsAll(expectedNotifications))
     }
+
+    private fun mapNotification(notificationDTO: NotificationDTO): Notification {
+        return Notification(
+            content = notificationDTO.content,
+            createdAt = BaseIdentifiableObject.parseDate(notificationDTO.createdAt),
+            id = notificationDTO.id,
+            readBy = notificationDTO.readBy.map {
+                ReadBy(
+                    BaseIdentifiableObject.parseDate(it.date),
+                    it.id,
+                    it.name
+                )
+            },
+            recipients = Recipients(
+                userGroups = notificationDTO.recipients.userGroups.map { Ref(it.id, it.name) },
+                users = notificationDTO.recipients.users.map { Ref(it.id, it.name) },
+                wildcard = notificationDTO.recipients.wildcard
+            ),
+            permissions = Permissions(
+                publicAccess = notificationDTO.permissions?.publicAccess ?: "",
+                userAccesses = notificationDTO.permissions?.userAccesses?.map {
+                    org.dhis2.usescases.notifications.domain.UserAccesses(
+                        it.access,
+                        it.id,
+                        it.name
+                    )
+                } ?: listOf(),
+                userGroupAccesses = notificationDTO.permissions?.userGroupAccesses?.map {
+                    org.dhis2.usescases.notifications.domain.UserGroupAccesses(
+                        it.access,
+                        it.id,
+                        it.name
+                    )
+                } ?: listOf()
+            ),
+            translations = notificationDTO.translations
+        )
+    }
+
 }

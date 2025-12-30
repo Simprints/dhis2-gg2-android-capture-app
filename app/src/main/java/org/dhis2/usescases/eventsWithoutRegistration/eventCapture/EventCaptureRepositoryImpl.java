@@ -28,10 +28,6 @@ import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 
-import static android.text.TextUtils.isEmpty;
-
-import static org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureRepositoryFunctionsKt.getProgramStageName;
-
 public class EventCaptureRepositoryImpl implements EventCaptureContract.EventCaptureRepository {
 
     private final String eventUid;
@@ -69,7 +65,9 @@ public class EventCaptureRepositoryImpl implements EventCaptureContract.EventCap
     @NonNull
     @Override
     public Flowable<String> programStageName() {
-        return Flowable.just(getProgramStageName(d2, eventUid));
+        return d2.programModule().programStages().uid(getCurrentEvent().programStage()).get()
+                .map(BaseIdentifiableObject::displayName)
+                .toFlowable();
     }
 
     @NonNull
