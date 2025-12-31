@@ -464,7 +464,7 @@ class SearchTEActivity :
     ) {
         when (uiState.selectedItem) {
             NavigationPage.LIST_VIEW -> {
-                viewModel.setListScreen()
+                viewModel.setListScreen(fromRelationship)
                 showList()
                 showSearchAndFilterButtons()
             }

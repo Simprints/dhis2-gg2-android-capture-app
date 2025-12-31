@@ -289,7 +289,7 @@ class SearchTEIViewModel(
         _navigationBarUIState.value = _navigationBarUIState.value.copy(selectedItem = page)
     }
 
-    fun setListScreen() {
+    fun setListScreen(fromRelationship: Boolean? = false) {
         _screenState.value.takeIf { it?.screenState == SearchScreenState.MAP }?.let {
             searching = (it as SearchList).isSearching
         }
@@ -327,7 +327,7 @@ class SearchTEIViewModel(
                                 ?.minAttributesRequiredToSearch()
                                 ?: 1,
                         isForced = shouldOpenSearch,
-                        isOpened = shouldOpenSearch || (!isSearchByBiometricsEnabled() && isLandscape()),
+                        isOpened = shouldOpenSearch || (!isSearchByBiometricsEnabled(fromRelationship ?: false) && isLandscape()),
                     ),
                 searchFilters =
                     SearchFilters(
@@ -1358,8 +1358,12 @@ class SearchTEIViewModel(
         )
     }
 
-    fun isSearchByBiometricsEnabled(): Boolean {
-        return biometricsConfig.biometricsMode == BiometricsMode.full || (biometricsConfig.biometricsMode == BiometricsMode.limited && teType.uid() == biometricsConfig.enableIdentificationForTET)
+    fun isSearchByBiometricsEnabled(fromRelationship: Boolean): Boolean {
+        return if (!fromRelationship){
+            biometricsConfig.biometricsMode == BiometricsMode.full
+        } else {
+            teType.uid() == biometricsConfig.enableIdentificationForTET
+        }
     }
 
     fun verifyAutoNavigateToTEI(dhisSearchResults: List<SearchTeiModel>) {
