@@ -9,7 +9,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.dhis2.R
@@ -17,7 +16,6 @@ import org.dhis2.bindings.app
 import org.dhis2.bindings.buildInfo
 import org.dhis2.commons.Constants.SESSION_DIALOG_RQ
 import org.dhis2.commons.dialogs.CustomDialog
-import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.data.server.OpenIdSession
 import org.dhis2.mobile.login.main.ui.navigation.AppLinkNavigation
 import org.dhis2.mobile.login.main.ui.screen.LoginScreen
@@ -40,9 +38,6 @@ const val FROM_SPLASH = "FROM_SPLASH"
 
 class LoginActivity : ActivityGlobalAbstract() {
     override var handleEdgeToEdge = false
-
-    @Inject
-    lateinit var resourceManager: ResourceManager
 
     @Inject
     lateinit var syncBiometricsConfig: SyncBiometricsConfig
@@ -94,6 +89,10 @@ class LoginActivity : ActivityGlobalAbstract() {
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(SurfaceColor.Primary.toArgb()),
         )
+        val appComponent = (applicationContext as org.dhis2.App).appComponent()
+        val serverComponent = (applicationContext as org.dhis2.App).serverComponent()!!
+
+        appComponent.plus(LoginModule(this, serverComponent)).inject(this)
         super.onCreate(savedInstanceState)
 
         checkMessage()
@@ -109,7 +108,7 @@ class LoginActivity : ActivityGlobalAbstract() {
                     onNavigateToHome = {
                         app().createUserComponent()
                         lifecycleScope.launch(Dispatchers.IO) {
-                            syncBiometricsConfig().collect {
+                            syncBiometricsConfig.invoke().collect {
                                 // Handle the emitted Unit value if necessary
                             }
                         }
