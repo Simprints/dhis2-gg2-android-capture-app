@@ -690,7 +690,7 @@ class TEIDataPresenter(
         val containsNHIS =  teiAttrValues.find { it.trackedEntityAttribute() == nhisNumberAttributeId } != null
 
         return if (containsNHIS){
-            BioStatus("NHIS Credential", successLight)
+            BioStatus("NHIS Verified", successLight)
         } else {
             null
         }
