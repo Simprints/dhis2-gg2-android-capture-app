@@ -89,6 +89,7 @@ fun getVerification(
     val verifications = getVerifications(basicPreferenceProvider)
 
     return verifications.find { it.teiUid == teiUId }
+    //return BiometricsVerification(teiUId, System.currentTimeMillis())
 }
 
 data class BiometricsVerification(val teiUid: String, val date: Long)
