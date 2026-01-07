@@ -7,6 +7,7 @@ const val defaultButtonColor = "#007acc"
 const val successButtonColor = "#FF35835D"
 const val failedButtonColor = "#C57704"
 const val declinedButtonColor = "#a6a5a4"
+const val successLight = "#80BA9E"
 
 val colorStops = arrayOf(
     0.0f to Color(0xFF009cb6),

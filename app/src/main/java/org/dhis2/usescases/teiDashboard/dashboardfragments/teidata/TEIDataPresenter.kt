@@ -18,6 +18,7 @@ import org.dhis2.commons.bindings.canCreateEventInEnrollment
 import org.dhis2.commons.bindings.enrollment
 import org.dhis2.commons.bindings.event
 import org.dhis2.commons.bindings.program
+import org.dhis2.commons.biometrics.successLight
 import org.dhis2.commons.data.EventCreationType
 import org.dhis2.commons.data.EventViewModel
 import org.dhis2.commons.data.EventViewModelType
@@ -50,7 +51,9 @@ import org.dhis2.usescases.biometrics.getAgeInMonthsByAttributes
 import org.dhis2.usescases.biometrics.getOrgUnitAsModuleId
 import org.dhis2.usescases.biometrics.isLastVerificationValid
 import org.dhis2.usescases.biometrics.isUnderAgeThreshold
+import org.dhis2.usescases.biometrics.nhisNumberAttributeId
 import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
+import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.BioStatus
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioModel
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioRegistrationMapper
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioVerificationMapper
@@ -679,6 +682,18 @@ class TEIDataPresenter(
 
     fun getBiometricsModel(): TeiDashboardBioModel? {
         return getBiometricsModelByDashboardModel(dashboardModel)
+    }
+
+    fun getNHISCredentialStatus(): BioStatus? {
+        val teiAttrValues = dashboardModel?.trackedEntityAttributeValues ?: listOf()
+
+        val containsNHIS =  teiAttrValues.find { it.trackedEntityAttribute() == nhisNumberAttributeId } != null
+
+        return if (containsNHIS){
+            BioStatus("NHIS Verified", successLight)
+        } else {
+            null
+        }
     }
 
     fun getBiometricsModelByDashboardModel(dashboardModel: DashboardEnrollmentModel?): TeiDashboardBioModel? {
