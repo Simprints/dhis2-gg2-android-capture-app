@@ -257,7 +257,7 @@ class SearchTEList : FragmentGlobalAbstract() {
                 if (seqSearch == null && !teTypeName.isNullOrBlank() && isLoaded == true) {
 
                     val isSearchByBiometrics =
-                        if (screenState is SearchList) viewModel.isSearchByBiometricsEnabled() else false
+                        if (screenState is SearchList) viewModel. isSearchByBiometricsEnabled(fromRelationship) else false
 
                     val isFilterOpened by viewModel.filtersOpened.observeAsState(false)
                     val createButtonVisibility by viewModel
