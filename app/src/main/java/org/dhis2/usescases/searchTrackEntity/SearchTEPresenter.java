@@ -378,7 +378,10 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     @Override
     public void onSearchTEIModelClick(SearchTeiModel item, SequentialSearch sequentialSearch) {
         String TeiUid = item.getTei().uid();
-        String enrollmentUid = item.getSelectedEnrollment().uid();
+        String enrollmentUid = item.getSelectedEnrollment() != null ?
+                item.getSelectedEnrollment().uid() :
+                null;
+
         boolean isOnline = item.isOnline();
 
         if (sequentialSearch instanceof SequentialSearch.BiometricsSearch) {

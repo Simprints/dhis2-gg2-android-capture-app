@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import org.dhis2.commons.data.EventCreationType
 import org.dhis2.usescases.biometrics.addAttrBiometricsEmojiIfRequired
 import org.dhis2.usescases.biometrics.addAttrNHISNumberEmojiIfRequired
+import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.BioStatus
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioButton
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioModel
 import org.dhis2.usescases.biometrics.ui.teiDashboardBiometrics.TeiDashboardBioStatus
@@ -37,7 +38,8 @@ fun TeiDetailDashboard(
     modifier: Modifier = Modifier,
     isGrouped: Boolean = true,
     teiDashboardBioModel: TeiDashboardBioModel?,
-    isUnderAgeThreshold:Boolean
+    teiDashboardNHISCredentialodel: BioStatus?,
+    isUnderAgeThreshold: Boolean
 ) {
     Column(
         modifier = modifier
@@ -65,14 +67,25 @@ fun TeiDetailDashboard(
         }
 
         card?.let {
-            // Eyeseetea customization
-            if (teiDashboardBioModel?.statusModel != null){
-                TeiDashboardBioStatus(teiDashboardBioModel.statusModel)
+            // EyeSeeTea customization
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(16.dp)
+            ) {
+                if (teiDashboardBioModel?.statusModel != null) {
+                    TeiDashboardBioStatus(teiDashboardBioModel.statusModel)
+                }
+
+                if (teiDashboardNHISCredentialodel != null) {
+                    TeiDashboardBioStatus(teiDashboardNHISCredentialodel)
+                }
             }
 
-            val additionalInfoListWithBiometricsIcons = addAttrBiometricsEmojiIfRequired(card.additionalInfo, isUnderAgeThreshold)
+            val additionalInfoListWithBiometricsIcons =
+                addAttrBiometricsEmojiIfRequired(card.additionalInfo, isUnderAgeThreshold)
 
-            val additionalInfoList = addAttrNHISNumberEmojiIfRequired(additionalInfoListWithBiometricsIcons).toMutableList()
+            val additionalInfoList =
+                addAttrNHISNumberEmojiIfRequired(additionalInfoListWithBiometricsIcons).toMutableList()
 
             CardDetail(
                 title = card.title,
@@ -94,7 +107,7 @@ fun TeiDetailDashboard(
             )
         }
 
-        if (teiDashboardBioModel?.buttonModel != null){
+        if (teiDashboardBioModel?.buttonModel != null) {
             TeiDashboardBioButton(teiDashboardBioModel.buttonModel)
         }
     }
