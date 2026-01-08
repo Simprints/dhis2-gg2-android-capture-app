@@ -13,6 +13,7 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.processors.BehaviorProcessor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import org.dhis2.R
 import org.dhis2.commons.Constants
 import org.dhis2.commons.bindings.canCreateEventInEnrollment
 import org.dhis2.commons.bindings.enrollment
@@ -747,7 +748,7 @@ class TEIDataPresenter(
         val containsNHIS =  teiAttrValues.find { it.trackedEntityAttribute() == nhisNumberAttributeId } != null
 
         return if (containsNHIS){
-            BioStatus("NHIS Credential", successLight)
+            BioStatus(resourceManager.getString(R.string.nhis_verified), successLight)
         } else {
             null
         }

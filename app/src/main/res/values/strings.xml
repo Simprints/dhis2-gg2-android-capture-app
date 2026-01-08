@@ -1044,6 +1044,7 @@
     <string name="biometrics_not_applicable_for_this_age_group_register_a_new_patient">Biometrics not applicable for this age group. Register a new patient</string>
     <string name="biometrics_enroll_without_biometrics">Enrol without biometrics</string>
     <string name="unable_save_biometrics">Unable to save biometrics, it saved without biometrics</string>
+    <string name="nhis_verified">NHIS Verified</string>
 
     <!--endregion-->
 </resources>
