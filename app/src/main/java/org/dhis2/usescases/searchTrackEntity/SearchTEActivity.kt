@@ -266,6 +266,7 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
                     initialProgram,
                     context,
                     initialQuery,
+                    fromRelationship
                 ),
             )
         searchComponent?.inject(this)
@@ -457,7 +458,7 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
     ) {
         when (uiState.selectedItem) {
             NavigationPage.LIST_VIEW -> {
-                viewModel.setListScreen(fromRelationship)
+                viewModel.setListScreen()
                 showList()
                 showSearchAndFilterButtons()
             }

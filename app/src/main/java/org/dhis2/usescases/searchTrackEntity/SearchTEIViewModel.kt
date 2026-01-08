@@ -92,7 +92,8 @@ class SearchTEIViewModel(
     private val resourceManager: ResourceManager,
     private val displayNameProvider: DisplayNameProvider,
     private val filterManager: FilterManager,
-    private val basicPreferenceProvider: BasicPreferenceProvider
+    private val basicPreferenceProvider: BasicPreferenceProvider,
+    private val fromRelationships: Boolean
 ) : ViewModel() {
 
     private var layersVisibility: Map<String, MapLayer> = emptyMap()
@@ -281,7 +282,7 @@ class SearchTEIViewModel(
         _navigationBarUIState.value = _navigationBarUIState.value.copy(selectedItem = page)
     }
 
-    fun setListScreen(fromRelationship: Boolean? = false) {
+    fun setListScreen() {
         _screenState.value.takeIf { it?.screenState == SearchScreenState.MAP }?.let {
             searching = (it as SearchList).isSearching
         }
@@ -310,7 +311,7 @@ class SearchTEIViewModel(
                     minAttributesToSearch = searchRepository.getProgram(initialProgramUid)
                         ?.minAttributesRequiredToSearch() ?: 1,
                     isForced = shouldOpenSearch,
-                    isOpened = shouldOpenSearch || (!isSearchByBiometricsEnabled(fromRelationship ?: false) && isLandscape()),
+                    isOpened = shouldOpenSearch || (!isSearchByBiometricsEnabled() && isLandscape()),
                 ),
                 searchFilters = SearchFilters(
                     hasActiveFilters = hasActiveFilters(),
@@ -607,7 +608,9 @@ class SearchTEIViewModel(
             )
 
             val nextActions =
-                if (previousSearch == null && !queryDataContainsAgeUnderThreadsHold && biometricsConfig.biometricsMode == BiometricsMode.full) {
+                if (previousSearch == null &&
+                    !queryDataContainsAgeUnderThreadsHold
+                    && isSearchByBiometricsEnabled()) {
                     listOf(
                         SequentialSearchAction.SearchWithBiometrics
                     )
@@ -1251,8 +1254,8 @@ class SearchTEIViewModel(
         )
     }
 
-    fun isSearchByBiometricsEnabled(fromRelationship: Boolean): Boolean {
-        return if (!fromRelationship){
+    fun isSearchByBiometricsEnabled(): Boolean {
+        return if (!fromRelationships){
             biometricsConfig.biometricsMode == BiometricsMode.full
         } else {
             teType.uid() == biometricsConfig.enableIdentificationForTET
