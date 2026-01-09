@@ -87,17 +87,20 @@ public class SearchTEModule {
     private final String initialProgram;
     private final Context moduleContext;
     private final Map<String, List<String>> initialQuery;
+    private final boolean fromRelationship;
 
     public SearchTEModule(SearchTEContractsModule.View view,
                           String tEType,
                           String initialProgram,
                           Context context,
-                          Map<String, List<String>> initialQuery) {
+                          Map<String, List<String>> initialQuery,
+                          boolean fromRelationship) {
         this.view = view;
         this.teiType = tEType;
         this.initialProgram = initialProgram;
         this.moduleContext = context;
         this.initialQuery = initialQuery;
+        this.fromRelationship = fromRelationship;
     }
 
     @Provides
@@ -355,7 +358,8 @@ public class SearchTEModule {
                 resourceManager,
                 displayNameProvider,
                 filterManager,
-                basicPreferenceProvider
+                basicPreferenceProvider,
+                fromRelationship
         );
     }
 
