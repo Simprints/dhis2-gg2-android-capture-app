@@ -7,13 +7,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.res.stringResource
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.activityViewModels
@@ -47,6 +52,7 @@ import org.dhis2.usescases.searchTrackEntity.SearchTeiViewModelFactory
 import org.dhis2.usescases.searchTrackEntity.adapters.SearchTeiLiveAdapter
 import org.dhis2.usescases.searchTrackEntity.ui.CreateNewButton
 import org.dhis2.usescases.searchTrackEntity.ui.FullSearchButtonAndWorkingList
+import org.dhis2.usescases.searchTrackEntity.ui.LoadingContent
 import org.dhis2.usescases.searchTrackEntity.ui.mapper.TEICardMapper
 import org.dhis2.utils.isLandscape
 import timber.log.Timber
@@ -81,6 +87,7 @@ class SearchTEList : FragmentGlobalAbstract() {
     }
 
     private lateinit var recycler: RecyclerView
+    private lateinit var centeredLoader: ComposeView
 
     private val liveAdapter by lazy {
         SearchTeiLiveAdapter(
@@ -166,6 +173,8 @@ class SearchTEList : FragmentGlobalAbstract() {
             //EyeSeeTea customization
             configureCreateButton(createButton)
             configureSequentialSearchNextAction(nextActions)
+            configureCenteredLoader(centeredLoader)
+            configureRecyclerVisibility()
         }.root.also {
             observeNewData()
         }
@@ -257,7 +266,7 @@ class SearchTEList : FragmentGlobalAbstract() {
                 if (seqSearch == null && !teTypeName.isNullOrBlank() && isLoaded == true) {
 
                     val isSearchByBiometrics =
-                        if (screenState is SearchList) viewModel. isSearchByBiometricsEnabled() else false
+                        if (screenState is SearchList) viewModel.isSearchByBiometricsEnabled() else false
 
                     val isFilterOpened by viewModel.filtersOpened.observeAsState(false)
                     val createButtonVisibility by viewModel
@@ -369,12 +378,42 @@ class SearchTEList : FragmentGlobalAbstract() {
         }
 
         liveAdapter.addLoadStateListener { state ->
-            if (state.append == LoadState.Loading) {
+            /* EyeSeTea customization - Show loader when loading new results
+                if (state.append == LoadState.Loading) {
                 displayResult(
                     listOf(SearchResult(SearchResult.SearchResultType.LOADING)),
                 )
             } else {
                 displayResult(null)
+             */
+            val isBiometricSearch = viewModel.sequentialSearch.value is SequentialSearch.BiometricsSearch
+            val biometricAppLaunched = viewModel.biometricAppLaunching.value == true
+            when {
+                state.refresh == LoadState.Loading -> {
+                    displayResult(
+                        listOf(SearchResult(SearchResult.SearchResultType.LOADING)),
+                    )
+                    // EyeSeeTea customization - Keep RecyclerView hidden during biometric search loading
+                    // Hide if it's biometric search OR if biometric app was launched (to prevent showing old data)
+                    if (isBiometricSearch || biometricAppLaunched) {
+                        recycler.visibility = View.GONE
+                    }
+                }
+
+                state.append == LoadState.Loading -> {
+                    displayResult(
+                        listOf(SearchResult(SearchResult.SearchResultType.LOADING)),
+                    )
+                }
+
+                else -> {
+                    displayResult(null)
+                    // EyeSeeTea customization - Show RecyclerView when loading finishes (only if not biometric search)
+                    if (!isBiometricSearch) {
+                        recycler.visibility = View.VISIBLE
+                        centeredLoader.visibility = View.GONE
+                    }
+                }
             }
         }
 
@@ -542,5 +581,76 @@ class SearchTEList : FragmentGlobalAbstract() {
         currentLastClickedTeiUid = item.tei.uid()
 
         viewModel.onSearchTeiModelClick(item)
+    }
+
+    @ExperimentalAnimationApi
+    private fun configureCenteredLoader(composeView: ComposeView) {
+        composeView.apply {
+            setViewCompositionStrategy(
+                ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
+            )
+            setContent {
+                // EyeSeeTea customization - Show centered loader (visibility is controlled by configureRecyclerVisibility)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    LoadingContent(
+                        loadingDescription = stringResource(org.dhis2.R.string.search_loading_more)
+                    )
+                }
+            }
+        }.also {
+            centeredLoader = it
+        }
+    }
+
+    private fun configureRecyclerVisibility() {
+        // EyeSeeTea customization - Hide RecyclerView when biometric app is about to be launched
+        viewModel.biometricAppLaunching.observe(viewLifecycleOwner) { isLaunching ->
+            if (isLaunching) {
+                recycler.visibility = View.GONE
+                centeredLoader.visibility = View.VISIBLE
+            }
+        }
+        
+        // EyeSeeTea customization - Also observe sequentialSearch to hide RecyclerView when biometric search starts
+        viewModel.sequentialSearch.observe(viewLifecycleOwner) { sequentialSearch ->
+            val isBiometricSearch = sequentialSearch is SequentialSearch.BiometricsSearch
+            val biometricAppLaunching = viewModel.biometricAppLaunching.value == true
+            
+            // Hide RecyclerView when biometric search is detected (when returning from app)
+            if (isBiometricSearch || biometricAppLaunching) {
+                recycler.visibility = View.GONE
+                centeredLoader.visibility = View.VISIBLE
+            }
+        }
+
+        // EyeSeeTea customization - Show RecyclerView when biometric search finishes loading
+        // Observe LoadState separately to show RecyclerView when loading completes
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                liveAdapter.loadStateFlow.collect { loadState ->
+                    val isBiometricSearch = viewModel.sequentialSearch.value is SequentialSearch.BiometricsSearch
+                    val biometricAppLaunching = viewModel.biometricAppLaunching.value == true
+                    
+                    // EyeSeeTea customization - Show RecyclerView when biometric search finishes loading
+                    if (isBiometricSearch && loadState.refresh !is LoadState.Loading) {
+                        // Search completed, show RecyclerView and reset flag
+                        recycler.visibility = View.VISIBLE
+                        centeredLoader.visibility = View.GONE
+                        if (biometricAppLaunching) {
+                            viewModel.resetBiometricAppLaunching()
+                        }
+                    } else if (biometricAppLaunching || (isBiometricSearch && loadState.refresh is LoadState.Loading)) {
+                        // Keep RecyclerView hidden during biometric flow
+                        recycler.visibility = View.GONE
+                        centeredLoader.visibility = View.VISIBLE
+                    }
+                }
+            }
+        }
     }
 }

@@ -56,5 +56,12 @@
             app:layout_anchor="@id/scrollView"
             app:layout_anchorGravity="bottom|center_horizontal" />
 
+        <!-- EyeSeeTea customization - Centered loader shown when RecyclerView is hidden during biometric search -->
+        <androidx.compose.ui.platform.ComposeView
+            android:id="@+id/centeredLoader"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" />
+
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 </layout>
