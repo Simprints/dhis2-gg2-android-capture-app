@@ -58,7 +58,7 @@
 
         <!-- EyeSeeTea customization - Centered loader shown when RecyclerView is hidden during biometric search -->
         <androidx.compose.ui.platform.ComposeView
-            android:id="@+id/centeredLoader"
+            android:id="@+id/biometricsLoader"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 

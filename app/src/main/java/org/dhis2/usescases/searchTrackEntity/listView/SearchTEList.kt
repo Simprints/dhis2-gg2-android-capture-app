@@ -175,7 +175,7 @@ class SearchTEList : FragmentGlobalAbstract() {
             //EyeSeeTea customization
             configureCreateButton(createButton)
             configureSequentialSearchNextAction(nextActions)
-            configureCenteredLoader(centeredLoader)
+            configureBiometricsLoader(biometricsLoader)
             configureRecyclerVisibility()
         }.root.also {
             observeNewData()
@@ -388,7 +388,8 @@ class SearchTEList : FragmentGlobalAbstract() {
             } else {
                 displayResult(null)
              */
-            val isBiometricSearch = viewModel.sequentialSearch.value is SequentialSearch.BiometricsSearch
+            val isBiometricSearch =
+                viewModel.sequentialSearch.value is SequentialSearch.BiometricsSearch
             val biometricAppLaunched = viewModel.biometricAppLaunching.value == true
             when {
                 state.refresh == LoadState.Loading -> {
@@ -584,8 +585,7 @@ class SearchTEList : FragmentGlobalAbstract() {
         viewModel.onSearchTeiModelClick(item)
     }
 
-    @ExperimentalAnimationApi
-    private fun configureCenteredLoader(composeView: ComposeView) {
+    private fun configureBiometricsLoader(composeView: ComposeView) {
         composeView.apply {
             setViewCompositionStrategy(
                 ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
@@ -595,8 +595,7 @@ class SearchTEList : FragmentGlobalAbstract() {
                 val biometricAppLaunching by viewModel.biometricAppLaunching.observeAsState(false)
                 val isBiometricSearch = sequentialSearch is SequentialSearch.BiometricsSearch
                 var isLoading by remember { mutableStateOf(false) }
-                
-                // EyeSeeTea customization - Observe LoadState to know when actually loading
+
                 LaunchedEffect(isBiometricSearch) {
                     if (isBiometricSearch) {
                         liveAdapter.loadStateFlow.collect { loadState ->
@@ -606,9 +605,7 @@ class SearchTEList : FragmentGlobalAbstract() {
                         isLoading = false
                     }
                 }
-                
-                // EyeSeeTea customization - Show centered loader when RecyclerView is hidden during biometric flow
-                // Show loader when: biometric app was launched OR (it's biometric search AND loading)
+
                 if (biometricAppLaunching || (isBiometricSearch && isLoading)) {
                     Box(
                         modifier = Modifier
@@ -626,42 +623,37 @@ class SearchTEList : FragmentGlobalAbstract() {
     }
 
     private fun configureRecyclerVisibility() {
-        // EyeSeeTea customization - Hide RecyclerView when biometric app is about to be launched
         viewModel.biometricAppLaunching.observe(viewLifecycleOwner) { isLaunching ->
             if (isLaunching) {
                 recycler.visibility = View.GONE
             }
         }
-        
-        // EyeSeeTea customization - Also observe sequentialSearch to hide RecyclerView when biometric search starts
+
         viewModel.sequentialSearch.observe(viewLifecycleOwner) { sequentialSearch ->
             val isBiometricSearch = sequentialSearch is SequentialSearch.BiometricsSearch
-            val biometricAppLaunching = viewModel.biometricAppLaunching.value == true
-            
-            // Hide RecyclerView when biometric search is detected (when returning from app)
-            if (isBiometricSearch || biometricAppLaunching) {
+
+            if (isBiometricSearch) {
                 recycler.visibility = View.GONE
             }
         }
 
-        // EyeSeeTea customization - Show RecyclerView when biometric search finishes loading
-        // Observe LoadState separately to show RecyclerView when loading completes
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 liveAdapter.loadStateFlow.collect { loadState ->
-                    val isBiometricSearch = viewModel.sequentialSearch.value is SequentialSearch.BiometricsSearch
+                    val isBiometricSearch =
+                        viewModel.sequentialSearch.value is SequentialSearch.BiometricsSearch
                     val biometricAppLaunching = viewModel.biometricAppLaunching.value == true
-                    
-                    // EyeSeeTea customization - Show RecyclerView when biometric search finishes loading
-                    if (isBiometricSearch && loadState.refresh !is LoadState.Loading) {
-                        // Search completed, show RecyclerView and reset flag
-                        recycler.visibility = View.VISIBLE
-                        if (biometricAppLaunching) {
+
+                    val isLoading = loadState.refresh is LoadState.Loading
+
+                    if (isBiometricSearch) {
+                        recycler.visibility = if (biometricAppLaunching || isLoading)
+                            View.GONE
+                        else View.VISIBLE
+
+                        if (biometricAppLaunching && !isLoading) {
                             viewModel.resetBiometricAppLaunching()
                         }
-                    } else if (biometricAppLaunching || (isBiometricSearch && loadState.refresh is LoadState.Loading)) {
-                        // Keep RecyclerView hidden during biometric flow
-                        recycler.visibility = View.GONE
                     }
                 }
             }
