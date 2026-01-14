@@ -153,6 +153,8 @@ class SearchTEIViewModel(
 
     var searchParametersUiState by mutableStateOf(SearchParametersUiState())
 
+    var uiState by mutableStateOf(SearchParametersUiState())
+
     var mapManager: MapManager? = null
 
     private var fetchJob: Job? = null
@@ -185,6 +187,10 @@ class SearchTEIViewModel(
 
     private val _isDataLoaded = MutableLiveData<Boolean?>(false)
     val isDataLoaded: MutableLiveData<Boolean?> = _isDataLoaded
+
+    // EyeSeeTea customization - Notify when biometric app is about to be launched to hide RecyclerView
+    private val _biometricAppLaunching = MutableLiveData<Boolean>(false)
+    val biometricAppLaunching: LiveData<Boolean> = _biometricAppLaunching
 
     init {
         viewModelScope.launch(dispatchers.io()) {
@@ -1390,5 +1396,14 @@ class SearchTEIViewModel(
             }
         }
     }
-}
 
+    // EyeSeeTea customization - Method to notify that biometric app is about to be launched
+    fun notifyBiometricAppLaunching() {
+        _biometricAppLaunching.postValue(true)
+    }
+
+    // EyeSeeTea customization - Reset biometric app launching flag when search completes
+    fun resetBiometricAppLaunching() {
+        _biometricAppLaunching.postValue(false)
+    }
+}

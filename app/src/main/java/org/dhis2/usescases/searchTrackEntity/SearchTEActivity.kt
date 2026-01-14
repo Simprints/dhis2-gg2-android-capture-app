@@ -832,6 +832,8 @@ class SearchTEActivity :
         }
 
     override fun launchBiometricsIdentify(moduleId: String?, userOrgUnits: List<String>) {
+        // EyeSeeTea customization - Hide RecyclerView before launching biometric app
+        viewModel.notifyBiometricAppLaunching()
         BiometricsClientFactory.get(this).identify(this, moduleId, userOrgUnits)
     }
 
