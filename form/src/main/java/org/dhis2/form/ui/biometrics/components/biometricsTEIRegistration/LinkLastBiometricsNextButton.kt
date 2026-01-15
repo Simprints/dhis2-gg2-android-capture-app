@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Text
@@ -35,6 +36,7 @@ internal fun LinkLastBiometricsNextButton(
             containerColor = backgroundColor
         ), contentPadding = PaddingValues(),
         onClick = onClick,
+        shape = RoundedCornerShape(4.dp),
         enabled = enabled
     ) {
         val boxModifier = when (background) {
