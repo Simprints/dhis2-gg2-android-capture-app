@@ -24,7 +24,8 @@ class SearchTeiViewModelFactory(
     private val resourceManager: ResourceManager,
     private val displayNameProvider: DisplayNameProvider,
     private val filterManager: FilterManager,
-    private val basicPreferenceProvider: BasicPreferenceProvider
+    private val basicPreferenceProvider: BasicPreferenceProvider,
+    private val fromRelationships: Boolean
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         return SearchTEIViewModel(
@@ -41,7 +42,8 @@ class SearchTeiViewModelFactory(
             resourceManager,
             displayNameProvider,
             filterManager,
-            basicPreferenceProvider
+            basicPreferenceProvider,
+            fromRelationships
         ) as T
     }
 }
