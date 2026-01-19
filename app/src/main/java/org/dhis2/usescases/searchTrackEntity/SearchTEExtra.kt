@@ -2,7 +2,9 @@ package org.dhis2.usescases.searchTrackEntity
 
 import android.os.Bundle
 import org.dhis2.commons.Constants
+import org.json.JSONArray
 import org.json.JSONObject
+import timber.log.Timber
 
 enum class SearchTEExtra(
     val key: String,
@@ -60,4 +62,24 @@ private fun parseMapFromJson(jsonString: String): Map<String, List<String>> =
         map
     } catch (e: Exception) {
         emptyMap()
+    }
+
+fun mapToJsonString(queryData: Map<String, List<String>?>): String? =
+    try {
+        val jsonObject = JSONObject()
+        queryData.forEach { (key, values) ->
+            if (values != null && values.isNotEmpty()) {
+                val jsonArray = JSONArray()
+                values.forEach { value ->
+                    jsonArray.put(value)
+                }
+                jsonObject.put(key, jsonArray)
+            }
+        }
+        val jsonString = jsonObject.toString()
+        Timber.d("SearchTEExtra: Guardando queryData como JSON: $jsonString")
+        jsonString
+    } catch (e: Exception) {
+        Timber.e(e, "SearchTEExtra: Error al convertir Map a JSON")
+        null
     }

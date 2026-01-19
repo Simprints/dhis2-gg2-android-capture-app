@@ -342,7 +342,10 @@ class SearchTEActivity :
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        outState.putSerializable(Constants.QUERY_DATA, viewModel.queryData as Serializable)
+        val jsonString = mapToJsonString(viewModel.queryData)
+        if (jsonString != null) {
+            outState.putString(Constants.QUERY_DATA, jsonString)
+        }
         outState.putString(CURRENT_SCREEN, currentContent?.name)
     }
 
