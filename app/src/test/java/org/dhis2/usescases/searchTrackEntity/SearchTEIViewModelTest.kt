@@ -111,6 +111,7 @@ class SearchTEIViewModelTest {
             displayNameProvider = displayNameProvider,
             filterManager = filterManager,
             basicPreferenceProvider = basicPreferenceProvider,
+            false
         )
         testingDispatcher.scheduler.advanceUntilIdle()
     }
@@ -749,7 +750,8 @@ class SearchTEIViewModelTest {
             displayNameProvider = displayNameProvider,
             filterManager = filterManager,
             basicPreferenceProvider = basicPreferenceProvider,
-            presenter = presenter
+            presenter = presenter,
+            fromRelationships = false
         )
         testingDispatcher.scheduler.advanceUntilIdle()
 
@@ -798,7 +800,8 @@ class SearchTEIViewModelTest {
             displayNameProvider = displayNameProvider,
             filterManager = filterManager,
             basicPreferenceProvider = basicPreferenceProvider,
-            presenter = presenter
+            presenter = presenter,
+            fromRelationships = false
         )
         testingDispatcher.scheduler.advanceUntilIdle()
 
