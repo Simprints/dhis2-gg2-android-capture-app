@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.dhis2.mobile.commons.domain.invoke
 import org.dhis2.mobile.commons.extensions.launchUseCase
 import org.dhis2.mobile.commons.extensions.withMinimumDuration
 import org.dhis2.mobile.commons.network.NetworkStatusProvider
@@ -284,7 +285,7 @@ class CredentialsViewModel(
                             resendEnabled = true
                         )
                     }
-                    
+
                     // EyeSeeTea customization - Determine if message is error or info based on 2FA type
                     // EMAIL_TWO_FACTOR_CODE_SENT and SMS_TWO_FACTOR_CODE_SENT are info messages (blue)
                     // INCORRECT_TWO_FACTOR_CODE_* are error messages (red)
@@ -295,7 +296,7 @@ class CredentialsViewModel(
                         it.twoFactorState == null && result.type == TwoFactorType.TOTP -> false // First time TOTP, don't show error
                         else -> true // TOTP code incorrect or other errors
                     }
-                    
+
                     it.copy(
                         twoFactorState = newTwoFactorState,
                         errorMessage = if (shouldShowError && result.message != null) result.message else null,

@@ -214,7 +214,7 @@ class TEIDataPresenter(
                     { model ->
                         if (model is DashboardEnrollmentModel) {
                             dashboardModel = model
-                            programUid = model.currentProgram().uid()
+                            programUid = model.currentProgram()?.uid()
                             orgUnitUid = model.orgUnits[0].uid()
 
                             refreshVerificationStatus()
@@ -509,7 +509,9 @@ class TEIDataPresenter(
             }
         } else {
             when (eventCreationType) {
-                EventCreationType.REFERAL -> {
+                EventCreationType.REFERAL,
+                EventCreationType.ADDNEW,
+                -> {
                     createEventInEnrollment(eventCreationType)
                 }
 

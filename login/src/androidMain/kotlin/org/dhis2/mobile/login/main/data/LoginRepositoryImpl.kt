@@ -256,10 +256,6 @@ class LoginRepositoryImpl(
                     currentAccount?.serverUrl(),
                     systemInfo?.version(),
                 )
-                crashReportController.trackUser(
-                    currentAccount?.username(),
-                    currentAccount?.serverUrl(),
-                )
             }
         }
     }

@@ -57,7 +57,6 @@ import org.dhis2.form.ui.customintent.CustomIntentInput
 import org.dhis2.form.ui.customintent.CustomIntentResult
 import org.dhis2.form.ui.dialog.QRDetailBottomDialog
 import org.dhis2.form.ui.event.RecyclerViewUiEvents
-import org.dhis2.form.ui.idling.FormCountingIdlingResource
 import org.dhis2.form.ui.intent.FormIntent
 import org.dhis2.form.ui.mapper.FormSectionMapper
 import org.dhis2.maps.views.MapSelectorActivity
@@ -265,8 +264,6 @@ class FormView : Fragment() {
         savedInstanceState: Bundle?,
     ) {
         super.onViewCreated(view, savedInstanceState)
-        FormCountingIdlingResource.increment()
-
         setObservers()
     }
 
@@ -280,7 +277,6 @@ class FormView : Fragment() {
         viewModel.items.observe(
             viewLifecycleOwner,
         ) { items ->
-            FormCountingIdlingResource.decrement()
             render(items)
         }
 
@@ -482,11 +478,9 @@ class FormView : Fragment() {
         viewModel.displayLoopWarningIfNeeded()
         viewModel.onItemsRendered()
         onFieldItemsRendered?.invoke(items.isEmpty())
-        FormCountingIdlingResource.decrement()
     }
 
     private fun intentHandler(intent: FormIntent) {
-        FormCountingIdlingResource.increment()
         viewModel.submitIntent(intent)
     }
 
