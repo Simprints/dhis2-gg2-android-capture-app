@@ -1376,6 +1376,8 @@ class SearchTEIViewModel(
     }
 
     fun verifyAutoNavigateToTEI(dhisSearchResults: List<SearchTeiModel>) {
+        if (fromRelationships) return
+
         val sequentialSearch = _sequentialSearch.value
 
         val simprintsItems = if (sequentialSearch is SequentialSearch.BiometricsSearch) {
