@@ -30,6 +30,7 @@ import com.google.android.material.snackbar.BaseTransientBottomBar
 import com.google.android.material.snackbar.Snackbar
 import dhis2.org.analytics.charts.ui.GroupAnalyticsFragment.Companion.forProgram
 import io.reactivex.functions.Consumer
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.dhis2.App
 import org.dhis2.R
@@ -949,6 +950,11 @@ class SearchTEActivity :
                     ).show()
 
                     simulateNotFoundBiometricsSearch(null)
+                }
+
+                lifecycleScope.launch {
+                    delay(200)
+                    viewModel.resetBiometricAppLaunching()
                 }
             }
 

@@ -34,6 +34,7 @@ import androidx.paging.LoadState
 import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.dhis2.bindings.dp
@@ -235,10 +236,12 @@ class SearchTEList : FragmentGlobalAbstract() {
                             super.onScrolled(recyclerView, dx, dy)
                             if (dy > 0) {
                                 viewModel.isScrollingDown.value = true
-                                currentPosition = layoutManager?.findFirstCompletelyVisibleItemPosition()
+                                currentPosition =
+                                    layoutManager?.findFirstCompletelyVisibleItemPosition()
                             } else if (dy < 0) {
                                 viewModel.isScrollingDown.value = false
-                                currentPosition = layoutManager?.findFirstCompletelyVisibleItemPosition()
+                                currentPosition =
+                                    layoutManager?.findFirstCompletelyVisibleItemPosition()
                             }
                         }
                     },
@@ -409,19 +412,11 @@ class SearchTEList : FragmentGlobalAbstract() {
             } else {
                 displayResult(null)
              */
-            val isBiometricSearch =
-                viewModel.sequentialSearch.value is SequentialSearch.BiometricsSearch
-            val biometricAppLaunched = viewModel.biometricAppLaunching.value == true
             when {
                 state.refresh == LoadState.Loading -> {
                     displayResult(
                         listOf(SearchResult(SearchResult.SearchResultType.LOADING)),
                     )
-                    // EyeSeeTea customization - Keep RecyclerView hidden during biometric search loading
-                    // Hide if it's biometric search OR if biometric app was launched (to prevent showing old data)
-                    if (isBiometricSearch || biometricAppLaunched) {
-                        recycler.visibility = View.GONE
-                    }
                 }
 
                 state.append == LoadState.Loading -> {
@@ -432,10 +427,6 @@ class SearchTEList : FragmentGlobalAbstract() {
 
                 else -> {
                     displayResult(null)
-                    // EyeSeeTea customization - Show RecyclerView when loading finishes (only if not biometric search)
-                    if (!isBiometricSearch) {
-                        recycler.visibility = View.VISIBLE
-                    }
                 }
             }
         }
@@ -661,6 +652,11 @@ class SearchTEList : FragmentGlobalAbstract() {
 
             if (isBiometricSearch) {
                 recycler.visibility = View.GONE
+            } else {
+                lifecycleScope.launch {
+                    delay(200)
+                    recycler.visibility = View.VISIBLE
+                }
             }
         }
 
@@ -674,12 +670,10 @@ class SearchTEList : FragmentGlobalAbstract() {
                     val isLoading = loadState.refresh is LoadState.Loading
 
                     if (isBiometricSearch) {
-                        recycler.visibility = if (biometricAppLaunching || isLoading)
-                            View.GONE
-                        else View.VISIBLE
-
-                        if (biometricAppLaunching && !isLoading) {
-                            viewModel.resetBiometricAppLaunching()
+                        if (biometricAppLaunching || isLoading) {
+                            recycler.visibility = View.GONE
+                        } else {
+                            recycler.visibility = View.VISIBLE
                         }
                     }
                 }
