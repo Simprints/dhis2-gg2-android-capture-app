@@ -13,8 +13,6 @@ import com.simprints.libsimprints.Metadata
 import com.simprints.libsimprints.RefusalForm
 import com.simprints.libsimprints.Registration
 import com.simprints.libsimprints.SimHelper
-import com.simprints.libsimprints.Tier
-import com.simprints.libsimprints.Verification
 import org.dhis2.R
 import org.dhis2.commons.biometrics.BIOMETRICS_CONFIRM_IDENTITY_REQUEST
 import org.dhis2.commons.biometrics.BIOMETRICS_ENROLL_LAST_REQUEST
@@ -29,8 +27,10 @@ import org.dhis2.data.biometrics.biometricsClient.models.SimprintsConfirmIdentit
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsRegisteredItem
 import org.dhis2.data.biometrics.biometricsClient.models.VerifyResult
+import org.dhis2.data.biometrics.biometricsClient.models.sid.ConfidenceBandSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.IdentificationSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.ScannedCredentialSID
+import org.dhis2.data.biometrics.biometricsClient.models.sid.VerificationSID
 import timber.log.Timber
 
 // TODO: This constants should be in libsimprints
@@ -517,12 +517,22 @@ class BiometricsClient(
     }
 
     private fun getVerificationJudgementByDhis2(data: Intent): VerifyResult {
-        val verification: Verification? =
-            data.getParcelableExtra(Constants.SIMPRINTS_VERIFICATION)
+        val verificationJson = data.getStringExtra(Constants.SIMPRINTS_VERIFICATION)
+        val verification: VerificationSID? = verificationJson?.let {
+            Gson().fromJson(it, VerificationSID::class.java)
+        }
+        val confidenceBand = verification?.let {
+            runCatching {
+                ConfidenceBandSID.valueOf(verification.confidenceBand)
+            }.getOrElse {
+                Timber.e("Verify returns data with unsupported confidence band: ${verification.confidenceBand}")
+                null
+            }
+        }
 
-        return if (verification != null) {
-            when (verification.tier) {
-                Tier.TIER_1, Tier.TIER_2, Tier.TIER_3, Tier.TIER_4 -> {
+        return if (confidenceBand != null) {
+            when (confidenceBand) {
+                ConfidenceBandSID.HIGH, ConfidenceBandSID.MEDIUM, ConfidenceBandSID.LOW -> {
                     if (verification.confidence >= confidenceScoreFilter) {
                         VerifyResult.Match
                     } else {
@@ -531,7 +541,7 @@ class BiometricsClient(
                     }
                 }
 
-                Tier.TIER_5 -> VerifyResult.NoMatch
+                ConfidenceBandSID.NONE -> VerifyResult.NoMatch
             }
         } else {
             VerifyResult.Failure
