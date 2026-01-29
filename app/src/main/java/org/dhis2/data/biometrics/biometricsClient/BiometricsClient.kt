@@ -36,6 +36,19 @@ import timber.log.Timber
 // TODO: This constants should be in libsimprints
 private const val SIMPRINTS_HAS_CREDENTIALS = "hasCredential"
 private const val SIMPRINTS_SCANNED_CREDENTIAL = "scannedCredential"
+/*
+When SIMPRINTS_HAS_CREDENTIALS is false,
+Simprints ID expects a "versionCode" intent extra in order to return data encoded as JSON:
+see https://github.com/Simprints/Android-Simprints-ID/blob/v2025.4.0/feature/client-api/src/main/java/com/simprints/feature/clientapi/mappers/response/LibSimprintsResponseMapper.kt#L62
+LibSimprints include this as a constant since v2025.1.1:
+see https://github.com/Simprints/LibSimprints/blob/v2025.1.1-SNAPSHOT/src/main/java/com/simprints/libsimprints/Constants.kt#L38
+and also https://github.com/Simprints/LibSimprints/blob/v2025.2.1/src/main/java/com/simprints/libsimprints/contracts/VersionsList.kt#L15
+However, LibSimprints v2025.1.1 minSdk is higher than DHIS2 3.2.1.1-simprints-fork-8 has.
+These key and value are backported from the newer (unsupported) LibSimprints versions
+to enable JSON formatting in data returned by Simprints ID.
+ */
+private const val SIMPRINTS_VERSION_CODE_KEY = "versionCode"
+private const val SIMPRINTS_VERSION_CODE_VALUE_INITIAL_REWORK = 20250102
 
 class BiometricsClient(
     projectId: String,
@@ -531,7 +544,7 @@ class BiometricsClient(
         requestCode: Int
     ) {
         try {
-            activity.startActivityForResult(intent, requestCode)
+            activity.startActivityForResult(intent.addJsonSupportToSimprintsResponse(), requestCode)
         } catch (ex: ActivityNotFoundException) {
             Toast.makeText(activity, R.string.biometrics_download_app, Toast.LENGTH_SHORT).show()
         }
@@ -543,7 +556,7 @@ class BiometricsClient(
         requestCode: Int
     ) {
         try {
-            fragment.startActivityForResult(intent, requestCode)
+            fragment.startActivityForResult(intent.addJsonSupportToSimprintsResponse(), requestCode)
         } catch (ex: ActivityNotFoundException) {
             fragment.context?.let {
                 Toast.makeText(
@@ -554,6 +567,9 @@ class BiometricsClient(
             }
         }
     }
+
+    private fun Intent.addJsonSupportToSimprintsResponse(): Intent =
+        putExtra(SIMPRINTS_VERSION_CODE_KEY, SIMPRINTS_VERSION_CODE_VALUE_INITIAL_REWORK)
 
     private fun createMetadata(
         trackedEntityInstanceUId: String?,
