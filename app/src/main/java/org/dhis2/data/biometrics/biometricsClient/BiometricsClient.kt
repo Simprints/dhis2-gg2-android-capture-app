@@ -3,15 +3,11 @@ package org.dhis2.data.biometrics.biometricsClient
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Intent
-import android.os.Build
-import android.os.Parcelable
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.google.gson.Gson
 import com.simprints.libsimprints.Constants
 import com.simprints.libsimprints.Metadata
-import com.simprints.libsimprints.RefusalForm
-import com.simprints.libsimprints.Registration
 import com.simprints.libsimprints.SimHelper
 import org.dhis2.R
 import org.dhis2.commons.biometrics.BIOMETRICS_CONFIRM_IDENTITY_REQUEST
@@ -29,6 +25,8 @@ import org.dhis2.data.biometrics.biometricsClient.models.SimprintsRegisteredItem
 import org.dhis2.data.biometrics.biometricsClient.models.VerifyResult
 import org.dhis2.data.biometrics.biometricsClient.models.sid.ConfidenceBandSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.IdentificationSID
+import org.dhis2.data.biometrics.biometricsClient.models.sid.RefusalFormSID
+import org.dhis2.data.biometrics.biometricsClient.models.sid.RegistrationSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.ScannedCredentialSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.VerificationSID
 import timber.log.Timber
@@ -49,6 +47,7 @@ to enable JSON formatting in data returned by Simprints ID.
  */
 private const val SIMPRINTS_VERSION_CODE_KEY = "versionCode"
 private const val SIMPRINTS_VERSION_CODE_VALUE_INITIAL_REWORK = 20250102
+private const val SIMPRINTS_ENROLMENT_KEY = "enrolment"
 
 class BiometricsClient(
     projectId: String,
@@ -188,11 +187,10 @@ class BiometricsClient(
         val biometricsCompleted = checkBiometricsCompleted(data)
 
         val handleRegister = {
-            val registration: Registration? =
-                data.extractParcelableExtra(
-                    Constants.SIMPRINTS_REGISTRATION,
-                    Registration::class.java
-                )
+            val registrationJson = data.getStringExtra(SIMPRINTS_ENROLMENT_KEY)
+            val registration: RegistrationSID? = registrationJson?.let {
+                Gson().fromJson(it, RegistrationSID::class.java)
+            }
 
             val hasCredential: Boolean? = data.getBooleanExtra(SIMPRINTS_HAS_CREDENTIALS, false)
 
@@ -255,7 +253,7 @@ class BiometricsClient(
                     handlePossibleDuplicates()
                 }
 
-                data.hasExtra(Constants.SIMPRINTS_REGISTRATION) -> {
+                data.hasExtra(SIMPRINTS_ENROLMENT_KEY) -> {
                     handleRegister()
                 }
 
@@ -286,8 +284,10 @@ class BiometricsClient(
                 Gson().fromJson(it, Array<IdentificationSID>::class.java)?.toList()
             }
 
-            val refusalForm: RefusalForm? =
-                data.getParcelableExtra(Constants.SIMPRINTS_REFUSAL_FORM)
+            val refusalFormJson = data.getStringExtra(Constants.SIMPRINTS_REFUSAL_FORM)
+            val refusalForm: RefusalFormSID? = refusalFormJson?.let {
+                Gson().fromJson(it, RefusalFormSID::class.java)
+            }
 
             val sessionId: String = data.getStringExtra(Constants.SIMPRINTS_SESSION_ID) ?: ""
 
@@ -642,11 +642,3 @@ class BiometricsClient(
         const val SIMPRINTS_FORK_VERSION = "forkVersion"
     }
 }
-
-fun <T : Parcelable> Intent.extractParcelableExtra(key: String, clazz: Class<T>): T? =
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        getParcelableExtra(key, clazz)
-    } else {
-        @Suppress("DEPRECATION")
-        getParcelableExtra(key) as? T
-    }
