@@ -894,7 +894,7 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
 
                     presenter.searchOnBiometrics(
                         completedResult.items,
-                        completedResult.sessionId, false
+                        completedResult.sessionId, false, completedResult.scannedCredential
                     )
                 } else if (result is IdentifyResult.BiometricsDeclined) {
                     Toast.makeText(
@@ -965,7 +965,7 @@ class SearchTEActivity : ActivityGlobalAbstract(), SearchTEContractsModule.View 
     private fun simulateNotFoundBiometricsSearch(sessionId: String?) {
         presenter.searchOnBiometrics(
             listOf(SimprintsIdentifiedItem(BIOMETRICS_USER_NOT_FOUND, 0f, false, false)),
-            sessionId, false
+            sessionId, false, null
         )
     }
 
