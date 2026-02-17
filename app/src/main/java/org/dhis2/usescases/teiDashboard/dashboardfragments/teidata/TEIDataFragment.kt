@@ -358,8 +358,7 @@ class TEIDataFragment :
                             }
                         } ?: emptyList(),
                     teiDashboardBioModel = presenter.getBiometricsModel(),
-                    teiDashboardNHISCredentialodel = presenter.getNHISCredentialStatus(),
-                    isUnderAgeThreshold = isUnderAgeThreshold,
+                    isUnderAgeThreshold = isUnderAgeThreshold
                 )
             }
         }
