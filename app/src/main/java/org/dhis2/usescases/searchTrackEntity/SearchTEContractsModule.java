@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 import org.dhis2.commons.filters.FilterItem;
 import org.dhis2.commons.filters.FilterManager;
 import org.dhis2.commons.filters.Filters;
+import org.dhis2.data.biometrics.biometricsClient.models.ScannedCredential;
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsConfirmIdentityItem;
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem;
 import org.dhis2.maps.model.StageStyle;
@@ -138,7 +139,7 @@ public class SearchTEContractsModule {
 
         void trackSearchMapVisualization();
 
-        void searchOnBiometrics(List <SimprintsIdentifiedItem> simprintsIdentifiedItems, String sessionId, Boolean ageNotSupported);
+        void searchOnBiometrics(List <SimprintsIdentifiedItem> simprintsIdentifiedItems, String sessionId, Boolean ageNotSupported, ScannedCredential scannedCredential);
 
         boolean getBiometricsSearchStatus();
 

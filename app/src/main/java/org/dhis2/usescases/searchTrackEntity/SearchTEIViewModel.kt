@@ -204,7 +204,7 @@ class SearchTEIViewModel(
             )
         }
 
-        presenter.setBiometricListener { simprintsItems, biometricAttributeUid, items, sessionId, ageNotSupported ->
+        presenter.setBiometricListener { simprintsItems, biometricAttributeUid, items, sessionId, ageNotSupported, scannedCredential ->
             val filterValues = items.map { it.guid }
 
             val previousSearch = when (sequentialSearch.value) {
@@ -226,7 +226,8 @@ class SearchTEIViewModel(
                     biometricUids = filterValues,
                     previousSearch = previousSearch,
                     nextActions = nextActions,
-                    simprintsItems = simprintsItems
+                    simprintsItems = simprintsItems,
+                    scannedCredential = scannedCredential
                 )
             )
 
