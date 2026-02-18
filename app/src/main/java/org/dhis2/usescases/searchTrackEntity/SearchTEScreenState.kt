@@ -17,10 +17,7 @@ data class SearchList(
     val searchFilters: SearchFilters,
     val biometricsMode: BiometricsMode
 ) : SearchTEScreenState(listType, previousSate) {
-
-    fun displayResetFiltersButton(): Boolean {
-        return searchFilters.isOpened and searchFilters.hasActiveFilters
-    }
+    fun displayResetFiltersButton(): Boolean = searchFilters.isOpened and searchFilters.hasActiveFilters
 }
 
 data class SearchForm(

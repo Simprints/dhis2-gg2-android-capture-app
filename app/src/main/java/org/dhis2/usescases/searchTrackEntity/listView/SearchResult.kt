@@ -20,17 +20,17 @@ data class SearchResult(
         SEQUENTIAL_SEARCH
     }
 
-    fun shouldClearProgramData() =
-        type == SearchResultType.SEARCH_OR_CREATE
+    fun shouldClearProgramData() = type == SearchResultType.SEARCH_OR_CREATE
 
     fun shouldClearGlobalData() = type == SearchResultType.SEARCH_OUTSIDE
 
-    fun shouldDisplayInFullSize() = when (type) {
-        SearchResultType.SEARCH_OR_CREATE,
-        SearchResultType.SEARCH,
-        SearchResultType.NO_RESULTS,
-        SearchResultType.TOO_MANY_RESULTS,
-        -> true
-        else -> false
-    }
+    fun shouldDisplayInFullSize() =
+        when (type) {
+            SearchResultType.SEARCH_OR_CREATE,
+            SearchResultType.SEARCH,
+            SearchResultType.NO_RESULTS,
+            SearchResultType.TOO_MANY_RESULTS,
+            -> true
+            else -> false
+        }
 }

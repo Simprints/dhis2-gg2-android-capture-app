@@ -3,8 +3,9 @@ package org.dhis2.usescases.biometrics.ui.buttons
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.material.OutlinedButton
-import androidx.compose.material.Text
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,7 +25,8 @@ fun TealBorderButton(
             width = 1.dp,
             color = Color(0xFF0281cb)
         ),
-        onClick = onClick
+        onClick = onClick,
+        shape = RoundedCornerShape(4.dp),
     ) {
         Text(
             text = stringResource(textId),

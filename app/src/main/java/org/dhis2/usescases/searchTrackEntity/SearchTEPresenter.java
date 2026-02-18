@@ -32,7 +32,7 @@ import org.dhis2.commons.filters.FilterManager;
 import org.dhis2.commons.filters.data.FilterRepository;
 import org.dhis2.commons.matomo.MatomoAnalyticsController;
 import org.dhis2.commons.orgunitselector.OUTreeFragment;
-import org.dhis2.commons.orgunitselector.OrgUnitSelectorScope;
+import org.dhis2.mobile.commons.orgunit.OrgUnitSelectorScope;
 import org.dhis2.commons.prefs.BasicPreferenceProvider;
 import org.dhis2.commons.prefs.Preference;
 import org.dhis2.commons.prefs.PreferenceProvider;
@@ -43,6 +43,7 @@ import org.dhis2.commons.schedulers.SchedulerProvider;
 import org.dhis2.commons.schedulers.SingleEventEnforcer;
 import org.dhis2.commons.schedulers.SingleEventEnforcerImpl;
 
+import org.dhis2.data.biometrics.biometricsClient.models.ScannedCredential;
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsConfirmIdentityItem;
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem;
 import org.dhis2.data.service.SyncStatusController;
@@ -60,10 +61,13 @@ import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance;
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import io.reactivex.Observable;
@@ -289,8 +293,8 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
 
 
     @Override
-    public void onEnrollClick(HashMap<String, String> queryData, SequentialSearch sequentialSearch) {
-        HashMap<String, String> finalQueryData = getQueryData(queryData, sequentialSearch);
+    public void onEnrollClick(HashMap<String, List<String>> queryData, SequentialSearch sequentialSearch) {
+        HashMap<String, List<String>> finalQueryData = getQueryData(queryData, sequentialSearch);
 
         singleEventEnforcer.processEvent(() -> {
             manageEnrollClick(finalQueryData);
@@ -298,7 +302,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
         });
     }
 
-    public void manageEnrollClick(HashMap<String, String> queryData) {
+    public void manageEnrollClick(HashMap<String, List<String>> queryData) {
         if (selectedProgram != null)
             if (canCreateTei())
                 enroll(selectedProgram.uid(), null, queryData);
@@ -317,7 +321,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     }
 
     @Override
-    public void enroll(String programUid, String uid, HashMap<String, String> queryData) {
+    public void enroll(String programUid, String uid, HashMap<String, List<String>> queryData) {
 
         compositeDisposable.add(getOrgUnits()
                 .subscribeOn(schedulerProvider.io())
@@ -343,7 +347,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
         );
     }
 
-    private void enrollInOrgUnit(String orgUnitUid, String programUid, String uid, HashMap<String, String> queryData) {
+    private void enrollInOrgUnit(String orgUnitUid, String programUid, String uid,  HashMap<String, List<String>> queryData) {
         compositeDisposable.add(
                 searchRepository.saveToEnroll(trackedEntity.uid(), orgUnitUid, programUid, uid, queryData, view.fromRelationshipTEI())
                         .subscribeOn(schedulerProvider.computation())
@@ -351,7 +355,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
                         .subscribe(enrollmentAndTEI -> {
                                     analyticsHelper.setEvent(CREATE_ENROLL, CLICK, CREATE_ENROLL);
                                     view.goToEnrollment(
-                                            enrollmentAndTEI.val0(),
+                                            enrollmentAndTEI.getFirst(),
                                             selectedProgram.uid()
                                     );
                                 },
@@ -377,7 +381,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
 
     @Override
     public void onSearchTEIModelClick(SearchTeiModel item, SequentialSearch sequentialSearch) {
-        String TeiUid = item.getTei().uid();
+        String teiUid = item.getTei().uid();
         String enrollmentUid = item.getSelectedEnrollment() != null ?
                 item.getSelectedEnrollment().uid() :
                 null;
@@ -387,13 +391,34 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
         if (sequentialSearch instanceof SequentialSearch.BiometricsSearch) {
             view.showBiometricsSearchConfirmation(item);
             biometricsSearchStatus = false;
+        }
+        else if (previousIsBiometricsSearchAndContainCredentials (sequentialSearch)) {
+            view.showBiometricsSearchConfirmation(item);
+            biometricsSearchStatus = false;
         } else {
             if (!isOnline) {
-                openDashboard(TeiUid, enrollmentUid);
+                openDashboard(teiUid, enrollmentUid);
             } else {
-                downloadTei(TeiUid, enrollmentUid);
+                downloadTei(teiUid, enrollmentUid);
             }
         }
+    }
+
+    public boolean previousIsBiometricsSearchAndContainCredentials(SequentialSearch sequentialSearch){
+        boolean isMatchByCredentials;
+        SequentialSearch.BiometricsSearch biometricsSearch = null;
+
+        if (sequentialSearch != null && sequentialSearch.getPreviousSearch() instanceof SequentialSearch.BiometricsSearch){
+            biometricsSearch = (SequentialSearch.BiometricsSearch) sequentialSearch.getPreviousSearch();
+        }
+
+        if (biometricsSearch != null) {
+            isMatchByCredentials = biometricsSearch.getScannedCredential() != null;
+        } else {
+            isMatchByCredentials = false;
+        }
+
+        return isMatchByCredentials;
     }
 
     @Override
@@ -681,13 +706,16 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     }
 
     @Override
-    public void searchOnBiometrics(List<SimprintsIdentifiedItem> simprintsIdentifiedItems, String sessionId, Boolean ageNotSupported) {
+    public void searchOnBiometrics(List<SimprintsIdentifiedItem> simprintsIdentifiedItems,
+                                   String sessionId, Boolean ageNotSupported,
+                                   ScannedCredential scannedCredential) {
         if (biometricsSearchListener != null) {
             this.sessionId = sessionId;
 
             biometricsSearchStatus = true;
 
-            biometricsSearchListener.onBiometricsSearch(simprintsIdentifiedItems, biometricAttributeId, simprintsIdentifiedItems, sessionId, ageNotSupported);
+            biometricsSearchListener.onBiometricsSearch(simprintsIdentifiedItems, biometricAttributeId,
+                    simprintsIdentifiedItems, sessionId, ageNotSupported,  scannedCredential);
         }
     }
 
@@ -723,11 +751,16 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
 
     private BiometricsSearchListener biometricsSearchListener;
 
-    private HashMap<String, String> getQueryData(HashMap<String, String> queryData, SequentialSearch sequentialSearch) {
+    private HashMap<String, List<String>> getQueryData(HashMap<String, List<String>> queryData, SequentialSearch sequentialSearch) {
         if (sequentialSearch == null) {
             return queryData;
         } else {
-            return sequentialSearch.getFinalQueryData();
+            return sequentialSearch.getFinalQueryData().entrySet().stream()
+                    .collect(Collectors.toMap(
+                            Map.Entry::getKey,
+                            entry -> Arrays.asList(entry.getValue().split(";")),(prev, next) -> next,
+                            HashMap::new
+                    ));
         }
     }
 
@@ -736,7 +769,11 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     }
 
     public interface BiometricsSearchListener {
-        void onBiometricsSearch(List<SimprintsIdentifiedItem> simprintsIdentifiedItems, String biometricAttributeUid, List<SimprintsIdentifiedItem> items, @Nullable String sessionId, Boolean ageNotSupported);
+        void onBiometricsSearch(List<SimprintsIdentifiedItem> simprintsIdentifiedItems,
+                                String biometricAttributeUid, List<SimprintsIdentifiedItem> items,
+                                @Nullable String sessionId,
+                                Boolean ageNotSupported,
+                                ScannedCredential scannedCredential);
     }
 
     private String getBiometricsAttributeValue(String teiUid) {

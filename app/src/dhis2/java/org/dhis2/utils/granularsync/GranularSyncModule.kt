@@ -29,8 +29,8 @@ class GranularSyncModule(
         workManagerController: WorkManagerController,
         smsSyncProvider: SMSSyncProvider,
         repository: GranularSyncRepository,
-    ): GranularSyncViewModelFactory {
-        return GranularSyncViewModelFactory(
+    ): GranularSyncViewModelFactory =
+        GranularSyncViewModelFactory(
             d2,
             view,
             repository,
@@ -40,16 +40,15 @@ class GranularSyncModule(
             workManagerController,
             smsSyncProvider,
         )
-    }
 
     @Provides
     fun provideDispatchers() = object : DispatcherProvider {
         override fun io() = Dispatchers.IO
 
-        override fun computation() = Dispatchers.Default
+            override fun computation() = Dispatchers.Default
 
-        override fun ui() = Dispatchers.Main
-    }
+            override fun ui() = Dispatchers.Main
+        }
 
     @Provides
     fun granularSyncRepository(
@@ -69,11 +68,13 @@ class GranularSyncModule(
     )
 
     @Provides
-    fun smsSyncProvider(d2: D2, colorUtils: ColorUtils): SMSSyncProvider {
-        return SMSSyncProviderImpl(
+    fun smsSyncProvider(
+        d2: D2,
+        colorUtils: ColorUtils,
+    ): SMSSyncProvider =
+        SMSSyncProviderImpl(
             d2,
             syncContext,
             ResourceManager(context, colorUtils),
         )
-    }
 }

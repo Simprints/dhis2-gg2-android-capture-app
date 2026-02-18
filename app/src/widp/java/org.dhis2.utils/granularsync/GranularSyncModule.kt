@@ -31,13 +31,14 @@ import dagger.Provides
 import kotlinx.coroutines.Dispatchers
 import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.resources.ColorUtils
+import org.dhis2.commons.resources.DhisPeriodUtils
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.sync.SyncContext
 import org.dhis2.commons.viewmodel.DispatcherProvider
-import org.dhis2.data.dhislogic.DhisPeriodUtils
 import org.dhis2.data.dhislogic.DhisProgramUtils
 import org.dhis2.data.service.workManager.WorkManagerController
+import org.dhis2.form.di.Injector.provideDispatchers
 import org.hisp.dhis.android.core.D2
 
 @Module
@@ -46,7 +47,6 @@ class GranularSyncModule(
     private val view: GranularSyncContracts.View,
     private val syncContext: SyncContext
 ) {
-
     @Provides
     fun providesViewModelFactory(
         d2: D2,
@@ -86,7 +86,8 @@ class GranularSyncModule(
         preferenceProvider,
         dhisProgramUtils,
         periodUtils,
-        resourceManager
+        resourceManager,
+        provideDispatchers(),
     )
 
     @Provides
@@ -94,7 +95,7 @@ class GranularSyncModule(
         return SMSSyncProviderImpl(
             d2,
             syncContext,
-            ResourceManager(context, colorUtils),
+            ResourceManager(context, colorUtils)
         )
     }
 }

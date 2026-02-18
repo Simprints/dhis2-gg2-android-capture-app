@@ -47,6 +47,15 @@
         <item name="rippleColor">?colorPrimaryLight</item>
     </style>
 
+    <style name="SecondaryButton" parent="Widget.MaterialComponents.Button">
+        <item name="fontFamily">@font/rubik_regular</item>
+        <item name="fontWeight">500</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:background">@drawable/secondary_button_border</item>
+        <item name="android:textColor">@color/secondary_button_text_selector</item>
+        <item name="rippleColor">?colorPrimaryLight</item>
+    </style>
+
     <style name="NoBackgroundButton" parent="Widget.MaterialComponents.Button">
         <item name="android:textSize">12sp</item>
         <item name="android:background">?android:attr/selectableItemBackground</item>
