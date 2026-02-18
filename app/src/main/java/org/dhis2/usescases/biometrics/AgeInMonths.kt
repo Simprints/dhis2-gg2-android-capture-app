@@ -23,13 +23,13 @@ fun isUnderAgeThreshold(
 
 fun containsAgeFilterAndIsUnderAgeThreshold(
     basicPreferenceProvider: BasicPreferenceProvider,
-    queryData: Map<String, String>
+    queryData: Map<String, List<String>?>
 ): Boolean {
     val biometricsConfig = getBiometricsConfig(basicPreferenceProvider)
 
     val birthdateFieldKey = queryData.keys.find { it == biometricsConfig.dateOfBirthAttribute }
 
-    val value = queryData[birthdateFieldKey]
+    val value = queryData[birthdateFieldKey]?.firstOrNull()
 
     if (value != null) {
         val ageInMonths = calculateAgeInMonths(value, DateTime.now())

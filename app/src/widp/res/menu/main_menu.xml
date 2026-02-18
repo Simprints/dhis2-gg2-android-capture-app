@@ -55,11 +55,6 @@
             android:icon="@drawable/ic_troubleshooting"
             android:title="@string/main_menu_troubleshooting"/>
         <item
-            android:id="@+id/menu_jira"
-            android:icon="@drawable/ic_jira"
-            android:title="@string/jira_report" />
-
-        <item
             android:id="@+id/menu_about"
             android:icon="@drawable/ic_menu_info"
             android:title="@string/about" />

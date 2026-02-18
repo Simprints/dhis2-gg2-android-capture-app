@@ -60,9 +60,7 @@ class BiometricsDuplicatesDialogPresenter(
                 searchRepositoryKt.searchTrackedEntities(
                     SearchParametersModel(
                         program,
-                        hashMapOf(biometricsAttributeUid to possibleDuplicates.joinToString(
-                            separator = ";"
-                        ) { it.guid })
+                        hashMapOf(biometricsAttributeUid to possibleDuplicates.map { it.guid })
                     ),
                     NetworkUtils.isOnline(view.getContext())
                 ).map { pagingData ->

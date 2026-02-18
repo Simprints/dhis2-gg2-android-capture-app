@@ -15,8 +15,9 @@ import org.dhis2.commons.bindings.enrollment
 import org.dhis2.commons.bindings.program
 import org.dhis2.commons.biometrics.BiometricsPreference
 import org.dhis2.commons.data.EventCreationType
-import org.dhis2.commons.data.EventViewModel
+import org.dhis2.commons.data.EventModel
 import org.dhis2.commons.data.EventViewModelType
+import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.resources.D2ErrorUtils
 import org.dhis2.commons.resources.ResourceManager
@@ -25,9 +26,9 @@ import org.dhis2.data.schedulers.TrampolineSchedulerProvider
 import org.dhis2.form.data.FormValueStore
 import org.dhis2.form.data.OptionsRepository
 import org.dhis2.form.model.EventMode
+import org.dhis2.mobile.commons.model.MetadataIconData
 import org.dhis2.mobileProgramRules.RuleEngineHelper
 import org.dhis2.tracker.events.CreateEventUseCase
-import org.dhis2.ui.MetadataIconData
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.teiDashboard.DashboardEnrollmentModel
@@ -61,7 +62,6 @@ import org.mockito.kotlin.whenever
 import java.util.Date
 
 class TeiDataPresenterTest {
-
     @Rule
     @JvmField
     var instantExecutorRule = InstantTaskExecutorRule()
@@ -83,11 +83,13 @@ class TeiDataPresenterTest {
     private val resources: ResourceManager = mock()
     private val eventCreationOptionsMapper = EventCreationOptionsMapper(resources)
     private val teiDataContractHandler: TeiDataContractHandler = mock()
-    private val dispatcherProvider: DispatcherProvider = mock {
-        on { io() } doReturn Dispatchers.Unconfined
-    }
+    private val dispatcherProvider: DispatcherProvider =
+        mock {
+            on { io() } doReturn Dispatchers.Unconfined
+        }
     private val createEventUseCase: CreateEventUseCase = mock()
     private val d2ErrorUtils: D2ErrorUtils = mock()
+    private val preferences: PreferenceProvider = mock()
 
     private val basicPreferenceProvider: BasicPreferenceProvider = mock()
     private val resourceManager: ResourceManager = mock()
@@ -95,30 +97,32 @@ class TeiDataPresenterTest {
 
     @Before
     fun setUp() {
-        teiDataPresenter = TEIDataPresenter(
-            view,
-            d2,
-            dashboardRepository,
-            teiDataRepository,
-            ruleEngineHelper,
-            programUid,
-            teiUid,
-            enrollmentUid,
-            schedulers,
-            analytics,
-            valueStore,
-            optionsRepository,
-            getNewEventCreationTypeOptions,
-            eventCreationOptionsMapper,
-            teiDataContractHandler,
-            dispatcherProvider,
-            createEventUseCase,
-            d2ErrorUtils,
-            basicPreferenceProvider,
-            resourceManager,
-            null,
-            orgUnitRepository
-        )
+        teiDataPresenter =
+            TEIDataPresenter(
+                view,
+                d2,
+                dashboardRepository,
+                teiDataRepository,
+                ruleEngineHelper,
+                programUid,
+                teiUid,
+                enrollmentUid,
+                schedulers,
+                analytics,
+                valueStore,
+                optionsRepository,
+                getNewEventCreationTypeOptions,
+                eventCreationOptionsMapper,
+                teiDataContractHandler,
+                dispatcherProvider,
+                createEventUseCase,
+                d2ErrorUtils,
+                preferences,
+                basicPreferenceProvider,
+                resourceManager,
+                null,
+                orgUnitRepository,
+            )
     }
 
     @Test
@@ -176,9 +180,10 @@ class TeiDataPresenterTest {
         val contractLiveData = MutableLiveData<Unit>()
         whenever(view.viewLifecycleOwner()) doReturn lifecycleOwner
         whenever(teiDataContractHandler.createEvent(any())) doReturn contractLiveData
-        val mockedEnrollment: Enrollment = mock {
-            on { organisationUnit() } doReturn "orgUnitUid"
-        }
+        val mockedEnrollment: Enrollment =
+            mock {
+                on { organisationUnit() } doReturn "orgUnitUid"
+            }
         whenever(teiDataRepository.getEnrollment()) doReturn Single.just(mockedEnrollment)
         whenever(teiDataRepository.enrollmentOrgUnitInCaptureScope("orgUnitUid")) doReturn false
         teiDataPresenter.onEventCreationClick(EventCreationOptionsMapper.ADD_NEW_ID)
@@ -187,9 +192,10 @@ class TeiDataPresenterTest {
 
     @Test
     fun shouldNotBeAbleToCreateNewEventsWhenFull() {
-        val mockedEnrollment = mock<Enrollment> {
-            on { status() } doReturn EnrollmentStatus.ACTIVE
-        }
+        val mockedEnrollment =
+            mock<Enrollment> {
+                on { status() } doReturn EnrollmentStatus.ACTIVE
+            }
         whenever(d2.enrollment(enrollmentUid)) doReturn mockedEnrollment
         whenever(d2.canCreateEventInEnrollment(enrollmentUid, emptyList())) doReturn false
         teiDataPresenter.updateCreateEventButtonVisibility()
@@ -198,9 +204,10 @@ class TeiDataPresenterTest {
 
     @Test
     fun shouldNotBeAbleToCreateNewEventsWhenEnrollmentNotActive() {
-        val mockedEnrollment = mock<Enrollment> {
-            on { status() } doReturn EnrollmentStatus.CANCELLED
-        }
+        val mockedEnrollment =
+            mock<Enrollment> {
+                on { status() } doReturn EnrollmentStatus.CANCELLED
+            }
         whenever(d2.enrollment(enrollmentUid)) doReturn mockedEnrollment
         whenever(d2.canCreateEventInEnrollment(enrollmentUid, emptyList())) doReturn true
         teiDataPresenter.updateCreateEventButtonVisibility()
@@ -209,27 +216,35 @@ class TeiDataPresenterTest {
 
     @Test
     fun `Should display schedule events dialogs when configured`() {
-        val programStage = ProgramStage.builder()
-            .uid("programStage")
-            .allowGenerateNextVisit(true)
-            .displayGenerateEventBox(true)
-            .remindCompleted(false)
-            .build()
+        val programStage =
+            ProgramStage
+                .builder()
+                .uid("programStage")
+                .allowGenerateNextVisit(true)
+                .displayGenerateEventBox(true)
+                .remindCompleted(false)
+                .build()
         whenever(
             dashboardRepository.displayGenerateEvent("eventUid"),
         ) doReturn Observable.just(programStage)
         teiDataPresenter.displayGenerateEvent("eventUid")
-        verify(view).displayScheduleEvent(programStage = null, showYesNoOptions = true, eventCreationType = EventCreationType.SCHEDULE)
+        verify(view).displayScheduleEvent(
+            programStage = null,
+            showYesNoOptions = true,
+            eventCreationType = EventCreationType.SCHEDULE
+        )
     }
 
     @Test
     fun `Should display close program dialogs when configured`() {
-        val programStage = ProgramStage.builder()
-            .uid("programStage")
-            .allowGenerateNextVisit(false)
-            .displayGenerateEventBox(false)
-            .remindCompleted(true)
-            .build()
+        val programStage =
+            ProgramStage
+                .builder()
+                .uid("programStage")
+                .allowGenerateNextVisit(false)
+                .displayGenerateEventBox(false)
+                .remindCompleted(true)
+                .build()
         whenever(
             dashboardRepository.displayGenerateEvent("eventUid"),
         ) doReturn Observable.just(programStage)
@@ -238,111 +253,123 @@ class TeiDataPresenterTest {
     }
 
     @Test
-    fun `Should not show ORG unit selector dialog when org count is 1`() = runBlocking {
-        val orgUnitUid = "orgUnitUid"
-        val programStageUid = "programStageUid"
-        val eventUid = "eventUid"
+    fun `Should not show ORG unit selector dialog when org count is 1`() =
+        runBlocking {
+            val orgUnitUid = "orgUnitUid"
+            val programStageUid = "programStageUid"
+            val eventUid = "eventUid"
 
-        val orgUnit = OrganisationUnit.builder()
-            .uid(orgUnitUid)
-            .build()
+            val orgUnit =
+                OrganisationUnit
+                    .builder()
+                    .uid(orgUnitUid)
+                    .build()
 
-        whenever(
-            teiDataRepository.programOrgListInCaptureScope(programUid),
-        ) doReturn listOf(orgUnit)
+            whenever(
+                teiDataRepository.programOrgListInCaptureScope(programUid),
+            ) doReturn listOf(orgUnit)
 
-        whenever(
-            createEventUseCase.invoke(
-                programUid,
-                orgUnitUid,
-                programStageUid,
-                enrollmentUid,
-            ),
-        ) doReturn (Result.success(eventUid))
+            whenever(
+                createEventUseCase.invoke(
+                    programUid,
+                    orgUnitUid,
+                    programStageUid,
+                    enrollmentUid,
+                ),
+            ) doReturn (Result.success(eventUid))
 
-        teiDataPresenter.checkOrgUnitCount(programUid, programStageUid)
+            teiDataPresenter.checkOrgUnitCount(programUid, programStageUid)
 
-        verify(view).goToEventDetails(eventUid, EventMode.NEW, programUid)
-        verifyNoMoreInteractions(view)
-    }
-
-    @Test
-    fun `Should show ORG unit selector dialog when org count is greater than 1`() = runBlocking {
-        val orgUnitUid1 = "orgUnitUid 1"
-        val orgUnitUid2 = "orgUnitUid 2"
-        val programStageUid = "programStageUid"
-
-        val orgUnit1 = OrganisationUnit.builder()
-            .uid(orgUnitUid1)
-            .build()
-
-        val orgUnit2 = OrganisationUnit.builder()
-            .uid(orgUnitUid2)
-            .build()
-
-        whenever(
-            teiDataRepository.programOrgListInCaptureScope(programUid),
-        ) doReturn listOf(orgUnit1, orgUnit2)
-
-        teiDataPresenter.checkOrgUnitCount(programUid, programStageUid)
-
-        verify(view).displayOrgUnitSelectorForNewEvent(programUid, programStageUid)
-        verifyNoMoreInteractions(view)
-    }
+            verify(view).goToEventDetails(eventUid, EventMode.NEW, programUid)
+            verifyNoMoreInteractions(view)
+        }
 
     @Test
-    fun `onOrgUnitForNewEventSelected success`() = runBlocking {
-        val orgUnitUid = "orgUnitUid"
-        val programStageUid = "programStageUid"
-        val eventUid = "eventUid"
+    fun `Should show ORG unit selector dialog when org count is greater than 1`() =
+        runBlocking {
+            val orgUnitUid1 = "orgUnitUid 1"
+            val orgUnitUid2 = "orgUnitUid 2"
+            val programStageUid = "programStageUid"
 
-        whenever(
-            createEventUseCase.invoke(
-                programUid,
-                orgUnitUid,
-                programStageUid,
-                enrollmentUid,
-            ),
-        ) doReturn (Result.success(eventUid))
+            val orgUnit1 =
+                OrganisationUnit
+                    .builder()
+                    .uid(orgUnitUid1)
+                    .build()
 
-        teiDataPresenter.onNewEventSelected(
-            orgUnitUid,
-            programStageUid,
-        )
+            val orgUnit2 =
+                OrganisationUnit
+                    .builder()
+                    .uid(orgUnitUid2)
+                    .build()
 
-        verify(view).goToEventDetails(eventUid, EventMode.NEW, programUid)
-        verifyNoMoreInteractions(view)
-    }
+            whenever(
+                teiDataRepository.programOrgListInCaptureScope(programUid),
+            ) doReturn listOf(orgUnit1, orgUnit2)
+
+            teiDataPresenter.checkOrgUnitCount(programUid, programStageUid)
+
+            verify(view).displayOrgUnitSelectorForNewEvent(programUid, programStageUid)
+            verifyNoMoreInteractions(view)
+        }
 
     @Test
-    fun `onOrgUnitForNewEventSelected failure`() = runBlocking {
-        val orgUnitUid = "orgUnitUid"
-        val programStageUid = "programStageUid"
-        val errorMessage = "Error message"
-        val d2Error = D2Error.builder()
-            .errorCode(D2ErrorCode.UNEXPECTED)
-            .errorDescription(errorMessage)
-            .build()
+    fun `onOrgUnitForNewEventSelected success`() =
+        runBlocking {
+            val orgUnitUid = "orgUnitUid"
+            val programStageUid = "programStageUid"
+            val eventUid = "eventUid"
 
-        whenever(
-            createEventUseCase.invoke(
-                programUid,
+            whenever(
+                createEventUseCase.invoke(
+                    programUid,
+                    orgUnitUid,
+                    programStageUid,
+                    enrollmentUid,
+                ),
+            ) doReturn (Result.success(eventUid))
+
+            teiDataPresenter.onNewEventSelected(
                 orgUnitUid,
                 programStageUid,
-                enrollmentUid,
-            ),
-        ) doReturn (Result.failure(d2Error))
+            )
 
-        whenever(d2ErrorUtils.getErrorMessage(d2Error)) doReturn (errorMessage)
+            verify(view).goToEventDetails(eventUid, EventMode.NEW, programUid)
+            verifyNoMoreInteractions(view)
+        }
 
-        teiDataPresenter.onNewEventSelected(
-            orgUnitUid,
-            programStageUid,
-        )
+    @Test
+    fun `onOrgUnitForNewEventSelected failure`() =
+        runBlocking {
+            val orgUnitUid = "orgUnitUid"
+            val programStageUid = "programStageUid"
+            val errorMessage = "Error message"
+            val d2Error =
+                D2Error
+                    .builder()
+                    .errorCode(D2ErrorCode.UNEXPECTED)
+                    .errorDescription(errorMessage)
+                    .build()
 
-        verify(view).displayMessage(errorMessage)
-        verifyNoMoreInteractions(view)
-    }
+            whenever(
+                createEventUseCase.invoke(
+                    programUid,
+                    orgUnitUid,
+                    programStageUid,
+                    enrollmentUid,
+                ),
+            ) doReturn (Result.failure(d2Error))
+
+            whenever(d2ErrorUtils.getErrorMessage(d2Error)) doReturn (errorMessage)
+
+            teiDataPresenter.onNewEventSelected(
+                orgUnitUid,
+                programStageUid,
+            )
+
+            verify(view).displayMessage(errorMessage)
+            verifyNoMoreInteractions(view)
+        }
 
     @Test
     fun `should display schedule event without yes and no options, when schedule event option is selected`() {
@@ -356,8 +383,44 @@ class TeiDataPresenterTest {
         )
 
         // then
-        verify(view).displayScheduleEvent(programStage = programStage, showYesNoOptions = false, eventCreationType = EventCreationType.SCHEDULE)
+        verify(
+            view,
+        ).displayScheduleEvent(
+            programStage = programStage,
+            showYesNoOptions = false,
+            eventCreationType = EventCreationType.SCHEDULE
+        )
         verifyNoMoreInteractions(view)
+    }
+
+    @Test
+    fun `should create event in enrollment when ADDNEW is selected with null stage`() {
+        // given
+        val lifecycleOwner: LifecycleOwner = Mockito.mock(LifecycleOwner::class.java)
+        val lifecycle = LifecycleRegistry(Mockito.mock(LifecycleOwner::class.java))
+        lifecycle.currentState = Lifecycle.State.RESUMED
+        Mockito.`when`(lifecycleOwner.lifecycle).thenReturn(lifecycle)
+
+        val contractLiveData = MutableLiveData<Unit>()
+        whenever(view.viewLifecycleOwner()) doReturn lifecycleOwner
+        whenever(teiDataContractHandler.createEvent(any())) doReturn contractLiveData
+
+        val mockedEnrollment: Enrollment =
+            mock {
+                on { organisationUnit() } doReturn "orgUnitUid"
+            }
+        whenever(teiDataRepository.getEnrollment()) doReturn Single.just(mockedEnrollment)
+        whenever(teiDataRepository.enrollmentOrgUnitInCaptureScope("orgUnitUid")) doReturn true
+
+        // when
+        teiDataPresenter.onAddNewEventOptionSelected(
+            eventCreationType = EventCreationType.ADDNEW,
+            stage = null,
+        )
+        contractLiveData.value = Unit
+
+        // then
+        verify(teiDataContractHandler).createEvent(any())
     }
 
     //EyeSeeTea Customizations
@@ -415,6 +478,7 @@ class TeiDataPresenterTest {
             dispatcherProvider,
             createEventUseCase,
             d2ErrorUtils,
+            preferences,
             basicPreferenceProvider,
             resourceManager,
             null,
@@ -451,13 +515,13 @@ class TeiDataPresenterTest {
     private fun fakeModel(
         eventCount: Int = 0,
         type: EventViewModelType = EventViewModelType.STAGE,
-    ): EventViewModel {
+    ): EventModel {
         val dataElements = mutableListOf<Pair<String, String>>()
         dataElements.add(
             Pair("Name", "Peter"),
         )
 
-        return EventViewModel(
+        return EventModel(
             type = type,
             stage = ProgramStage.builder().uid("stage").build(),
             event = null,

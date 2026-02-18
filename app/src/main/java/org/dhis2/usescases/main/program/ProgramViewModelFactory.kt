@@ -21,8 +21,8 @@ class ProgramViewModelFactory(
     private val schedulerProvider: SchedulerProvider,
     private val selectBiometricsConfig: SelectBiometricsConfig
 ) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return ProgramViewModel(
+    override fun <T : ViewModel> create(modelClass: Class<T>): T =
+        ProgramViewModel(
             view,
             programRepository,
             featureConfigRepository,
@@ -33,5 +33,4 @@ class ProgramViewModelFactory(
             schedulerProvider,
             selectBiometricsConfig
         ) as T
-    }
 }

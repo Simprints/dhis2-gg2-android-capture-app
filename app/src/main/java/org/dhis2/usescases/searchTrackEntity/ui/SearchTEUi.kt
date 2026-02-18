@@ -22,13 +22,13 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.Icon
-import androidx.compose.material.IconButton
-import androidx.compose.material.LocalTextStyle
-import androidx.compose.material.OutlinedButton
-import androidx.compose.material.Text
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -70,32 +70,39 @@ import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
 import org.hisp.dhis.mobile.ui.designsystem.theme.getTextStyle
 
 @Composable
-fun SearchResultUi(searchResult: SearchResult, onSearchOutsideClick: () -> Unit) {
+fun SearchResultUi(
+    searchResult: SearchResult,
+    onSearchOutsideClick: () -> Unit,
+) {
     when (searchResult.type) {
         SearchResult.SearchResultType.LOADING ->
             LoadingContent(
                 loadingDescription = stringResource(R.string.search_loading_more),
             )
 
-        SearchResult.SearchResultType.SEARCH_OUTSIDE -> SearchOutsideProgram(
-            resultText = stringResource(R.string.search_no_results_in_program)
-                .format(searchResult.extraData!!),
-            buttonText = stringResource(R.string.search_outside_action),
-            onSearchOutsideClick = onSearchOutsideClick,
-        )
+        SearchResult.SearchResultType.SEARCH_OUTSIDE ->
+            SearchOutsideProgram(
+                resultText =
+                    stringResource(R.string.search_no_results_in_program)
+                        .format(searchResult.extraData!!),
+                buttonText = stringResource(R.string.search_outside_action),
+                onSearchOutsideClick = onSearchOutsideClick,
+            )
 
         SearchResult.SearchResultType.NO_MORE_RESULTS -> NoMoreResults()
         SearchResult.SearchResultType.TOO_MANY_RESULTS -> TooManyResults()
         SearchResult.SearchResultType.NO_RESULTS -> NoResults()
         SearchResult.SearchResultType.SEARCH_OR_CREATE -> SearchOrCreate(searchResult.extraData!!)
         SearchResult.SearchResultType.SEARCH -> InitSearch(searchResult.extraData!!)
-        SearchResult.SearchResultType.NO_MORE_RESULTS_OFFLINE -> NoMoreResults(
-            message = stringResource(id = R.string.search_no_more_results_offline),
-        )
+        SearchResult.SearchResultType.NO_MORE_RESULTS_OFFLINE ->
+            NoMoreResults(
+                message = stringResource(id = R.string.search_no_more_results_offline),
+            )
 
-        SearchResult.SearchResultType.UNABLE_SEARCH_OUTSIDE -> UnableToSearchOutside(
-            uiData = searchResult.uiData as UnableToSearchOutsideData,
-        )
+        SearchResult.SearchResultType.UNABLE_SEARCH_OUTSIDE ->
+            UnableToSearchOutside(
+                uiData = searchResult.uiData as UnableToSearchOutsideData,
+            )
 
         SearchResult.SearchResultType.SEQUENTIAL_SEARCH -> NoMoreResults(searchResult.extraData!!)
     }
@@ -108,20 +115,23 @@ fun SearchButton(
     createButtonVisible: Boolean = true,
     onClick: () -> Unit,
 ) {
-    val textId = if (createButtonVisible) {
-        R.string.search_te_type
-    } else {
-        R.string.search_add_new_te_type
-    }
+    val textId =
+        if (createButtonVisible) {
+            R.string.search_te_type
+        } else {
+            R.string.search_add_new_te_type
+        }
 
     OutlinedButton(
-        modifier = Modifier
-            .requiredHeight(56.dp)
-            .then(modifier),
+        modifier =
+            Modifier
+                .requiredHeight(56.dp)
+                .then(modifier),
         onClick = onClick,
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = SurfaceColor.Primary,
-        ),
+        colors =
+            ButtonDefaults.outlinedButtonColors(
+                contentColor = SurfaceColor.Primary,
+            ),
         border = BorderStroke(1.dp, SurfaceColor.Primary),
         shape = RoundedCornerShape(Spacing.Spacing16),
     ) {
@@ -148,17 +158,17 @@ fun AddNewButton(
 ) {
     Button(
         onClick = onClick,
-        modifier = Modifier
-            .requiredHeight(44.dp)
-            .then(modifier),
-        colors = ButtonDefaults.buttonColors(
-            backgroundColor = SurfaceColor.PrimaryContainer,
-            contentColor = TextColor.OnPrimaryContainer,
-        ),
+        modifier =
+            Modifier
+                .requiredHeight(44.dp)
+                .then(modifier),
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor = SurfaceColor.PrimaryContainer,
+                contentColor = TextColor.OnPrimaryContainer,
+            ),
         shape = RoundedCornerShape(Spacing.Spacing16),
-        elevation = ButtonDefaults.elevation(
-            defaultElevation = 0.dp,
-        ),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp),
     ) {
         Icon(
             painter = painterResource(id = R.drawable.ic_add_primary),
@@ -193,19 +203,21 @@ fun SearchButtonWithQuery(
         )
 
         Box(
-            modifier = Modifier
-                .matchParentSize()
-                .padding(end = 48.dp)
-                .clip(RoundedCornerShape(50))
-                .background(Color.Unspecified)
-                .clickable(
-                    onClick = onClick,
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = ripple(
-                        true,
-                        color = SurfaceColor.Primary,
+            modifier =
+                Modifier
+                    .matchParentSize()
+                    .padding(end = 48.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.Unspecified)
+                    .clickable(
+                        onClick = onClick,
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication =
+                            ripple(
+                                true,
+                                color = SurfaceColor.Primary,
+                            ),
                     ),
-                ),
         )
     }
 }
@@ -240,18 +252,20 @@ fun FullSearchButtonAndWorkingList(
     Column(modifier = modifier) {
         if (!isLandscape || queryData.isNotEmpty()) {
             Row(
-                modifier = Modifier.padding(
-                    top = Spacing.Spacing16,
-                    start = Spacing.Spacing16,
-                    end = Spacing.Spacing16,
-                    bottom = Spacing.Spacing0,
-                ),
+                modifier =
+                    Modifier.padding(
+                        top = Spacing.Spacing16,
+                        start = Spacing.Spacing16,
+                        end = Spacing.Spacing16,
+                        bottom = Spacing.Spacing0,
+                    ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(
-                    modifier = Modifier
-                        .wrapContentHeight()
-                        .weight(1f),
+                    modifier =
+                        Modifier
+                            .wrapContentHeight()
+                            .weight(1f),
                     verticalArrangement = Arrangement.spacedBy(Spacing.Spacing8),
                 ) {
                     if (queryData.isNotEmpty()) {
@@ -274,22 +288,24 @@ fun FullSearchButtonAndWorkingList(
                 if (closeFilterVisibility) {
                     Spacer(modifier = Modifier.size(16.dp))
                     Box(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .shadow(2.dp, CircleShape, clip = false)
-                            .clip(CircleShape)
-                            .background(Color.White),
+                        modifier =
+                            Modifier
+                                .size(48.dp)
+                                .shadow(2.dp, CircleShape, clip = false)
+                                .clip(CircleShape)
+                                .background(Color.White),
                     ) {
                         IconButton(onClick = onCloseFilters) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_arrow_up),
                                 contentDescription = "",
-                                tint = Color(
-                                    ColorUtils().getPrimaryColor(
-                                        LocalContext.current,
-                                        ColorType.PRIMARY,
+                                tint =
+                                    Color(
+                                        ColorUtils().getPrimaryColor(
+                                            LocalContext.current,
+                                            ColorType.PRIMARY,
+                                        ),
                                     ),
-                                ),
                             )
                         }
                     }
@@ -331,9 +347,10 @@ private fun SearchAndCreateTEIButton(
 @Composable
 fun LoadingContent(loadingDescription: String) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         ProgressIndicator(type = ProgressIndicatorType.CIRCULAR_SMALL)
@@ -342,20 +359,26 @@ fun LoadingContent(loadingDescription: String) {
             text = loadingDescription,
             fontSize = 14.sp,
             color = Color.Black.copy(alpha = 0.38f),
-            style = LocalTextStyle.current.copy(
-                lineHeight = 10.sp,
-                fontFamily = FontFamily(Font(R.font.rubik_regular)),
-            ),
+            style =
+                LocalTextStyle.current.copy(
+                    lineHeight = 10.sp,
+                    fontFamily = FontFamily(Font(R.font.rubik_regular)),
+                ),
         )
     }
 }
 
 @Composable
-fun SearchOutsideProgram(resultText: String, buttonText: String, onSearchOutsideClick: () -> Unit) {
+fun SearchOutsideProgram(
+    resultText: String,
+    buttonText: String,
+    onSearchOutsideClick: () -> Unit,
+) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
@@ -363,45 +386,50 @@ fun SearchOutsideProgram(resultText: String, buttonText: String, onSearchOutside
             textAlign = TextAlign.Center,
             fontSize = 14.sp,
             color = Color.Black.copy(alpha = 0.38f),
-            style = LocalTextStyle.current.copy(
-                fontFamily = FontFamily(Font(R.font.rubik_regular)),
-            ),
+            style =
+                LocalTextStyle.current.copy(
+                    fontFamily = FontFamily(Font(R.font.rubik_regular)),
+                ),
         )
         Spacer(modifier = Modifier.size(16.dp))
         Button(
             onClick = onSearchOutsideClick,
-            border = BorderStroke(
-                1.dp,
-                Color(
-                    ColorUtils().getPrimaryColor(
-                        LocalContext.current,
-                        ColorType.PRIMARY,
+            border =
+                BorderStroke(
+                    1.dp,
+                    Color(
+                        ColorUtils().getPrimaryColor(
+                            LocalContext.current,
+                            ColorType.PRIMARY,
+                        ),
                     ),
                 ),
-            ),
-            colors = ButtonDefaults.buttonColors(
-                backgroundColor = colorResource(id = R.color.white),
-            ),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = colorResource(id = R.color.white),
+                ),
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_search),
                 contentDescription = "",
-                tint = Color(
-                    ColorUtils().getPrimaryColor(
-                        LocalContext.current,
-                        ColorType.PRIMARY,
+                tint =
+                    Color(
+                        ColorUtils().getPrimaryColor(
+                            LocalContext.current,
+                            ColorType.PRIMARY,
+                        ),
                     ),
-                ),
             )
             Spacer(modifier = Modifier.size(16.dp))
             Text(
                 text = buttonText,
-                color = Color(
-                    ColorUtils().getPrimaryColor(
-                        LocalContext.current,
-                        ColorType.PRIMARY,
+                color =
+                    Color(
+                        ColorUtils().getPrimaryColor(
+                            LocalContext.current,
+                            ColorType.PRIMARY,
+                        ),
                     ),
-                ),
             )
         }
     }
@@ -410,18 +438,21 @@ fun SearchOutsideProgram(resultText: String, buttonText: String, onSearchOutside
 @Composable
 fun NoMoreResults(message: String = stringResource(R.string.string_no_more_results)) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp, 96.dp, 16.dp, 16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp, 96.dp, 16.dp, 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             text = message,
             fontSize = 14.sp,
             color = Color.Black.copy(alpha = 0.38f),
-            style = LocalTextStyle.current.copy(
-                fontFamily = FontFamily(Font(R.font.rubik_regular)),
-            ),
+            style =
+                LocalTextStyle.current.copy(
+                    lineHeight = 10.sp,
+                    fontFamily = FontFamily(Font(R.font.rubik_regular)),
+                ),
         )
     }
 }
@@ -429,19 +460,22 @@ fun NoMoreResults(message: String = stringResource(R.string.string_no_more_resul
 @Composable
 fun UnableToSearchOutside(uiData: UnableToSearchOutsideData) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = stringResource(R.string.search_unable_search_outside)
-                .format(uiData.trackedEntityTypeName.toLowerCase(Locale.current)),
+            text =
+                stringResource(R.string.search_unable_search_outside)
+                    .format(uiData.trackedEntityTypeName.toLowerCase(Locale.current)),
             fontSize = 14.sp,
             color = Color.Black.copy(alpha = 0.38f),
-            style = LocalTextStyle.current.copy(
-                fontFamily = FontFamily(Font(R.font.rubik_regular)),
-            ),
+            style =
+                LocalTextStyle.current.copy(
+                    fontFamily = FontFamily(Font(R.font.rubik_regular)),
+                ),
         )
         Spacer(modifier = Modifier.size(16.dp))
         uiData.trackedEntityTypeAttributes.forEach {
@@ -462,12 +496,13 @@ fun AttributeField(fieldName: String) {
                 modifier = Modifier.size(5.dp),
                 painter = painterResource(id = R.drawable.ic_circle),
                 contentDescription = "",
-                tint = Color(
-                    ColorUtils().getPrimaryColor(
-                        LocalContext.current,
-                        ColorType.PRIMARY,
+                tint =
+                    Color(
+                        ColorUtils().getPrimaryColor(
+                            LocalContext.current,
+                            ColorType.PRIMARY,
+                        ),
                     ),
-                ),
             )
         }
         Spacer(modifier = Modifier.size(8.dp))
@@ -475,9 +510,10 @@ fun AttributeField(fieldName: String) {
             text = fieldName,
             color = colorResource(id = R.color.textSecondary),
             fontSize = 14.sp,
-            style = LocalTextStyle.current.copy(
-                fontFamily = FontFamily(Font(R.font.rubik_regular)),
-            ),
+            style =
+                LocalTextStyle.current.copy(
+                    fontFamily = FontFamily(Font(R.font.rubik_regular)),
+                ),
         )
     }
 }
@@ -485,10 +521,11 @@ fun AttributeField(fieldName: String) {
 @Composable
 fun NoResults() {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
-            .padding(16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -501,10 +538,11 @@ fun NoResults() {
             text = stringResource(R.string.search_no_results),
             fontSize = 17.sp,
             color = Color.Black.copy(alpha = 0.38f),
-            style = LocalTextStyle.current.copy(
-                lineHeight = 24.sp,
-                fontFamily = FontFamily(Font(R.font.rubik_regular)),
-            ),
+            style =
+                LocalTextStyle.current.copy(
+                    lineHeight = 24.sp,
+                    fontFamily = FontFamily(Font(R.font.rubik_regular)),
+                ),
         )
     }
 }
@@ -512,10 +550,11 @@ fun NoResults() {
 @Composable
 fun TooManyResults() {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
-            .padding(16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -529,19 +568,21 @@ fun TooManyResults() {
             fontSize = 17.sp,
             color = colorResource(id = R.color.pink_500),
             textAlign = TextAlign.Center,
-            style = LocalTextStyle.current.copy(
-                lineHeight = 24.sp,
-                fontFamily = FontFamily(Font(R.font.rubik_regular)),
-            ),
+            style =
+                LocalTextStyle.current.copy(
+                    lineHeight = 24.sp,
+                    fontFamily = FontFamily(Font(R.font.rubik_regular)),
+                ),
         )
         Text(
             text = stringResource(R.string.search_too_many_results_message),
             fontSize = 17.sp,
             color = Color.Black.copy(alpha = 0.38f),
-            style = LocalTextStyle.current.copy(
-                lineHeight = 24.sp,
-                fontFamily = FontFamily(Font(R.font.rubik_regular)),
-            ),
+            style =
+                LocalTextStyle.current.copy(
+                    lineHeight = 24.sp,
+                    fontFamily = FontFamily(Font(R.font.rubik_regular)),
+                ),
         )
     }
 }
@@ -549,10 +590,11 @@ fun TooManyResults() {
 @Composable
 fun SearchOrCreate(teTypeName: String) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
-            .padding(16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -565,10 +607,11 @@ fun SearchOrCreate(teTypeName: String) {
             text = stringResource(R.string.search_or_create).format(teTypeName),
             fontSize = 17.sp,
             color = Color.Black.copy(alpha = 0.38f),
-            style = LocalTextStyle.current.copy(
-                lineHeight = 24.sp,
-                fontFamily = FontFamily(Font(R.font.rubik_regular)),
-            ),
+            style =
+                LocalTextStyle.current.copy(
+                    lineHeight = 24.sp,
+                    fontFamily = FontFamily(Font(R.font.rubik_regular)),
+                ),
         )
     }
 }
@@ -576,10 +619,11 @@ fun SearchOrCreate(teTypeName: String) {
 @Composable
 fun InitSearch(teTypeName: String) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .fillMaxHeight()
-            .padding(16.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .fillMaxHeight()
+                .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -587,10 +631,11 @@ fun InitSearch(teTypeName: String) {
             text = stringResource(R.string.init_search).format(teTypeName),
             fontSize = 17.sp,
             color = Color.Black.copy(alpha = 0.38f),
-            style = LocalTextStyle.current.copy(
-                lineHeight = 24.sp,
-                fontFamily = FontFamily(Font(R.font.rubik_regular)),
-            ),
+            style =
+                LocalTextStyle.current.copy(
+                    lineHeight = 24.sp,
+                    fontFamily = FontFamily(Font(R.font.rubik_regular)),
+                ),
         )
     }
 }
@@ -703,10 +748,11 @@ fun NoResultsPreview() {
 @Composable
 fun SearchOrCreatePreview() {
     SearchResultUi(
-        searchResult = SearchResult(
-            SearchResult.SearchResultType.SEARCH_OR_CREATE,
-            "Person",
-        ),
+        searchResult =
+            SearchResult(
+                SearchResult.SearchResultType.SEARCH_OR_CREATE,
+                "Person",
+            ),
     ) {}
 }
 

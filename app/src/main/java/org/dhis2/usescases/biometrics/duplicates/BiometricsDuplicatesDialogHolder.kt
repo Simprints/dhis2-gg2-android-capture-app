@@ -2,11 +2,11 @@ package org.dhis2.usescases.biometrics.duplicates
 
 import android.view.View
 import androidx.recyclerview.widget.RecyclerView
-import org.dhis2.bindings.getEnrollmentIconsData
-import org.dhis2.bindings.hasFollowUp
-import org.dhis2.bindings.paintAllEnrollmentIcons
-import org.dhis2.bindings.setAttributeList
-import org.dhis2.bindings.setStatusText
+import org.dhis2.commons.bindings.getEnrollmentIconsData
+import org.dhis2.commons.bindings.hasFollowUp
+import org.dhis2.commons.bindings.paintAllEnrollmentIcons
+import org.dhis2.commons.bindings.setAttributeList
+import org.dhis2.commons.bindings.setStatusText
 import org.dhis2.commons.data.EnrollmentIconData
 
 
