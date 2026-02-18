@@ -12,12 +12,12 @@ jobs:
     steps:
       - name: Sync develop-simprints branch
         run: |
-          gh repo sync $CURRENT_FORK_REPOSITORY --source $UPSTREAM_REPOSITORY --branch develop-simprints --force
+          gh repo sync $CURRENT_FORK_REPOSITORY --source $UPSTREAM_REPOSITORY --branch develop-simprints
       - name: Sync release-simprints branch and create PR if changed
         run: |
           upstream_sync_branch="release-simprints"
           head_before_sync=$(gh api repos/$CURRENT_FORK_REPOSITORY/branches/$upstream_sync_branch --jq '.commit.sha')
-          gh repo sync $CURRENT_FORK_REPOSITORY --source $UPSTREAM_REPOSITORY --branch $upstream_sync_branch --force
+          gh repo sync $CURRENT_FORK_REPOSITORY --source $UPSTREAM_REPOSITORY --branch $upstream_sync_branch
           head_after_sync=$(gh api repos/$CURRENT_FORK_REPOSITORY/branches/$upstream_sync_branch --jq '.commit.sha')
           if [[ "$head_before_sync" != "$head_after_sync" ]]; then
             echo "Upstream changes synced into $upstream_sync_branch. Creating PR..."
