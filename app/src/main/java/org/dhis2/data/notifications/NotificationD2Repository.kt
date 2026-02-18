@@ -1,16 +1,13 @@
 package org.dhis2.data.notifications
 
-import NotificationsApi
-import UserGroupsApi
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.map
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.prefs.Preference
 import org.dhis2.usescases.notifications.domain.Notification
 import org.dhis2.usescases.notifications.domain.NotificationRepository
+import org.dhis2.usescases.notifications.domain.Permissions
 import org.dhis2.usescases.notifications.domain.ReadBy
 import org.dhis2.usescases.notifications.domain.Recipients
 import org.dhis2.usescases.notifications.domain.Ref
@@ -30,17 +27,9 @@ class NotificationD2Repository(
         try {
             val allNotifications = getAllNotificationsFromRemote()
 
-            val userGroups = getUserGroups()
-
-            val userNotifications =
-                getNotificationsForCurrentUser(allNotifications, userGroups.userGroups)
-
-            preferenceProvider.saveAsJson(Preference.NOTIFICATIONS, userNotifications)
+            saveUserNotificationsInCache(allNotifications)
 
             emit(Unit)
-
-            Timber.d("Notifications synced")
-            Timber.d("Notifications: $userNotifications")
 
         } catch (e: Exception) {
             Timber.e(e)
@@ -59,12 +48,12 @@ class NotificationD2Repository(
         emit(notifications)
     }
 
-    override fun getById(id: String): Flow<Notification?> {
-        return sync().flatMapConcat {
-            get()
-        }.map { notifications ->
-            notifications.find { it.id == id }
-        }
+    override fun getById(id: String): Flow<Notification?> = flow {
+        val notifications = getAllNotificationsFromRemote()
+
+        val notification = notifications.find { it.id == id }
+
+        emit(notification)
     }
 
     override fun save(notification: Notification): Flow<Unit> = flow {
@@ -81,12 +70,14 @@ class NotificationD2Repository(
 
             notificationsApi.postData(notificationsDTO)
 
+            saveUserNotificationsInCache(notifications)
+
             emit(Unit)
 
-        } catch (e: Exception) {
+        }catch (e: Exception){
             Timber.e("Error updating notifications: $e")
         }
-    }.flatMapConcat { sync() }
+    }
 
     private suspend fun getAllNotificationsFromRemote(): List<Notification> {
         try {
@@ -99,6 +90,18 @@ class NotificationD2Repository(
             Timber.e("Error getting notifications: $e")
             return emptyList()
         }
+    }
+
+    private suspend fun saveUserNotificationsInCache(allNotifications: List<Notification>) {
+        val userGroups = getUserGroups()
+
+        val userNotifications =
+            getNotificationsForCurrentUser(allNotifications, userGroups.userGroups)
+
+        preferenceProvider.saveAsJson(Preference.NOTIFICATIONS, userNotifications)
+
+        Timber.d("Notifications saved in cache")
+        Timber.d("Notifications: $userNotifications")
     }
 
     private suspend fun getUserGroups(): UserGroups {
@@ -120,28 +123,34 @@ class NotificationD2Repository(
         userGroups: List<Ref>
     ): List<Notification> {
         val userGroupIds = userGroups.map { it.id }
+        val userId = d2.userModule().user().blockingGet()!!.uid()
 
         val nonReadByUserNotifications = allNotifications.filter { notification ->
             notification.readBy.none { readBy ->
-                readBy.id == d2.userModule().user().blockingGet()!!.uid()
+                readBy.id == userId
             }
         }
 
         val notificationsByAll = nonReadByUserNotifications.filter { notification ->
-            notification.recipients.wildcard == "ALL"
+            notification.recipients.wildcard.lowercase() == "ALL".lowercase()
         }
 
         val notificationsByUserGroup = nonReadByUserNotifications.filter { notification ->
-            notification.recipients.userGroups.any { userGroupIds.contains(it.id) }
+            notification.recipients.userGroups.any { userGroupIds.contains(it.id) } &&
+                    isForAndroid(notification)
         }
 
         val notificationsByUser = nonReadByUserNotifications.filter { notification ->
-            notification.recipients.users.any {
-                it.id == d2.userModule().user().blockingGet()!!.uid()
-            }
+            notification.recipients.users.any { it.id == userId } && isForAndroid(notification)
         }
 
-        return notificationsByAll + notificationsByUserGroup + notificationsByUser
+        return (notificationsByAll + notificationsByUserGroup + notificationsByUser).distinct()
+    }
+
+    private fun isForAndroid(notification: Notification): Boolean {
+        return notification.recipients.wildcard.lowercase() == "Android".lowercase() ||
+                notification.recipients.wildcard == "" ||
+                notification.recipients.wildcard.lowercase() == "BOTH".lowercase()
     }
 
     private fun mapNotification(notificationDTO: NotificationDTO): Notification {
@@ -160,7 +169,25 @@ class NotificationD2Repository(
                 userGroups = notificationDTO.recipients.userGroups.map { Ref(it.id, it.name) },
                 users = notificationDTO.recipients.users.map { Ref(it.id, it.name) },
                 wildcard = notificationDTO.recipients.wildcard
-            )
+            ),
+            permissions = Permissions(
+                publicAccess = notificationDTO.permissions?.publicAccess ?: "",
+                userAccesses = notificationDTO.permissions?.userAccesses?.map {
+                    org.dhis2.usescases.notifications.domain.UserAccesses(
+                        it.access,
+                        it.id,
+                        it.name
+                    )
+                } ?: listOf(),
+                userGroupAccesses = notificationDTO.permissions?.userGroupAccesses?.map {
+                    org.dhis2.usescases.notifications.domain.UserGroupAccesses(
+                        it.access,
+                        it.id,
+                        it.name
+                    )
+                } ?: listOf()
+            ),
+            translations = notificationDTO.translations
         )
     }
 
@@ -180,7 +207,25 @@ class NotificationD2Repository(
                 userGroups = notification.recipients.userGroups.map { RefDTO(it.id, it.name) },
                 users = notification.recipients.users.map { RefDTO(it.id, it.name) },
                 wildcard = notification.recipients.wildcard
-            )
+            ),
+            permissions = PermissionsDTO(
+                publicAccess = notification.permissions?.publicAccess ?: "",
+                userAccesses = notification.permissions?.userAccesses?.map {
+                    UserAccessesDTO(
+                        it.access,
+                        it.id,
+                        it.name
+                    )
+                } ?: listOf(),
+                userGroupAccesses = notification.permissions?.userGroupAccesses?.map {
+                    UserGroupAccessesDTO(
+                        it.access,
+                        it.id,
+                        it.name
+                    )
+                } ?: listOf()
+            ),
+            translations = notification.translations
         )
     }
 

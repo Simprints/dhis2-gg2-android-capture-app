@@ -60,8 +60,6 @@ import org.dhis2.usescases.searchTrackEntity.SearchTEComponent;
 import org.dhis2.usescases.searchTrackEntity.SearchTEModule;
 import org.dhis2.usescases.settings.SyncManagerComponent;
 import org.dhis2.usescases.settings.SyncManagerModule;
-import org.dhis2.usescases.settingsprogram.ProgramSettingsComponent;
-import org.dhis2.usescases.settingsprogram.SettingsProgramModule;
 import org.dhis2.usescases.sms.SmsComponent;
 import org.dhis2.usescases.sms.SmsModule;
 import org.dhis2.usescases.sync.SyncComponent;
@@ -74,6 +72,8 @@ import org.dhis2.usescases.teiDashboard.dialogs.scheduling.SchedulingComponent;
 import org.dhis2.usescases.teiDashboard.dialogs.scheduling.SchedulingModule;
 import org.dhis2.usescases.teiDashboard.teiProgramList.TeiProgramListComponent;
 import org.dhis2.usescases.teiDashboard.teiProgramList.TeiProgramListModule;
+import org.dhis2.utils.session.ChangeServerURLComponent;
+import org.dhis2.utils.session.ChangeServerURLModule;
 import org.dhis2.utils.session.PinModule;
 import org.dhis2.utils.session.SessionComponent;
 
@@ -172,9 +172,6 @@ public interface UserComponent extends UserComponentFlavor{
     NoteDetailComponent plus(NoteDetailModule noteDetailModule);
 
     @NonNull
-    ProgramSettingsComponent plus(SettingsProgramModule settingsProgramModule);
-
-    @NonNull
     ScanComponent plus(ScanModule scanModule);
 
     @NonNull
@@ -194,6 +191,9 @@ public interface UserComponent extends UserComponentFlavor{
 
     @NonNull
     SessionComponent plus(PinModule pinModule);
+
+    @NonNull
+    ChangeServerURLComponent plus(ChangeServerURLModule changeServerURLModule);
 
     @NonNull
     SchedulingComponent plus(SchedulingModule schedulingModule);

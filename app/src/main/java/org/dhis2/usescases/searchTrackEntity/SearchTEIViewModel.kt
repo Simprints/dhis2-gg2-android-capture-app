@@ -18,7 +18,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.PagingData
 import androidx.paging.cachedIn
 import androidx.paging.map
-import com.mapbox.geojson.Feature
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
@@ -74,13 +73,14 @@ import org.hisp.dhis.android.core.arch.helpers.Result
 import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.maintenance.D2ErrorCode
 import org.hisp.dhis.mobile.ui.designsystem.component.navigationBar.NavigationBarItem
+import org.maplibre.geojson.Feature
 import timber.log.Timber
 
 const val TEI_TYPE_SEARCH_MAX_RESULTS = 10
 
 class SearchTEIViewModel(
     val initialProgramUid: String?,
-    initialQuery: MutableMap<String, String>?,
+    initialQuery: MutableMap<String, List<String>?>?,
     private val presenter: SearchTEContractsModule.Presenter,
     private val searchRepository: SearchRepository,
     private val searchRepositoryKt: SearchRepositoryKt,
@@ -95,20 +95,21 @@ class SearchTEIViewModel(
     private val basicPreferenceProvider: BasicPreferenceProvider,
     private val fromRelationships: Boolean
 ) : ViewModel() {
-
     private var layersVisibility: Map<String, MapLayer> = emptyMap()
 
-    private val _pageConfiguration = MutableLiveData<NavigationPageConfigurator>()
+    private val pageConfiguration = MutableLiveData<NavigationPageConfigurator>()
 
-    private val _navigationBarUIState = mutableStateOf(
-        NavigationBarUIState<NavigationPage>(),
-    )
+    private val _navigationBarUIState =
+        mutableStateOf(
+            NavigationBarUIState<NavigationPage>(),
+        )
     val navigationBarUIState: MutableState<NavigationBarUIState<NavigationPage>> =
         _navigationBarUIState
 
-    val queryData = mutableMapOf<String, String>().apply {
-        initialQuery?.let { putAll(it) }
-    }
+    val queryData =
+        mutableMapOf<String, List<String>?>().apply {
+            initialQuery?.let { putAll(it) }
+        }
 
     private val _legacyInteraction = MutableLiveData<LegacyInteraction?>()
     val legacyInteraction: LiveData<LegacyInteraction?> = _legacyInteraction
@@ -129,7 +130,7 @@ class SearchTEIViewModel(
     val isScrollingDown = MutableLiveData(false)
 
     private var searching: Boolean = false
-    private val _filtersActive = MutableLiveData(false)
+    private val filtersActive = MutableLiveData(false)
 
     private val _downloadResult = MutableLiveData<TeiDownloadResult>()
     val downloadResult: LiveData<TeiDownloadResult> = _downloadResult
@@ -150,9 +151,7 @@ class SearchTEIViewModel(
     private val _sequentialSearch = MutableLiveData<SequentialSearch?>(null)
     val sequentialSearch: LiveData<SequentialSearch?> = _sequentialSearch
 
-    // EyeSeeTea customization - Notify when biometric app is about to be launched to hide RecyclerView
-    private val _biometricAppLaunching = MutableLiveData<Boolean>(false)
-    val biometricAppLaunching: LiveData<Boolean> = _biometricAppLaunching
+    var searchParametersUiState by mutableStateOf(SearchParametersUiState())
 
     var uiState by mutableStateOf(SearchParametersUiState())
 
@@ -162,20 +161,24 @@ class SearchTEIViewModel(
 
     private val onNewSearch = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
-    val searchPagingData = onNewSearch.onStart { emit(Unit) }.flatMapLatest {
-        flow {
-            CoroutineTracker.increment()
-            emitAll(
-                when {
-                    searching -> loadSearchResults()
-                    displayFrontPageList() -> loadDisplayInListResults()
-                    else -> emptyFlow()
-                },
-            )
-            CoroutineTracker.decrement()
-        }
-    }.flowOn(dispatchers.io()).cachedIn(viewModelScope)
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PagingData.empty())
+    val searchPagingData =
+        onNewSearch
+            .onStart { emit(Unit) }
+            .flatMapLatest {
+                flow {
+                    CoroutineTracker.increment()
+                    emitAll(
+                        when {
+                            searching -> loadSearchResults()
+                            displayFrontPageList() -> loadDisplayInListResults()
+                            else -> emptyFlow()
+                        },
+                    )
+                    CoroutineTracker.decrement()
+                }
+            }.flowOn(dispatchers.io())
+            .cachedIn(viewModelScope)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PagingData.empty())
 
     private var searchChildren: Boolean = false
     private val uIds = mutableListOf<String>()
@@ -184,6 +187,10 @@ class SearchTEIViewModel(
 
     private val _isDataLoaded = MutableLiveData<Boolean?>(false)
     val isDataLoaded: MutableLiveData<Boolean?> = _isDataLoaded
+
+    // EyeSeeTea customization - Notify when biometric app is about to be launched to hide RecyclerView
+    private val _biometricAppLaunching = MutableLiveData<Boolean>(false)
+    val biometricAppLaunching: LiveData<Boolean> = _biometricAppLaunching
 
     init {
         viewModelScope.launch(dispatchers.io()) {
@@ -197,8 +204,8 @@ class SearchTEIViewModel(
             )
         }
 
-        presenter.setBiometricListener { simprintsItems, biometricAttributeUid, items, sessionId, ageNotSupported ->
-            val filterValue = items.joinToString(";") { it.guid }
+        presenter.setBiometricListener { simprintsItems, biometricAttributeUid, items, sessionId, ageNotSupported, scannedCredential ->
+            val filterValues = items.map { it.guid }
 
             val previousSearch = when (sequentialSearch.value) {
                 is SequentialSearch.BiometricsSearch -> null
@@ -216,16 +223,17 @@ class SearchTEIViewModel(
                 SequentialSearch.BiometricsSearch(
                     sessionId = sessionId,
                     isAgeNotSupported = ageNotSupported,
-                    biometricUid = filterValue,
+                    biometricUids = filterValues,
                     previousSearch = previousSearch,
                     nextActions = nextActions,
-                    simprintsItems = simprintsItems
+                    simprintsItems = simprintsItems,
+                    scannedCredential = scannedCredential
                 )
             )
 
-            Timber.d("Search by biometrics %s", filterValue)
+            Timber.d("Search by biometrics %s", filterValues)
             queryData.clear()
-            queryData[biometricAttributeUid] = filterValue
+            queryData[biometricAttributeUid] = filterValues
 
             searchChildren = true
 
@@ -234,8 +242,9 @@ class SearchTEIViewModel(
     }
 
     private fun loadNavigationBarItems() {
+        CoroutineTracker.increment()
         val pageConfigurator = searchNavPageConfigurator.initVariables()
-        _pageConfiguration.postValue(pageConfigurator)
+        pageConfiguration.postValue(pageConfigurator)
 
         val enrollmentItems = mutableListOf<NavigationBarItem<NavigationPage>>()
 
@@ -272,14 +281,16 @@ class SearchTEIViewModel(
             )
         }
 
-        _navigationBarUIState.value = _navigationBarUIState.value.copy(
-            items = enrollmentItems.takeIf { it.size > 1 }.orEmpty(),
-            selectedItem = enrollmentItems.firstOrNull()?.id,
-        )
+        _navigationBarUIState.value =
+            _navigationBarUIState.value.copy(
+                items = enrollmentItems.takeIf { it.size > 1 }.orEmpty(),
+                selectedItem = enrollmentItems.firstOrNull()?.id,
+            )
 
         if (enrollmentItems.isNotEmpty()) {
             onNavigationPageChanged(enrollmentItems.first().id)
         }
+        CoroutineTracker.decrement()
     }
 
     fun onNavigationPageChanged(page: NavigationPage) {
@@ -293,7 +304,10 @@ class SearchTEIViewModel(
         val displayFrontPageList =
             searchRepository.getProgram(initialProgramUid)?.displayFrontPageList() ?: true
         val shouldOpenSearch =
-            !displayFrontPageList && !searchRepository.canCreateInProgramWithoutSearch() && !searching && _filtersActive.value == false
+            !displayFrontPageList &&
+                !searchRepository.canCreateInProgramWithoutSearch() &&
+                !searching &&
+                filtersActive.value == false
 
         createButtonScrollVisibility.postValue(
             if (searching) {
@@ -306,27 +320,34 @@ class SearchTEIViewModel(
             SearchList(
                 previousSate = _screenState.value?.screenState ?: SearchScreenState.NONE,
                 listType = SearchScreenState.LIST,
-                displayFrontPageList = searchRepository.getProgram(initialProgramUid)
-                    ?.displayFrontPageList() == true,
+                displayFrontPageList =
+                    searchRepository
+                        .getProgram(initialProgramUid)
+                        ?.displayFrontPageList() == true,
                 canCreateWithoutSearch = searchRepository.canCreateInProgramWithoutSearch(),
                 isSearching = searching,
-                searchForm = SearchForm(
-                    queryHasData = queryData.isNotEmpty(),
-                    minAttributesToSearch = searchRepository.getProgram(initialProgramUid)
-                        ?.minAttributesRequiredToSearch() ?: 1,
-                    isForced = shouldOpenSearch,
-                    isOpened = shouldOpenSearch || (!isSearchByBiometricsEnabled() && isLandscape()),
-                ),
-                searchFilters = SearchFilters(
-                    hasActiveFilters = hasActiveFilters(),
-                    isOpened = filterIsOpen(),
-                ),
-                biometricsConfig.biometricsMode
-            )
+                searchForm =
+                    SearchForm(
+                        queryHasData = queryData.isNotEmpty(),
+                        minAttributesToSearch =
+                            searchRepository
+                                .getProgram(initialProgramUid)
+                                ?.minAttributesRequiredToSearch()
+                                ?: 1,
+                        isForced = shouldOpenSearch,
+                        isOpened = shouldOpenSearch || (!isSearchByBiometricsEnabled() && isLandscape()),
+                    ),
+                searchFilters =
+                    SearchFilters(
+                        hasActiveFilters = hasActiveFilters(),
+                        isOpened = filterIsOpen(),
+                    ),
+                biometricsConfig.biometricsMode,
+            ),
         )
     }
 
-    private fun hasActiveFilters() = _filtersActive.value == true
+    private fun hasActiveFilters() = filtersActive.value == true
 
     fun setMapScreen() {
         _screenState.value.takeIf { it?.screenState == SearchScreenState.LIST }?.let {
@@ -336,22 +357,30 @@ class SearchTEIViewModel(
             SearchList(
                 previousSate = _screenState.value?.screenState ?: SearchScreenState.NONE,
                 listType = SearchScreenState.MAP,
-                displayFrontPageList = searchRepository.getProgram(initialProgramUid)
-                    ?.displayFrontPageList() ?: false,
+                displayFrontPageList =
+                    searchRepository
+                        .getProgram(initialProgramUid)
+                        ?.displayFrontPageList()
+                        ?: false,
                 canCreateWithoutSearch = searchRepository.canCreateInProgramWithoutSearch(),
                 isSearching = searching,
-                searchForm = SearchForm(
-                    queryHasData = queryData.isNotEmpty(),
-                    minAttributesToSearch = searchRepository.getProgram(initialProgramUid)
-                        ?.minAttributesRequiredToSearch() ?: 1,
-                    isForced = false,
-                    isOpened = false,
-                ),
-                searchFilters = SearchFilters(
-                    hasActiveFilters = hasActiveFilters(),
-                    isOpened = filterIsOpen(),
-                ),
-                BiometricsMode.zero
+                searchForm =
+                    SearchForm(
+                        queryHasData = queryData.isNotEmpty(),
+                        minAttributesToSearch =
+                            searchRepository
+                                .getProgram(initialProgramUid)
+                                ?.minAttributesRequiredToSearch()
+                                ?: 1,
+                        isForced = false,
+                        isOpened = false,
+                    ),
+                searchFilters =
+                    SearchFilters(
+                        hasActiveFilters = hasActiveFilters(),
+                        isOpened = filterIsOpen(),
+                    ),
+                BiometricsMode.zero,
             ),
         )
     }
@@ -369,22 +398,30 @@ class SearchTEIViewModel(
             SearchList(
                 previousSate = _screenState.value?.screenState ?: SearchScreenState.NONE,
                 listType = _screenState.value?.screenState ?: SearchScreenState.LIST,
-                displayFrontPageList = searchRepository.getProgram(initialProgramUid)
-                    ?.displayFrontPageList() ?: false,
+                displayFrontPageList =
+                    searchRepository
+                        .getProgram(initialProgramUid)
+                        ?.displayFrontPageList()
+                        ?: false,
                 canCreateWithoutSearch = searchRepository.canCreateInProgramWithoutSearch(),
                 isSearching = searching,
-                searchForm = SearchForm(
-                    queryHasData = queryData.isNotEmpty(),
-                    minAttributesToSearch = searchRepository.getProgram(initialProgramUid)
-                        ?.minAttributesRequiredToSearch() ?: 1,
-                    isForced = false,
-                    isOpened = true,
-                ),
-                searchFilters = SearchFilters(
-                    hasActiveFilters = hasActiveFilters(),
-                    isOpened = false,
-                ),
-                biometricsConfig.biometricsMode
+                searchForm =
+                    SearchForm(
+                        queryHasData = queryData.isNotEmpty(),
+                        minAttributesToSearch =
+                            searchRepository
+                                .getProgram(initialProgramUid)
+                                ?.minAttributesRequiredToSearch()
+                                ?: 1,
+                        isForced = false,
+                        isOpened = true,
+                    ),
+                searchFilters =
+                    SearchFilters(
+                        hasActiveFilters = hasActiveFilters(),
+                        isOpened = false,
+                    ),
+                biometricsConfig.biometricsMode,
             ),
         )
     }
@@ -400,43 +437,51 @@ class SearchTEIViewModel(
         }
     }
 
-    fun updateActiveFilters(filtersActive: Boolean) {
-        if (_filtersActive.value != filtersActive) searchRepository.clearFetchedList()
-        _filtersActive.postValue(filtersActive)
+    fun updateActiveFilters(filters: Boolean) {
+        if (filtersActive.value != filters) searchRepository.clearFetchedList()
+        filtersActive.postValue(filters)
     }
 
     fun refreshData() {
         performSearch()
     }
 
-    private fun updateQuery(uid: String, value: String?) {
-        if (value.isNullOrEmpty()) {
+    private fun updateQuery(
+        uid: String,
+        values: List<String>?,
+    ) {
+        if (values.isNullOrEmpty()) {
             queryData.remove(uid)
         } else {
-            queryData[uid] = value
+            queryData[uid] = values
         }
 
-        updateSearchParameters(uid, value)
+        updateSearchParameters(uid, values)
         updateSearch()
     }
 
-    private fun updateSearchParameters(uid: String, value: String?) {
-        val updatedItems = uiState.items.map {
-            if (it.uid == uid) {
-                (it as FieldUiModelImpl).copy(
-                    value = value,
-                    displayName = displayNameProvider.provideDisplayName(
-                        valueType = it.valueType,
-                        value = value,
-                        optionSet = it.optionSet,
-                        periodType = it.periodSelector?.type,
-                    ),
-                )
-            } else {
-                it
+    private fun updateSearchParameters(
+        uid: String,
+        values: List<String>?,
+    ) {
+        val updatedItems =
+            searchParametersUiState.items.map {
+                if (it.uid == uid) {
+                    (it as FieldUiModelImpl).copy(
+                        value = values?.joinToString(","),
+                        displayName =
+                            displayNameProvider.provideDisplayName(
+                                valueType = it.valueType,
+                                value = values?.joinToString(","),
+                                optionSet = it.optionSet,
+                                periodType = it.periodSelector?.type,
+                            ),
+                    )
+                } else {
+                    it
+                }
             }
-        }
-        uiState = uiState.copy(items = updatedItems)
+        searchParametersUiState = searchParametersUiState.copy(items = updatedItems)
     }
 
     fun clearQueryData() {
@@ -448,13 +493,15 @@ class SearchTEIViewModel(
     }
 
     private fun clearSearchParameters() {
-        val updatedItems = uiState.items.map {
-            (it as FieldUiModelImpl).copy(value = null, displayName = null)
-        }
-        uiState = uiState.copy(
-            items = updatedItems,
-            searchedItems = mapOf(),
-        )
+        val updatedItems =
+            searchParametersUiState.items.map {
+                (it as FieldUiModelImpl).copy(value = null, displayName = null)
+            }
+        searchParametersUiState =
+            searchParametersUiState.copy(
+                items = updatedItems,
+                searchedItems = mapOf(),
+            )
         searching = false
     }
 
@@ -463,90 +510,37 @@ class SearchTEIViewModel(
             val currentSearchList = _screenState.value as SearchList
             _screenState.postValue(
                 currentSearchList.copy(
-                    searchForm = currentSearchList.searchForm.copy(
-                        queryHasData = queryData.isNotEmpty(),
-                    ),
+                    searchForm =
+                        currentSearchList.searchForm.copy(
+                            queryHasData = queryData.isNotEmpty(),
+                        ),
                 ),
             )
         }
-        uiState = uiState.copy(searchEnabled = queryData.isNotEmpty())
+        searchParametersUiState = searchParametersUiState.copy(searchEnabled = queryData.isNotEmpty())
     }
 
-    private suspend fun loadSearchResults() = withContext(dispatchers.io()) {
-        val searchParametersModel = SearchParametersModel(
-            selectedProgram = searchRepository.getProgram(initialProgramUid),
-            queryData = queryData,
-            uIds = uIds,
-        )
-        val getPagingData = searchRepositoryKt.searchTrackedEntities(
-            searchParametersModel,
-            searching && networkUtils.isOnline(),
-        )
+    private suspend fun loadSearchResults() =
+        withContext(dispatchers.io()) {
+            val searchParametersModel =
+                SearchParametersModel(
+                    selectedProgram = searchRepository.getProgram(initialProgramUid),
+                    queryData = queryData,
+                )
+            val getPagingData =
+                searchRepositoryKt.searchTrackedEntities(
+                    searchParametersModel,
+                    searching && networkUtils.isOnline(),
+                )
 
-        return@withContext getPagingData.map { pagingData ->
-            pagingData.map { item ->
-                withContext(dispatchers.io()) {
-                    if (searching && networkUtils.isOnline() && filterManager.stateFilters.isEmpty()) {
-                        searchRepository.transform(
-                            item,
-                            searchParametersModel.selectedProgram,
-                            false,
-                            filterManager.sortingItem,
-                        )
-                    } else {
-                        searchRepository.transform(
-                            item,
-                            searchParametersModel.selectedProgram,
-                            true,
-                            filterManager.sortingItem,
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    private suspend fun loadDisplayInListResults() = withContext(dispatchers.io()) {
-        val searchParametersModel = SearchParametersModel(
-            selectedProgram = searchRepository.getProgram(initialProgramUid),
-            queryData = queryData,
-            uIds = uIds,
-        )
-        val getPagingData = searchRepositoryKt.searchTrackedEntities(
-            searchParametersModel,
-            false,
-        )
-
-        return@withContext getPagingData.map { pagingData ->
-            pagingData.map { item ->
-                withContext(dispatchers.io()) {
-                    searchRepository.transform(
-                        item,
-                        searchParametersModel.selectedProgram,
-                        true,
-                        filterManager.sortingItem,
-                    )
-                }
-            }
-        }
-    }
-
-    suspend fun fetchGlobalResults() = withContext(dispatchers.io()) {
-        val searchParametersModel = SearchParametersModel(
-            selectedProgram = null,
-            queryData = queryData,
-            uIds = uIds,
-        )
-        val getPagingData = searchRepositoryKt.searchTrackedEntities(
-            searchParametersModel,
-            searching && networkUtils.isOnline(),
-        )
-
-        return@withContext if (searching) {
-            getPagingData.map { pagingData ->
+            return@withContext getPagingData.map { pagingData ->
                 pagingData.map { item ->
                     withContext(dispatchers.io()) {
-                        if (searching && networkUtils.isOnline() && filterManager.stateFilters.isEmpty()) {
+                        if (
+                            searching &&
+                            networkUtils.isOnline() &&
+                            filterManager.stateFilters.isEmpty()
+                        ) {
                             searchRepository.transform(
                                 item,
                                 searchParametersModel.selectedProgram,
@@ -564,31 +558,96 @@ class SearchTEIViewModel(
                     }
                 }
             }
-        } else {
-            null
         }
-    }
+
+    private suspend fun loadDisplayInListResults() =
+        withContext(dispatchers.io()) {
+            val searchParametersModel =
+                SearchParametersModel(
+                    selectedProgram = searchRepository.getProgram(initialProgramUid),
+                    queryData = queryData,
+                )
+            val getPagingData =
+                searchRepositoryKt.searchTrackedEntities(
+                    searchParametersModel,
+                    false,
+                )
+
+            return@withContext getPagingData.map { pagingData ->
+                pagingData.map { item ->
+                    withContext(dispatchers.io()) {
+                        searchRepository.transform(
+                            item,
+                            searchParametersModel.selectedProgram,
+                            true,
+                            filterManager.sortingItem,
+                        )
+                    }
+                }
+            }
+        }
+
+    suspend fun fetchGlobalResults() =
+        withContext(dispatchers.io()) {
+            val searchParametersModel =
+                SearchParametersModel(
+                    selectedProgram = null,
+                    queryData = queryData,
+                )
+            val getPagingData =
+                searchRepositoryKt.searchTrackedEntities(
+                    searchParametersModel,
+                    searching && networkUtils.isOnline(),
+                )
+
+            return@withContext if (searching) {
+                getPagingData.map { pagingData ->
+                    pagingData.map { item ->
+                        withContext(dispatchers.io()) {
+                            if (
+                                searching &&
+                                networkUtils.isOnline() &&
+                                filterManager.stateFilters.isEmpty()
+                            ) {
+                                searchRepository.transform(
+                                    item,
+                                    searchParametersModel.selectedProgram,
+                                    false,
+                                    filterManager.sortingItem,
+                                )
+                            } else {
+                                searchRepository.transform(
+                                    item,
+                                    searchParametersModel.selectedProgram,
+                                    true,
+                                    filterManager.sortingItem,
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                null
+            }
+        }
 
     fun fetchMapResults() {
         CoroutineTracker.increment()
-        viewModelScope.launch {
-            val result = async(context = dispatchers.io()) {
-                mapDataRepository.getTrackerMapData(
-                    searchRepository.getProgram(initialProgramUid),
-                    queryData,
-                    layersVisibility,
-                )
-            }
-
+        viewModelScope.launch(dispatchers.io()) {
             try {
-                val data = result.await()
+                val data =
+                    mapDataRepository.getTrackerMapData(
+                        searchRepository.getProgram(initialProgramUid),
+                        queryData,
+                        layersVisibility,
+                    )
                 _mapResults.send(data)
             } catch (e: Exception) {
                 Timber.e(e)
             } finally {
+                searching = false
                 CoroutineTracker.decrement()
             }
-            searching = false
         }
     }
 
@@ -606,10 +665,6 @@ class SearchTEIViewModel(
 
             val queryDataContainsAgeUnderThreadsHold =
                 containsAgeFilterAndIsUnderAgeThreshold(basicPreferenceProvider, queryData)
-            containsAgeFilterAndIsUnderAgeThreshold(
-                basicPreferenceProvider,
-                queryData,
-            )
 
             val nextActions =
                 if (previousSearch == null &&
@@ -626,7 +681,9 @@ class SearchTEIViewModel(
                 SequentialSearch.AttributeSearch(
                     previousSearch = previousSearch,
                     nextActions = nextActions,
-                    queryData = queryData.toMap()
+                    queryData = queryData.mapValues {
+                        it.value?.joinToString(";") ?:""
+                    }
                 )
             )
         }
@@ -640,16 +697,16 @@ class SearchTEIViewModel(
             try {
                 if (canPerformSearch()) {
                     searching = queryData.isNotEmpty()
-                    uiState = uiState.copy(
-                        clearSearchEnabled = queryData.isNotEmpty(),
-                        searchedItems = getFriendlyQueryData(),
-                    )
+                    searchParametersUiState =
+                        searchParametersUiState.copy(
+                            clearSearchEnabled = queryData.isNotEmpty(),
+                            searchedItems = getFriendlyQueryData(),
+                        )
 
                     when (_screenState.value?.screenState) {
                         SearchScreenState.LIST -> {
                             setListScreen()
                             onNewSearch.emit(Unit)
-                            CoroutineTracker.decrement()
                         }
 
                         SearchScreenState.MAP -> {
@@ -661,14 +718,18 @@ class SearchTEIViewModel(
                         else -> searching = false
                     }
                 } else {
-                    val minAttributesToSearch = searchRepository.getProgram(initialProgramUid)
-                        ?.minAttributesRequiredToSearch() ?: 0
-                    val message = resourceManager.getString(
-                        R.string.search_min_num_attr,
-                        minAttributesToSearch,
-                    )
-                    uiState = uiState.copy(minAttributesMessage = message)
-                    uiState.updateMinAttributeWarning(true)
+                    val minAttributesToSearch =
+                        searchRepository
+                            .getProgram(initialProgramUid)
+                            ?.minAttributesRequiredToSearch()
+                            ?: 0
+                    val message =
+                        resourceManager.getString(
+                            R.string.search_min_num_attr,
+                            minAttributesToSearch,
+                        )
+                    searchParametersUiState = searchParametersUiState.copy(minAttributesMessage = message)
+                    searchParametersUiState.updateMinAttributeWarning(true)
                     setSearchScreen()
                     _refreshData.postValue(Unit)
                     onNewSearch.emit(Unit)
@@ -679,41 +740,47 @@ class SearchTEIViewModel(
         }
     }
 
-    private fun canPerformSearch(): Boolean {
-        return minAttributesToSearchCheck() || displayFrontPageList()
-    }
+    private fun canPerformSearch(): Boolean = minAttributesToSearchCheck() || displayFrontPageList()
 
-    private fun minAttributesToSearchCheck(): Boolean {
-        return searchRepository.getProgram(initialProgramUid)?.let { program ->
+    private fun minAttributesToSearchCheck(): Boolean =
+        searchRepository.getProgram(initialProgramUid)?.let { program ->
             (program.minAttributesRequiredToSearch() ?: 0) <= queryData.size
         } ?: true
-    }
 
-    private fun displayFrontPageList(): Boolean {
-        return searchRepository.getProgram(initialProgramUid)?.let { program ->
+    private fun displayFrontPageList(): Boolean =
+        searchRepository.getProgram(initialProgramUid)?.let { program ->
             program.displayFrontPageList() == true && queryData.isEmpty()
         } ?: false
-    }
 
-    private fun canDisplayResult(itemCount: Int, onlineTooManyResults: Boolean): Boolean {
-        return !onlineTooManyResults && when (initialProgramUid) {
-            null -> itemCount <= TEI_TYPE_SEARCH_MAX_RESULTS
-            else -> searchRepository.getProgram(initialProgramUid)?.maxTeiCountToReturn()
-                ?.takeIf { it != 0 }?.let { maxTeiCount ->
-                    itemCount <= maxTeiCount
-                } ?: true
-        }
-    }
+    private fun canDisplayResult(
+        itemCount: Int,
+        onlineTooManyResults: Boolean,
+    ): Boolean =
+        !onlineTooManyResults &&
+            when (initialProgramUid) {
+                null -> itemCount <= TEI_TYPE_SEARCH_MAX_RESULTS
+                else ->
+                    searchRepository
+                        .getProgram(initialProgramUid)
+                        ?.maxTeiCountToReturn()
+                        ?.takeIf { it != 0 }
+                        ?.let { maxTeiCount ->
+                            itemCount <= maxTeiCount
+                        } ?: true
+            }
 
-    fun queryDataByProgram(programUid: String?): MutableMap<String, String> {
-        return searchRepository.filterQueryForProgram(queryData, programUid)
-    }
+    fun queryDataByProgram(programUid: String?): MutableMap<String, List<String>> =
+        searchRepository.filterQueryForProgram(queryData, programUid)
 
     fun onEnrollClick() {
         _legacyInteraction.postValue(LegacyInteraction.OnEnrollClick(queryData))
     }
 
-    fun onAddRelationship(teiUid: String, relationshipTypeUid: String?, online: Boolean) {
+    fun onAddRelationship(
+        teiUid: String,
+        relationshipTypeUid: String?,
+        online: Boolean,
+    ) {
         _legacyInteraction.postValue(
             LegacyInteraction.OnAddRelationship(
                 teiUid,
@@ -727,11 +794,16 @@ class SearchTEIViewModel(
         _legacyInteraction.postValue(LegacyInteraction.OnSyncIconClick(teiUid))
     }
 
-    fun onDownloadTei(teiUid: String, enrollmentUid: String?, reason: String? = null) {
+    fun onDownloadTei(
+        teiUid: String,
+        enrollmentUid: String?,
+        reason: String? = null,
+    ) {
         viewModelScope.launch {
-            val result = async(dispatchers.io()) {
-                searchRepository.download(teiUid, enrollmentUid, reason)
-            }
+            val result =
+                async(dispatchers.io()) {
+                    searchRepository.download(teiUid, enrollmentUid, reason)
+                }
             try {
                 val downloadResult = result.await()
                 if (downloadResult is TeiDownloadResult.TeiToEnroll) {
@@ -751,7 +823,11 @@ class SearchTEIViewModel(
         }
     }
 
-    fun onTeiClick(teiUid: String, enrollmentUid: String?, online: Boolean) {
+    fun onTeiClick(
+        teiUid: String,
+        enrollmentUid: String?,
+        online: Boolean,
+    ) {
         _legacyInteraction.postValue(
             LegacyInteraction.OnTeiClick(teiUid, enrollmentUid, online),
         )
@@ -762,16 +838,18 @@ class SearchTEIViewModel(
         globalResultCount: Int? = null,
         onlineErrorCode: D2ErrorCode? = null,
     ) {
-        val canDisplayResults = canDisplayResult(
-            programResultCount,
-            onlineErrorCode == D2ErrorCode.MAX_TEI_COUNT_REACHED,
-        )
+        val canDisplayResults =
+            canDisplayResult(
+                programResultCount,
+                onlineErrorCode == D2ErrorCode.MAX_TEI_COUNT_REACHED,
+            )
         val hasProgramResults = programResultCount > 0
         val hasGlobalResults = globalResultCount?.let { it > 0 }
 
-        val isSearching = _screenState.value?.takeIf { it is SearchList }?.let {
-            (it as SearchList).isSearching
-        } ?: false
+        val isSearching =
+            _screenState.value?.takeIf { it is SearchList }?.let {
+                (it as SearchList).isSearching
+            } ?: false
 
         if (isSearching) {
             handleSearchResult(
@@ -789,18 +867,20 @@ class SearchTEIViewModel(
     }
 
     private fun handleDisplayInListResult(hasProgramResults: Boolean) {
-        val result = when {
-            !hasProgramResults && searchRepository.canCreateInProgramWithoutSearch() -> listOf(
-                SearchResult(
-                    SearchResult.SearchResultType.SEARCH_OR_CREATE,
-                    searchRepository.trackedEntityType.displayName(),
-                ),
-            )
+        val result =
+            when {
+                !hasProgramResults && searchRepository.canCreateInProgramWithoutSearch() ->
+                    listOf(
+                        SearchResult(
+                            SearchResult.SearchResultType.SEARCH_OR_CREATE,
+                            searchRepository.trackedEntityType.displayName(),
+                        ),
+                    )
 
-            else -> listOf(SearchResult(SearchResult.SearchResultType.NO_MORE_RESULTS_OFFLINE))
-        }
+                else -> listOf(SearchResult(SearchResult.SearchResultType.NO_MORE_RESULTS_OFFLINE))
+            }
 
-        if (result.isEmpty() && _filtersActive.value == false) {
+        if (result.isEmpty() && filtersActive.value == false) {
             setSearchScreen()
         }
 
@@ -812,48 +892,54 @@ class SearchTEIViewModel(
         hasProgramResults: Boolean,
         hasGlobalResults: Boolean?,
     ) {
-        val result = when {
-            !canDisplayResults -> {
-                listOf(SearchResult(SearchResult.SearchResultType.TOO_MANY_RESULTS))
-            }
+        val result =
+            when {
+                !canDisplayResults -> {
+                    listOf(SearchResult(SearchResult.SearchResultType.TOO_MANY_RESULTS))
+                }
 
-            hasGlobalResults == null && searchRepository.getProgram(initialProgramUid) != null && searchRepository.filterQueryForProgram(
-                queryData,
-                null
-            )
-                .isNotEmpty() && searchRepository.filtersApplyOnGlobalSearch() && sequentialSearch.value != null && sequentialSearch.value is SequentialSearch.AttributeSearch -> {
-                listOf(
-                    SearchResult(
-                        if (IS_SEARCH_OUTSIDE_PROGRAM_AVAILABLE) {
-                            SearchResult.SearchResultType.SEARCH_OUTSIDE
-                        } else {
-                            SearchResult.SearchResultType.NO_MORE_RESULTS
-                        },
-                        searchRepository.getProgram(initialProgramUid)?.displayName(),
-                    ),
-                )
-            }
-
-            hasGlobalResults == null && searchRepository.getProgram(initialProgramUid) != null && searchRepository.trackedEntityTypeFields()
-                .isNotEmpty() && searchRepository.filtersApplyOnGlobalSearch() && sequentialSearch.value != null && sequentialSearch.value is SequentialSearch.AttributeSearch -> {
-                listOf(
-                    SearchResult(
-                        type = SearchResult.SearchResultType.UNABLE_SEARCH_OUTSIDE,
-                        uiData = UnableToSearchOutsideData(
-                            trackedEntityTypeAttributes = searchRepository.trackedEntityTypeFields(),
-                            trackedEntityTypeName = searchRepository.trackedEntityType.displayName()!!,
+                hasGlobalResults == null &&
+                    searchRepository.getProgram(initialProgramUid) != null &&
+                    searchRepository.filterQueryForProgram(queryData, null).isNotEmpty() &&
+                    searchRepository.filtersApplyOnGlobalSearch() &&
+                        sequentialSearch.value != null &&
+                        sequentialSearch.value is SequentialSearch.AttributeSearch -> {
+                    listOf(
+                        SearchResult(
+                            SearchResult.SearchResultType.SEARCH_OUTSIDE,
+                            searchRepository.getProgram(initialProgramUid)?.displayName(),
                         ),
-                    ),
-                )
+                    )
+                }
+
+                hasGlobalResults == null &&
+                    searchRepository.getProgram(initialProgramUid) != null &&
+                    searchRepository.trackedEntityTypeFields().isNotEmpty() &&
+                    searchRepository.filtersApplyOnGlobalSearch()
+                        && sequentialSearch.value != null
+                        && sequentialSearch.value is SequentialSearch.AttributeSearch-> {
+                    listOf(
+                        SearchResult(
+                            type = SearchResult.SearchResultType.UNABLE_SEARCH_OUTSIDE,
+                            uiData =
+                                UnableToSearchOutsideData(
+                                    trackedEntityTypeAttributes =
+                                        searchRepository.trackedEntityTypeFields(),
+                                    trackedEntityTypeName =
+                                        searchRepository.trackedEntityType.displayName()!!,
+                                ),
+                        ),
+                    )
+                }
+
+                hasProgramResults || hasGlobalResults == true ->
+                    listOf(SearchResult(SearchResult.SearchResultType.NO_MORE_RESULTS))
+
+                else ->
+                    //EyeSeTea customization - never show icon folder no results
+                    //listOf(SearchResult(SearchResult.SearchResultType.NO_RESULTS))
+                    listOf()
             }
-
-            hasProgramResults || hasGlobalResults == true -> listOf(SearchResult(SearchResult.SearchResultType.NO_MORE_RESULTS))
-
-            else ->
-                //EyeSeTea customization - never show icon folder no results
-                //listOf(SearchResult(SearchResult.SearchResultType.NO_RESULTS))
-                listOf()
-        }
 
         val sequentialSearchMessage = getSearchResultSequentialSearchMessage(hasProgramResults)
 
@@ -865,21 +951,24 @@ class SearchTEIViewModel(
     fun filtersApplyOnGlobalSearch(): Boolean = searchRepository.filtersApplyOnGlobalSearch()
 
     private fun handleInitWithoutData() {
-        val result = when (searchRepository.canCreateInProgramWithoutSearch()) {
-            true -> listOf(
-                SearchResult(
-                    SearchResult.SearchResultType.SEARCH_OR_CREATE,
-                    searchRepository.trackedEntityType.displayName(),
-                ),
-            )
+        val result =
+            when (searchRepository.canCreateInProgramWithoutSearch()) {
+                true ->
+                    listOf(
+                        SearchResult(
+                            SearchResult.SearchResultType.SEARCH_OR_CREATE,
+                            searchRepository.trackedEntityType.displayName(),
+                        ),
+                    )
 
-            false -> listOf(
-                SearchResult(
-                    SearchResult.SearchResultType.SEARCH,
-                    searchRepository.trackedEntityType.displayName(),
-                ),
-            )
-        }
+                false ->
+                    listOf(
+                        SearchResult(
+                            SearchResult.SearchResultType.SEARCH,
+                            searchRepository.trackedEntityType.displayName(),
+                        ),
+                    )
+            }
         _dataResult.postValue(result)
     }
 
@@ -891,19 +980,20 @@ class SearchTEIViewModel(
         closeSearchOrFilterCallback: () -> Unit,
         closeKeyboardCallback: () -> Unit,
     ) {
-        val searchScreenIsForced = _screenState.value?.let {
-            if (it is SearchList && it.searchForm.isForced) {
-                it.searchForm.isForced
-            } else {
-                false
-            }
-        } ?: false
+        val searchScreenIsForced =
+            _screenState.value?.let {
+                if (it is SearchList && it.searchForm.isForced) {
+                    it.searchForm.isForced
+                } else {
+                    false
+                }
+            } ?: false
 
         if (isPortrait && searchOrFilterIsOpen && !searchScreenIsForced) {
             if (keyBoardIsOpen) closeKeyboardCallback()
             closeSearchOrFilterCallback()
             viewModelScope.launch {
-                uiState.onBackPressed(true)
+                searchParametersUiState.onBackPressed(true)
             }
         } else if (keyBoardIsOpen) {
             closeKeyboardCallback()
@@ -913,23 +1003,24 @@ class SearchTEIViewModel(
         }
     }
 
-    fun canDisplayBottomNavigationBar(): Boolean {
-        return _screenState.value?.let {
+    fun canDisplayBottomNavigationBar(): Boolean =
+        _screenState.value?.let {
             it is SearchList
         } ?: false
-    }
 
     fun onProgramSelected(
         programIndex: Int,
         programs: List<ProgramSpinnerModel>,
         onProgramChanged: (selectedProgramUid: String?) -> Unit,
     ) {
-        val selectedProgram = when {
-            programIndex > 0 -> programs.takeIf { it.size > 1 }?.let { it[programIndex - 1] }
-                ?: programs.first()
+        val selectedProgram =
+            when {
+                programIndex > 0 ->
+                    programs.takeIf { it.size > 1 }?.let { it[programIndex - 1] }
+                        ?: programs.first()
 
-            else -> null
-        }
+                else -> null
+            }
         searchRepository.setCurrentTheme(selectedProgram)
 
         if (selectedProgram?.uid != initialProgramUid) {
@@ -937,36 +1028,40 @@ class SearchTEIViewModel(
         }
     }
 
-    fun isBottomNavigationBarVisible(): Boolean {
-        return _pageConfiguration.value?.let {
+    fun isBottomNavigationBarVisible(): Boolean =
+        pageConfiguration.value?.let {
             it.displayMapView() || it.displayAnalytics()
         } ?: false
-    }
 
     fun setFiltersOpened(filtersOpened: Boolean) {
         _filtersOpened.postValue(filtersOpened)
     }
 
     fun onFiltersClick(isLandscape: Boolean) {
-        _screenState.value.takeIf { it is SearchList }?.let {
-            val currentScreen = (it as SearchList)
-            val filterFieldsVisible = !currentScreen.searchFilters.isOpened
-            currentScreen.copy(
-                searchForm = currentScreen.searchForm.copy(
-                    isOpened = if (filterFieldsVisible) {
-                        false
-                    } else {
-                        isLandscape
-                    },
-                ),
-                searchFilters = SearchFilters(
-                    hasActiveFilters = hasActiveFilters(),
-                    isOpened = filterFieldsVisible,
-                ),
-            )
-        }?.let {
-            _screenState.postValue(it)
-        }
+        _screenState.value
+            .takeIf { it is SearchList }
+            ?.let {
+                val currentScreen = (it as SearchList)
+                val filterFieldsVisible = !currentScreen.searchFilters.isOpened
+                currentScreen.copy(
+                    searchForm =
+                        currentScreen.searchForm.copy(
+                            isOpened =
+                                if (filterFieldsVisible) {
+                                    false
+                                } else {
+                                    isLandscape
+                                },
+                        ),
+                    searchFilters =
+                        SearchFilters(
+                            hasActiveFilters = hasActiveFilters(),
+                            isOpened = filterFieldsVisible,
+                        ),
+                )
+            }?.let {
+                _screenState.postValue(it)
+            }
     }
 
     fun updateBackdrop(screenState: SearchTEScreenState) {
@@ -978,16 +1073,13 @@ class SearchTEIViewModel(
         )
     }
 
-    fun filterIsOpen(): Boolean {
-        return _screenState.value?.takeIf { it is SearchList }?.let {
+    fun filterIsOpen(): Boolean =
+        _screenState.value?.takeIf { it is SearchList }?.let {
             val currentScreen = it as SearchList
             currentScreen.searchFilters.isOpened
         } ?: false
-    }
 
-    fun fetchMapStyles(): List<BaseMapStyle> {
-        return mapStyleConfig.fetchMapStyles()
-    }
+    fun fetchMapStyles(): List<BaseMapStyle> = mapStyleConfig.fetchMapStyles()
 
     fun onLegacyInteractionConsumed() {
         _legacyInteraction.postValue(null)
@@ -998,110 +1090,125 @@ class SearchTEIViewModel(
         teiTypeUid: String,
     ) {
         fetchJob?.cancel()
-        fetchJob = viewModelScope.launch {
-            val fieldUiModels = searchRepositoryKt.searchParameters(programUid, teiTypeUid)
-                .filter { it.label.isNotBiometricText() }
+        fetchJob =
+            viewModelScope.launch {
+                val fieldUiModels =
+                    searchRepositoryKt.searchParameters(programUid, teiTypeUid)
+                        .filter { it.label.isNotBiometricText() }
 
-            uiState = uiState.copy(items = fieldUiModels)
-        }
-    }
-
-    fun onParameterIntent(formIntent: FormIntent) = when (formIntent) {
-        is FormIntent.OnTextChange -> {
-            updateQuery(
-                formIntent.uid,
-                formIntent.value,
-            )
-        }
-
-        is FormIntent.OnSave -> {
-            updateQuery(
-                formIntent.uid,
-                formIntent.value,
-            )
-        }
-
-        is FormIntent.OnQrCodeScanned -> {
-            onQrCodeScanned(formIntent)
-        }
-
-        is FormIntent.OnFocus -> {
-            val updatedItems = uiState.items.map { field ->
-                if (field.focused && field.uid != formIntent.uid) {
-                    val validation = field.value?.takeIf {
-                        field.valueType in listOf(
-                            ValueType.DATE, ValueType.DATETIME, ValueType.AGE, ValueType.TIME,
-                        )
-                    }?.let { value -> field.valueType?.validator?.validate(value) }
-
-                    (field as FieldUiModelImpl).copy(
-                        focused = false,
-                        error = when (validation) {
-                            is Result.Failure -> resourceManager.getString(R.string.formatting_error)
-                            else -> null
-                        },
-                    )
-                } else if (field.uid == formIntent.uid) {
-                    (field as FieldUiModelImpl).copy(focused = true)
-                } else {
-                    field
-                }
+                searchParametersUiState = searchParametersUiState.copy(items = fieldUiModels)
             }
-            uiState = uiState.copy(items = updatedItems)
-        }
-
-        is FormIntent.ClearValue -> {
-            updateQuery(
-                formIntent.uid,
-                null,
-            )
-        }
-
-        else -> {
-            // no-op
-        }
     }
+
+    fun onParameterIntent(formIntent: FormIntent) =
+        when (formIntent) {
+            is FormIntent.OnTextChange -> {
+                updateQuery(
+                    formIntent.uid,
+                    formIntent.value?.split(","),
+                )
+            }
+
+            is FormIntent.OnSave -> {
+                updateQuery(
+                    formIntent.uid,
+                    formIntent.value?.split(","),
+                )
+            }
+
+            is FormIntent.OnQrCodeScanned -> {
+                onQrCodeScanned(formIntent)
+            }
+
+            is FormIntent.OnFocus -> {
+                val updatedItems =
+                    searchParametersUiState.items.map { field ->
+                        if (field.focused && field.uid != formIntent.uid) {
+                            val validation =
+                                field.value
+                                    ?.takeIf {
+                                        field.valueType in
+                                            listOf(
+                                                ValueType.DATE,
+                                                ValueType.DATETIME,
+                                                ValueType.AGE,
+                                                ValueType.TIME,
+                                            )
+                                    }?.let { value -> field.valueType?.validator?.validate(value) }
+
+                            (field as FieldUiModelImpl).copy(
+                                focused = false,
+                                error =
+                                    when (validation) {
+                                        is Result.Failure -> resourceManager.getString(R.string.formatting_error)
+                                        else -> null
+                                    },
+                            )
+                        } else if (field.uid == formIntent.uid) {
+                            (field as FieldUiModelImpl).copy(focused = true)
+                        } else {
+                            field
+                        }
+                    }
+                searchParametersUiState = searchParametersUiState.copy(items = updatedItems)
+            }
+
+            is FormIntent.ClearValue -> {
+                updateQuery(
+                    formIntent.uid,
+                    null,
+                )
+            }
+
+            else -> {
+                // no-op
+            }
+        }
 
     private fun onQrCodeScanned(formIntent: FormIntent.OnQrCodeScanned) {
         viewModelScope.launch {
             updateQuery(
                 formIntent.uid,
-                formIntent.value,
+                formIntent.value?.let { listOf(it) },
             )
 
             searching = queryData.isNotEmpty()
-            uiState = uiState.copy(
-                clearSearchEnabled = queryData.isNotEmpty(),
-                searchedItems = getFriendlyQueryData(),
-            )
-
-            val searchParametersModel = SearchParametersModel(
-                selectedProgram = searchRepository.getProgram(initialProgramUid),
-                queryData = queryData,
-            )
-            val isOnline = searching && networkUtils.isOnline()
-            val trackedEntities = async(dispatchers.io()) {
-                searchRepositoryKt.searchTrackedEntitiesImmediate(
-                    searchParametersModel = searchParametersModel,
-                    isOnline = isOnline,
+            searchParametersUiState =
+                searchParametersUiState.copy(
+                    clearSearchEnabled = queryData.isNotEmpty(),
+                    searchedItems = getFriendlyQueryData(),
                 )
-            }.await()
+
+            val searchParametersModel =
+                SearchParametersModel(
+                    selectedProgram = searchRepository.getProgram(initialProgramUid),
+                    queryData = queryData,
+                )
+            val isOnline = searching && networkUtils.isOnline()
+            val trackedEntities =
+                async(dispatchers.io()) {
+                    searchRepositoryKt.searchTrackedEntitiesImmediate(
+                        searchParametersModel = searchParametersModel,
+                        isOnline = isOnline,
+                    )
+                }.await()
 
             if (trackedEntities.isEmpty() || trackedEntities.size > 1) return@launch
 
             val tei = trackedEntities.first()
-            val searchTeiModel = withContext(dispatchers.io()) {
-                searchRepository.transform(
-                    /* searchItem = */
-                    tei,
-                    /* selectedProgram = */
-                    searchParametersModel.selectedProgram,
-                    /* offlineOnly = */
-                    !(isOnline && filterManager.stateFilters.isEmpty()),
-                    /* sortingItem = */
-                    filterManager.sortingItem,
-                )
-            }
+            val searchTeiModel =
+                withContext(dispatchers.io()) {
+                    searchRepository.transform(
+                        // searchItem =
+                        tei,
+                        // selectedProgram =
+                        searchParametersModel.selectedProgram,
+                        // offlineOnly =
+                        !(isOnline && filterManager.stateFilters.isEmpty()),
+                        // sortingItem =
+                        filterManager.sortingItem,
+                    )
+                }
 
             searching = false
 
@@ -1118,19 +1225,22 @@ class SearchTEIViewModel(
     }
 
     fun clearFocus() {
-        val updatedItems = uiState.items.map {
-            if (it.focused) {
-                (it as FieldUiModelImpl).copy(focused = false)
-            } else {
-                it
+        val updatedItems =
+            searchParametersUiState.items.map {
+                if (it.focused) {
+                    (it as FieldUiModelImpl).copy(focused = false)
+                } else {
+                    it
+                }
             }
-        }
-        uiState = uiState.copy(items = updatedItems)
+        searchParametersUiState = searchParametersUiState.copy(items = updatedItems)
     }
 
     fun getFriendlyQueryData(): Map<String, String> {
         val map = mutableMapOf<String, String>()
-        uiState.items.filter { !it.value.isNullOrEmpty() }.forEach { item ->
+        searchParametersUiState.items
+            .filter { !it.value.isNullOrEmpty() }
+            .forEach { item ->
 
             when (item.valueType) {
                 ValueType.ORGANISATION_UNIT, ValueType.MULTI_TEXT -> {

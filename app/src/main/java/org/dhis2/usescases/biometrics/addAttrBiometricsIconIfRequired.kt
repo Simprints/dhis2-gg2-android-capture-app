@@ -1,6 +1,6 @@
 package org.dhis2.usescases.biometrics
 
-import androidx.compose.material.Icon
+import androidx.compose.material3.Icon
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import org.dhis2.R

@@ -1,25 +1,20 @@
 package org.dhis2.usescases.searchTrackEntity;
 
 import android.database.sqlite.SQLiteConstraintException;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
 import org.dhis2.R;
 import org.dhis2.bindings.ExtensionsKt;
 import org.dhis2.commons.Constants;
 import org.dhis2.commons.bindings.ValueExtensionsKt;
 import org.dhis2.commons.data.EntryMode;
-import org.dhis2.commons.data.EventViewModel;
+import org.dhis2.commons.data.EventModel;
 import org.dhis2.commons.data.EventViewModelType;
-import org.dhis2.commons.data.tuples.Pair;
-import org.dhis2.commons.data.tuples.Trio;
 import org.dhis2.commons.date.DateUtils;
 import org.dhis2.commons.filters.FilterManager;
 import org.dhis2.commons.filters.data.FilterPresenter;
 import org.dhis2.commons.filters.sorting.SortingItem;
 import org.dhis2.commons.network.NetworkUtils;
-import org.dhis2.mobile.commons.reporting.CrashReportController;
 import org.dhis2.commons.prefs.BasicPreferenceProvider;
 import org.dhis2.commons.resources.DhisPeriodUtils;
 import org.dhis2.commons.resources.MetadataIconProvider;
@@ -30,18 +25,23 @@ import org.dhis2.data.forms.dataentry.ValueStore;
 import org.dhis2.data.forms.dataentry.ValueStoreImpl;
 import org.dhis2.data.search.SearchParametersModel;
 import org.dhis2.data.sorting.SearchSortingValueSetter;
-import org.dhis2.mobile.commons.providers.FieldErrorMessageProvider;
 import org.dhis2.metadata.usecases.FileResourceConfiguration;
 import org.dhis2.metadata.usecases.ProgramConfiguration;
 import org.dhis2.metadata.usecases.TrackedEntityInstanceConfiguration;
+import org.dhis2.mobile.commons.customintents.CustomIntentRepository;
+import org.dhis2.mobile.commons.model.CustomIntentActionTypeModel;
+import org.dhis2.mobile.commons.providers.FieldErrorMessageProvider;
+import org.dhis2.mobile.commons.reporting.CrashReportController;
 import org.dhis2.tracker.data.ProfilePictureProvider;
 import org.dhis2.tracker.relationships.model.RelationshipDirection;
+import org.dhis2.tracker.relationships.model.RelationshipGeometry;
 import org.dhis2.tracker.relationships.model.RelationshipModel;
 import org.dhis2.tracker.relationships.model.RelationshipOwnerType;
 import org.dhis2.ui.ThemeManager;
 import org.dhis2.usescases.teiDownload.TeiDownloader;
 
 import static org.dhis2.data.biometrics.utils.VerificationKt.updateBiometricsAttributeValue;
+import static org.dhis2.usescases.biometrics.AttributesKt.biometricAttributeId;
 import static org.dhis2.usescases.biometrics.BiometricConstantsKt.BIOMETRICS_ENABLED;
 import static org.dhis2.commons.biometrics.ExtensionsKt.isBiometricAttribute;
 
@@ -96,6 +96,8 @@ import dhis2.org.analytics.charts.Charts;
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import kotlin.Pair;
+import kotlin.Triple;
 
 public class SearchRepositoryImpl implements SearchRepository {
 
@@ -111,6 +113,7 @@ public class SearchRepositoryImpl implements SearchRepository {
     private String currentProgram;
     private final Charts charts;
     private final CrashReportController crashReportController;
+    private DateUtils dateUtils;
     private final NetworkUtils networkUtils;
     private final SearchTEIRepository searchTEIRepository;
     private TrackedEntityInstanceDownloader downloadRepository = null;
@@ -127,8 +130,8 @@ public class SearchRepositoryImpl implements SearchRepository {
     private HashMap<String, List<String>> trackedEntityTypeAttributesUidsCache = new HashMap();
 
     private final MetadataIconProvider metadataIconProvider;
-
     private final ProfilePictureProvider profilePictureProvider;
+    private CustomIntentRepository customIntentRepository;
 
     private final BasicPreferenceProvider preferenceProvider;
 
@@ -146,6 +149,8 @@ public class SearchRepositoryImpl implements SearchRepository {
                          ThemeManager themeManager,
                          MetadataIconProvider metadataIconProvider,
                          ProfilePictureProvider profilePictureProvider,
+                         DateUtils dateUtils,
+                         CustomIntentRepository customIntentRepository,
                          BasicPreferenceProvider preferenceProvider
     ) {
         this.teiType = teiType;
@@ -156,6 +161,7 @@ public class SearchRepositoryImpl implements SearchRepository {
         this.periodUtils = periodUtils;
         this.charts = charts;
         this.crashReportController = crashReportController;
+        this.dateUtils = dateUtils;
         this.currentProgram = initialProgram;
         this.networkUtils = networkUtils;
         this.searchTEIRepository = searchTEIRepository;
@@ -168,6 +174,7 @@ public class SearchRepositoryImpl implements SearchRepository {
                 resources);
         this.metadataIconProvider = metadataIconProvider;
         this.profilePictureProvider = profilePictureProvider;
+        this.customIntentRepository = customIntentRepository;
         this.preferenceProvider = preferenceProvider;
     }
 
@@ -223,13 +230,8 @@ public class SearchRepositoryImpl implements SearchRepository {
         for (int i = 0; i < searchParametersModel.getQueryData().keySet().size(); i++) {
 
             String dataId = searchParametersModel.getQueryData().keySet().toArray()[i].toString();
-            String dataValue;
+            List<String> dataValues = searchParametersModel.getQueryData().get(dataId);
 
-            if (searchParametersModel.getUIds().size() == 0) {
-                dataValue = searchParametersModel.getQueryData().get(dataId);
-            } else {
-                dataValue = "%DELETE%";
-            }
 
             boolean isTETypeAttribute = d2.trackedEntityModule().trackedEntityTypeAttributes()
                     .byTrackedEntityTypeUid().eq(teiType)
@@ -240,29 +242,43 @@ public class SearchRepositoryImpl implements SearchRepository {
                 TrackedEntityAttribute attribute = d2.trackedEntityModule().trackedEntityAttributes().uid(dataId).blockingGet();
                 boolean isUnique = attribute.unique();
                 boolean isOptionSet = (attribute.optionSet() != null);
-                if (isUnique || isOptionSet) {
-                    if (dataValue.contains(";")) {
-                        // EyeSeeTea customization
-                        trackedEntityInstanceQuery = trackedEntityInstanceQuery.byAttribute(dataId).in(dataValue);
-                    } else {
-                        trackedEntityInstanceQuery = trackedEntityInstanceQuery.byFilter(dataId).eq(dataValue);
-                    }
-                } else if (dataValue.contains("_os_")) {
-                    dataValue = dataValue.split("_os_")[1];
-                    trackedEntityInstanceQuery = trackedEntityInstanceQuery.byFilter(dataId).eq(dataValue);
-                } else if (dataValue.contains(";")) {
-                    // EyeSeeTea customization
-                    trackedEntityInstanceQuery = trackedEntityInstanceQuery.byAttribute(dataId).in(dataValue);
-                } else
-                    trackedEntityInstanceQuery = trackedEntityInstanceQuery.byFilter(dataId).like(dataValue);
+                assert dataValues != null;
+                if(!dataId.equals(biometricAttributeId) && !customIntentRepository.attributeHasCustomIntentAndReturnsAListOfValues(dataId, CustomIntentActionTypeModel.SEARCH) && dataValues.size() > 1) {
+                    //Only search with a list of values when the attribute is linked to a custom intent
+                    //that returns a list of values, otherwise the comma was one of the search characters
+                    dataValues = Collections.singletonList(String.join(",", dataValues));
+                }
+                trackedEntityInstanceQuery = getTrackedEntityQuery(dataId, dataValues, isUnique, isOptionSet);
             }
         }
 
-        if (searchParametersModel.getUIds().size() > 0) {
-            trackedEntityInstanceQuery = trackedEntityInstanceQuery.byUIds().in(searchParametersModel.getUIds());
-        }
-
         return trackedEntityInstanceQuery;
+    }
+
+    private TrackedEntitySearchCollectionRepository getTrackedEntityQuery(String dataId,
+                                                                          List<String> dataValues,
+                                                                          boolean isUnique,
+                                                                          boolean isOptionSet) {
+        if (dataValues.size() > 1) {
+            // return any tracked entities with attributes that match the the values in the list
+            return trackedEntityInstanceQuery.byFilter(dataId).in(dataValues);
+        } else {
+            if (dataValues.size() == 1) {
+                String dataValue = dataValues.get(0);
+                if (isUnique || isOptionSet) {
+                    // If the attribute is unique or an option set, we want an exact match
+                    return trackedEntityInstanceQuery.byFilter(dataId).eq(dataValue);
+                } else if (dataValue.contains(OPTION_SET_REGEX)) {
+                    //legacy code could no longer be needed
+                    dataValue = dataValue.split(OPTION_SET_REGEX)[1];
+                    return trackedEntityInstanceQuery.byFilter(dataId).eq(dataValue);
+                } else
+                    // return tracked entities that contain the data value
+                    return trackedEntityInstanceQuery.byFilter(dataId).like(dataValue);
+            } else {
+                return trackedEntityInstanceQuery;
+            }
+        }
     }
 
     @NonNull
@@ -271,7 +287,7 @@ public class SearchRepositoryImpl implements SearchRepository {
                                                          @NonNull String orgUnit,
                                                          @NonNull String programUid,
                                                          @Nullable String teiUid,
-                                                         HashMap<String, String> queryData,
+                                                         HashMap<String, List<String>> queryData,
                                                          @Nullable String fromRelationshipUid) {
 
         Single<String> enrollmentInitial;
@@ -309,9 +325,13 @@ public class SearchRepositoryImpl implements SearchRepository {
                         if (queryData.containsKey(Constants.ENROLLMENT_DATE_UID))
                             queryData.remove(Constants.ENROLLMENT_DATE_UID);
                         for (String key : queryData.keySet()) {
-                            String dataValue = queryData.get(key);
-                            if (dataValue.contains("_os_"))
-                                dataValue = dataValue.split("_os_")[1];
+                            List<String> dataValues = queryData.get(key);
+
+                            assert dataValues != null;
+                            String dataValue = !dataValues.isEmpty() ? dataValues.get(0) : null;
+                            assert dataValue != null;
+                            if (dataValue.contains(OPTION_SET_REGEX))
+                                dataValue = dataValue.split(OPTION_SET_REGEX)[1];
 
                             TrackedEntityAttribute attribute = d2.trackedEntityModule().trackedEntityAttributes().uid(key).blockingGet();
                             boolean isGenerated = attribute.generated();
@@ -332,9 +352,9 @@ public class SearchRepositoryImpl implements SearchRepository {
                                         .organisationUnit(orgUnit)
                                         .build())
                         .map(enrollmentUid -> {
-                            d2.enrollmentModule().enrollments().uid(enrollmentUid).setEnrollmentDate(DateUtils.getInstance().getStartOfDay(new Date()));
+                            d2.enrollmentModule().enrollments().uid(enrollmentUid).setEnrollmentDate(dateUtils.getStartOfDay(new Date()));
                             d2.enrollmentModule().enrollments().uid(enrollmentUid).setFollowUp(false);
-                            return Pair.create(enrollmentUid, uid);
+                            return new Pair<>(enrollmentUid, uid);
                         })
         ).toObservable();
     }
@@ -372,10 +392,10 @@ public class SearchRepositoryImpl implements SearchRepository {
         }
     }
 
-    private Trio<String, String, String> getProgramInfo(Program program) {
+    private Triple<String, String, String> getProgramInfo(Program program) {
         String programColor = program.style() != null && program.style().color() != null ? program.style().color() : "";
         String programIcon = program.style() != null && program.style().icon() != null ? program.style().icon() : "";
-        return Trio.create(program.displayName(), programColor, programIcon);
+        return new Triple<>(program.displayName(), programColor, programIcon);
     }
 
     private void setAttributesInfo(SearchTeiModel searchTei, TrackedEntitySearchItem searchTeiItem) {
@@ -441,17 +461,44 @@ public class SearchRepositoryImpl implements SearchRepository {
         String teiId = tei.getTei() != null && tei.getTei().uid() != null ? tei.getTei().uid() : "";
         List<Enrollment> enrollments = d2.enrollmentModule().enrollments().byTrackedEntityInstance().eq(teiId).blockingGet();
 
-        EventCollectionRepository overdueEvents = d2.eventModule().events().byEnrollmentUid().in(UidsHelper.getUidsList(enrollments)).byStatus().eq(EventStatus.OVERDUE);
+        EventCollectionRepository overdueEvents = d2.eventModule().events()
+                .byEnrollmentUid().in(UidsHelper.getUidsList(enrollments))
+                .byStatus().eq(EventStatus.OVERDUE);
+
+        EventCollectionRepository overdueScheduledEvents = d2.eventModule().events()
+                .byEnrollmentUid().in(UidsHelper.getUidsList(enrollments))
+                .byStatus().eq(EventStatus.SCHEDULE);
 
         if (selectedProgram != null) {
             overdueEvents = overdueEvents.byProgramUid().eq(selectedProgram.uid());
+            overdueScheduledEvents = overdueScheduledEvents.byProgramUid().eq(selectedProgram.uid());
         }
 
         List<Event> overdueList = overdueEvents.orderByDueDate(RepositoryScope.OrderByDirection.DESC).blockingGet();
+        List<Event> scheduledList = overdueScheduledEvents.orderByDueDate(RepositoryScope.OrderByDirection.DESC).blockingGet();
 
-        if (!overdueList.isEmpty()) {
+        List<Event> filteredScheduled = new ArrayList<>();
+        for (Event event : scheduledList) {
+            if (Boolean.TRUE.equals(dateUtils.isEventDueDateOverdue(event.dueDate()))) {
+                filteredScheduled.add(event);
+            }
+        }
+
+        for (Event event : overdueList) {
+            if (Boolean.TRUE.equals(dateUtils.isEventDueDateOverdue(event.dueDate()))) {
+                filteredScheduled.add(event);
+            }
+        }
+
+        List<Event> combinedOverdue = new ArrayList<>(filteredScheduled);
+
+        if (!combinedOverdue.isEmpty()) {
+            combinedOverdue.sort((e1, e2) -> {
+                if (e1.dueDate() == null || e2.dueDate() == null) return 0;
+                return e2.dueDate().compareTo(e1.dueDate());
+            });
             tei.setHasOverdue(true);
-            tei.setOverdueDate(overdueList.get(0).dueDate());
+            tei.setOverdueDate(combinedOverdue.get(0).dueDate());
         }
     }
 
@@ -492,10 +539,29 @@ public class SearchRepositoryImpl implements SearchRepository {
                 for (TrackedEntityAttributeValue attributeValue : toAttr) {
                     toValues.add(new kotlin.Pair<>(attributeValue.trackedEntityAttribute(), attributeValue.value()));
                 }
+
+                RelationshipGeometry fromGeometry = null;
+                RelationshipGeometry toGeometry = null;
+
+                if (fromTei.geometry() != null) {
+                    fromGeometry = new RelationshipGeometry(
+                            fromTei.geometry().type().name(),
+                            fromTei.geometry().coordinates()
+                    );
+                }
+
+                if (toTei.geometry() != null) {
+                    toGeometry = new RelationshipGeometry(
+                            toTei.geometry().type().name(),
+                            toTei.geometry().coordinates()
+                    );
+                }
+
                 relationshipModels.add(new RelationshipModel(
-                        relationship,
-                        fromTei.geometry(),
-                        toTei.geometry(),
+                        relationship.uid(),
+                        relationship.syncState().name(),
+                        fromGeometry,
+                        toGeometry,
                         direction,
                         relationshipTEIUid,
                         RelationshipOwnerType.TEI,
@@ -505,6 +571,7 @@ public class SearchRepositoryImpl implements SearchRepository {
                         profilePicturePath(toTei, selectedProgram.uid()),
                         getTeiDefaultRes(fromTei),
                         getTeiDefaultRes(toTei),
+                        null,
                         null,
                         true,
                         null,
@@ -657,8 +724,8 @@ public class SearchRepositoryImpl implements SearchRepository {
     }
 
     @Override
-    public List<EventViewModel> getEventsForMap(List<SearchTeiModel> teis) {
-        List<EventViewModel> eventViewModels = new ArrayList<>();
+    public List<EventModel> getEventsForMap(List<SearchTeiModel> teis) {
+        List<EventModel> eventModels = new ArrayList<>();
         List<String> teiUidList = new ArrayList<>();
         for (SearchTeiModel tei : teis) {
             teiUidList.add(tei.getTei().uid());
@@ -679,8 +746,8 @@ public class SearchRepositoryImpl implements SearchRepository {
                 cacheStages.put(event.programStage(), stage);
             }
 
-            eventViewModels.add(
-                    new EventViewModel(
+            eventModels.add(
+                    new EventModel(
                             EventViewModelType.EVENT,
                             cacheStages.get(event.programStage()),
                             event,
@@ -689,6 +756,7 @@ public class SearchRepositoryImpl implements SearchRepository {
                             true,
                             true,
                             orgUnitName(event.organisationUnit()),
+                            true,
                             null,
                             null,
                             false,
@@ -705,7 +773,7 @@ public class SearchRepositoryImpl implements SearchRepository {
                     ));
         }
 
-        return eventViewModels;
+        return eventModels;
     }
 
     private String orgUnitName(String orgUnitUid) {
@@ -714,7 +782,9 @@ public class SearchRepositoryImpl implements SearchRepository {
                     .organisationUnits()
                     .uid(orgUnitUid)
                     .blockingGet();
-            orgUnitNameCache.put(orgUnitUid, organisationUnit.displayName());
+            if (organisationUnit != null) {
+                orgUnitNameCache.put(orgUnitUid, organisationUnit.displayName());
+            }
         }
         return orgUnitNameCache.get(orgUnitUid);
     }
@@ -789,6 +859,10 @@ public class SearchRepositoryImpl implements SearchRepository {
             if (selectedProgram != null) {
                 setRelationshipsInfo(searchTei, selectedProgram);
             }
+            if (!searchItem.getProgramOwners().isEmpty() &&
+                !searchItem.getProgramOwners().get(0).getOwnerOrgUnit().equals(searchItem.getOrganisationUnit())) {
+                searchTei.setOwnerOrgUnit(orgUnitName(searchItem.getProgramOwners().get(0).getOwnerOrgUnit()));
+            }
             if (searchTei.getSelectedEnrollment() != null) {
                 searchTei.setEnrolledOrgUnit(orgUnitName(searchTei.getSelectedEnrollment().organisationUnit()));
             } else {
@@ -797,7 +871,15 @@ public class SearchRepositoryImpl implements SearchRepository {
             searchTei.setProfilePicture(profilePictureProvider.invoke(dbTei, selectedProgram != null ? selectedProgram.uid() : null));
         } else {
             searchTei.setTei(teiFromItem);
-            searchTei.setEnrolledOrgUnit(orgUnitName(searchTei.getTei().organisationUnit()));
+            if (!searchItem.getProgramOwners().isEmpty() &&
+                searchItem.getProgramOwners().get(0).getOwnerOrgUnit().equals(searchItem.getOrganisationUnit())) {
+                searchTei.setEnrolledOrgUnit(orgUnitName(searchTei.getTei().organisationUnit()));
+            } else {
+                searchTei.setEnrolledOrgUnit(orgUnitName(searchTei.getTei().organisationUnit()));
+                if (!searchItem.getProgramOwners().isEmpty()) {
+                    searchTei.setOwnerOrgUnit(orgUnitName(searchItem.getProgramOwners().get(0).getOwnerOrgUnit()));
+                }
+            }
 
             for (TrackedEntitySearchItemAttribute attribute : searchItem.getAttributeValues()) {
                 if (attribute.getDisplayInList()) {
@@ -922,15 +1004,15 @@ public class SearchRepositoryImpl implements SearchRepository {
     }
 
     @Override
-    public @NotNull Map<String, String> filterQueryForProgram(@NotNull Map<String, String> queryData, @Nullable String programUid) {
-        Map<String, String> filteredQuery = new HashMap<>();
-        for (Map.Entry<String, String> entry : queryData.entrySet()) {
+    public @NotNull Map<String, List<String>> filterQueryForProgram(@NotNull Map<String, List<String>> queryData, @Nullable String programUid) {
+        Map<String, List<String>> filteredQuery = new HashMap<>();
+        for (Map.Entry<String, List<String>> entry : queryData.entrySet()) {
             String attributeUid = entry.getKey();
-            String value = entry.getValue();
+            List<String> values = entry.getValue();
             if (programUid == null && attributeIsForType(attributeUid) ||
                     programUid != null && attributeBelongsToProgram(attributeUid, programUid)
             ) {
-                filteredQuery.put(attributeUid, value);
+                filteredQuery.put(attributeUid, values);
             }
         }
         return filteredQuery;
@@ -994,5 +1076,9 @@ public class SearchRepositoryImpl implements SearchRepository {
             return uids;
         }
     }
+
+    private static final String OPTION_SET_REGEX = "_os_";
+
 }
+
 

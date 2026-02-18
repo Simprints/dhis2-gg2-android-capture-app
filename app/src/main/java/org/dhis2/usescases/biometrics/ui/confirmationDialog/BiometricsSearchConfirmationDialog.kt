@@ -19,12 +19,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -114,7 +114,7 @@ private fun ConfirmContent(
         Column(horizontalAlignment = Alignment.Start, modifier = Modifier.padding(16.dp)) {
             Text(
                 stringResource(R.string.biometrics_confirm_patient_identity),
-                style = MaterialTheme.typography.subtitle1,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
@@ -163,7 +163,7 @@ private fun ConfirmContent(
 
                 Button(
                     modifier = modifier,
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color.Transparent),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                     contentPadding = PaddingValues(),
                     onClick = confirmAction
                 ) {
@@ -193,7 +193,7 @@ private fun TEIContent(item: ListCardUiModel) {
         Column(modifier = Modifier.padding(bottom = 16.dp)) {
             Text(
                 item.title,
-                style = MaterialTheme.typography.subtitle2,
+                style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Normal,
             )
             item.subTitle?.let {

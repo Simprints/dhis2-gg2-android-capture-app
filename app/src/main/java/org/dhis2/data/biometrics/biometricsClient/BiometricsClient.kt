@@ -34,6 +34,7 @@ import timber.log.Timber
 // TODO: This constants should be in libsimprints
 private const val SIMPRINTS_HAS_CREDENTIALS = "hasCredential"
 private const val SIMPRINTS_SCANNED_CREDENTIAL = "scannedCredential"
+
 /*
 When SIMPRINTS_HAS_CREDENTIALS is false,
 Simprints ID expects a "versionCode" intent extra in order to return data encoded as JSON:
@@ -291,6 +292,11 @@ class BiometricsClient(
 
             val sessionId: String = data.getStringExtra(Constants.SIMPRINTS_SESSION_ID) ?: ""
 
+            val scannedCredentialJson = data.getStringExtra(SIMPRINTS_SCANNED_CREDENTIAL)
+            val scannedCredential: ScannedCredentialSID? = scannedCredentialJson?.let {
+                Gson().fromJson(it, ScannedCredentialSID::class.java)
+            }
+
             return if (identifications == null && refusalForm != null) {
                 IdentifyResult.BiometricsDeclined
             } else if (identifications.isNullOrEmpty()) {
@@ -298,20 +304,27 @@ class BiometricsClient(
             } else {
                 val finalIdentifications =
                     identifications.filter { it.confidence >= confidenceScoreFilter && !it.isLinkedToCredential } +
-                            identifications.filter {  it.isLinkedToCredential }
+                            identifications.filter { it.isLinkedToCredential }
 
                 if (finalIdentifications.isEmpty()) {
                     Timber.w("Identify returns data but no match with confidence score filter")
                     IdentifyResult.UserNotFound(sessionId)
                 } else {
-                    IdentifyResult.Completed(finalIdentifications.map {
-                        SimprintsIdentifiedItem(
-                            it.guid,
-                            it.confidence,
-                            it.isLinkedToCredential,
-                            it.isVerified
+                    IdentifyResult.Completed(
+                        finalIdentifications.map {
+                            SimprintsIdentifiedItem(
+                                it.guid,
+                                it.confidence,
+                                it.isLinkedToCredential,
+                                it.isVerified
+                            )
+                        },
+                        sessionId,
+                        scannedCredential = if (scannedCredential == null) null else ScannedCredential(
+                            scannedCredential.type,
+                            scannedCredential.value
                         )
-                    }, sessionId)
+                    )
                 }
             }
         } else {

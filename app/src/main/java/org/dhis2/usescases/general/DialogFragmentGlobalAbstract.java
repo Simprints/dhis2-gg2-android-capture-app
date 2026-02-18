@@ -89,11 +89,6 @@ public abstract class DialogFragmentGlobalAbstract extends DialogFragment implem
     }
 
     @Override
-    public SharedPreferences getSharedPreferences() {
-        return getAbstractActivity().getSharedPreferences();
-    }
-
-    @Override
     public void showToast(String message) {
         Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
     }

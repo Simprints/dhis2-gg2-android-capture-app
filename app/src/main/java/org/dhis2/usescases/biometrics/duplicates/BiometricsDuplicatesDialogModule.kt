@@ -7,6 +7,7 @@ import dhis2.org.analytics.charts.Charts
 import org.dhis2.R
 import org.dhis2.commons.date.DateLabelProvider
 import org.dhis2.commons.date.DateUtils
+import org.dhis2.commons.di.dagger.PerActivity
 import org.dhis2.commons.filters.data.FilterPresenter
 import org.dhis2.commons.network.NetworkUtils
 import org.dhis2.commons.prefs.BasicPreferenceProvider
@@ -33,6 +34,8 @@ import org.dhis2.form.ui.provider.HintProviderImpl
 import org.dhis2.form.ui.provider.KeyboardActionProviderImpl
 import org.dhis2.form.ui.provider.LegendValueProviderImpl
 import org.dhis2.form.ui.provider.UiEventTypesProviderImpl
+import org.dhis2.mobile.commons.customintents.CustomIntentRepository
+import org.dhis2.mobile.commons.customintents.CustomIntentRepositoryImpl
 import org.dhis2.mobile.commons.reporting.CrashReportController
 import org.dhis2.tracker.data.ProfilePictureProvider
 import org.dhis2.ui.ThemeManager
@@ -79,8 +82,11 @@ class BiometricsDuplicatesDialogModule(
     }
 
     @Provides
-    internal fun searchRepository(d2: D2): SearchTEIRepository {
-        return SearchTEIRepositoryImpl(d2, DhisEnrollmentUtils(d2))
+    internal fun searchRepository(
+        d2: D2,
+        crashReportController: CrashReportController
+    ): SearchTEIRepository {
+        return SearchTEIRepositoryImpl(d2, DhisEnrollmentUtils(d2), crashReportController)
     }
 
     @Provides
@@ -94,6 +100,8 @@ class BiometricsDuplicatesDialogModule(
         searchTEIRepository: SearchTEIRepository?,
         themeManager: ThemeManager?,
         metadataIconProvider: MetadataIconProvider,
+        dateUtils: DateUtils,
+        customIntentRepository: CustomIntentRepository,
         basicPreferenceProvider: BasicPreferenceProvider
     ): SearchRepository {
         val profilePictureProvider = ProfilePictureProvider(d2)
@@ -113,6 +121,8 @@ class BiometricsDuplicatesDialogModule(
             themeManager,
             metadataIconProvider,
             profilePictureProvider,
+            dateUtils,
+            customIntentRepository,
             basicPreferenceProvider
         )
     }
@@ -147,7 +157,9 @@ class BiometricsDuplicatesDialogModule(
         dispatcherProvider: DispatcherProvider,
         fieldViewModelFactory: FieldViewModelFactory,
         metadataIconProvider: MetadataIconProvider,
-        colorUtils: ColorUtils
+        colorUtils: ColorUtils,
+        dateUtils: DateUtils,
+        customIntentRepository: CustomIntentRepository
     ): SearchRepositoryKt {
         val resourceManager = ResourceManager(context, colorUtils)
         val dateLabelProvider =
@@ -172,8 +184,9 @@ class BiometricsDuplicatesDialogModule(
                 dateLabelProvider,
                 metadataIconProvider,
                 profilePictureProvider,
-                DateUtils.getInstance()
-            )
+                dateUtils
+            ),
+            customIntentRepository
         )
     }
 
@@ -200,5 +213,16 @@ class BiometricsDuplicatesDialogModule(
         resourceManager: ResourceManager
     ): TEICardMapper {
         return TEICardMapper(context, resourceManager)
+    }
+
+    @Provides
+    fun provideDateUtils(
+    ): DateUtils {
+        return DateUtils.getInstance()
+    }
+
+    @Provides
+    fun provideCustomIntentRepository(d2: D2): CustomIntentRepository {
+        return CustomIntentRepositoryImpl(d2)
     }
 }

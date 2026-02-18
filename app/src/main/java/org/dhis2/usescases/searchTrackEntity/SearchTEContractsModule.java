@@ -8,6 +8,7 @@ import androidx.annotation.Nullable;
 import org.dhis2.commons.filters.FilterItem;
 import org.dhis2.commons.filters.FilterManager;
 import org.dhis2.commons.filters.Filters;
+import org.dhis2.data.biometrics.biometricsClient.models.ScannedCredential;
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsConfirmIdentityItem;
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem;
 import org.dhis2.maps.model.StageStyle;
@@ -25,10 +26,6 @@ import io.reactivex.Observable;
 import io.reactivex.functions.Consumer;
 import kotlin.Pair;
 import kotlin.Unit;
-
-/**
- * QUADRAM. Created by ppajuelo on 02/11/2017.
- */
 
 public class SearchTEContractsModule {
 
@@ -87,9 +84,9 @@ public class SearchTEContractsModule {
 
         void onBackClick();
 
-        void onEnrollClick(HashMap<String, String> queryData, SequentialSearch sequentialSearch);
+        void onEnrollClick(HashMap<String,  List<String>> queryData, SequentialSearch sequentialSearch);
 
-        void enroll(String programUid, String teiUid, HashMap<String, String> queryData);
+        void enroll(String programUid, String teiUid, HashMap<String, List<String>> queryData);
 
         void onTEIClick(String teiUid, String enrollmentUid, boolean isOnline);
         void onSearchTEIModelClick(SearchTeiModel item, SequentialSearch sequentialSearch);
@@ -142,7 +139,7 @@ public class SearchTEContractsModule {
 
         void trackSearchMapVisualization();
 
-        void searchOnBiometrics(List <SimprintsIdentifiedItem> simprintsIdentifiedItems, String sessionId, Boolean ageNotSupported);
+        void searchOnBiometrics(List <SimprintsIdentifiedItem> simprintsIdentifiedItems, String sessionId, Boolean ageNotSupported, ScannedCredential scannedCredential);
 
         boolean getBiometricsSearchStatus();
 
