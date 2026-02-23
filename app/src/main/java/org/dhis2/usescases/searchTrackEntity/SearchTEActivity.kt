@@ -62,6 +62,7 @@ import org.dhis2.commons.sync.SyncContext.TrackerProgramTei
 import org.dhis2.data.biometrics.BiometricsClientFactory
 import org.dhis2.data.biometrics.biometricsClient.models.ConfirmIdentityResult
 import org.dhis2.data.biometrics.biometricsClient.models.IdentifyResult
+import org.dhis2.data.biometrics.biometricsClient.models.ScannedCredential
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 
 import org.dhis2.data.forms.dataentry.ProgramAdapter
@@ -924,7 +925,7 @@ class SearchTEActivity :
                         Toast.LENGTH_SHORT
                     ).show()
 
-                    simulateNotFoundBiometricsSearch(null)
+                    simulateNotFoundBiometricsSearch(null, null)
 
                     launchSearchFormIfRequired()
                 } else if (result is IdentifyResult.UserNotFound) {
@@ -933,14 +934,14 @@ class SearchTEActivity :
                         Toast.LENGTH_SHORT
                     ).show()
 
-                    simulateNotFoundBiometricsSearch(result.sessionId)
+                    simulateNotFoundBiometricsSearch(result.sessionId, result.scannedCredential)
                 } else if (result is IdentifyResult.Failure) {
                     Toast.makeText(
                         context, R.string.biometrics_failed,
                         Toast.LENGTH_SHORT
                     ).show()
 
-                    simulateNotFoundBiometricsSearch(null)
+                    simulateNotFoundBiometricsSearch(null, null)
 
                     launchSearchFormIfRequired()
                 } else if (result is IdentifyResult.AgeGroupNotSupported) {
@@ -949,7 +950,7 @@ class SearchTEActivity :
                         Toast.LENGTH_SHORT
                     ).show()
 
-                    simulateNotFoundBiometricsSearch(null)
+                    simulateNotFoundBiometricsSearch(null, null)
                 }
 
                 lifecycleScope.launch {
@@ -984,10 +985,10 @@ class SearchTEActivity :
         super.onActivityResult(requestCode, resultCode, data)
     }
 
-    private fun simulateNotFoundBiometricsSearch(sessionId: String?) {
+    private fun simulateNotFoundBiometricsSearch(sessionId: String?, scannedCredential: ScannedCredential?) {
         presenter.searchOnBiometrics(
             listOf(SimprintsIdentifiedItem(BIOMETRICS_USER_NOT_FOUND, 0f, false, false)),
-            sessionId, false, null
+            sessionId, false, scannedCredential
         )
     }
 
