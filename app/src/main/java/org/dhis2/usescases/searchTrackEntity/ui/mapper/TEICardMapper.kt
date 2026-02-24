@@ -164,11 +164,10 @@ class TEICardMapper(
         val listWithNHISIcons = addAttrNHISNumberEmojiIfRequired(listWithBiometricsIcons).toMutableList()
 
         return listWithNHISIcons.also { list ->
-            if (searchTEIModel.displayOrgUnit) {
+            if (searchTEIModel.displayOrgUnit && !searchTEIModel.enrolledOrgUnit.isNullOrBlank()) {
                 checkEnrolledIn(
                     list = list,
-                    enrolledOrgUnit = searchTEIModel.enrolledOrgUnit,
-                )
+                    enrolledOrgUnit = searchTEIModel.enrolledOrgUnit!!)
             }
 
             checkEnrolledPrograms(

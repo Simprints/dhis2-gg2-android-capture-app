@@ -354,7 +354,6 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
                         }
                     } ?: emptyList(),
                     teiDashboardBioModel = presenter.getBiometricsModel(),
-                    teiDashboardNHISCredentialodel = presenter.getNHISCredentialStatus(),
                     isUnderAgeThreshold = isUnderAgeThreshold
                 )
             }
