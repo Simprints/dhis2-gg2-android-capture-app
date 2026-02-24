@@ -6,7 +6,4 @@ data class SimprintsRegisteredItem(
     val scannedCredential: ScannedCredential?
 )
 
-data class ScannedCredential(
-    val type: String,
-    val value: String,
-)
+

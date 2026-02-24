@@ -1,6 +1,7 @@
 package org.dhis2.usescases.biometrics.ui
 
 import org.dhis2.commons.biometrics.BIOMETRICS_SEARCH_PATTERN
+import org.dhis2.data.biometrics.biometricsClient.models.ScannedCredential
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 import org.dhis2.usescases.biometrics.biometricAttributeId
 
@@ -55,7 +56,8 @@ sealed class SequentialSearch(
         val biometricUid: String,
         val sessionId: String?,
         val isAgeNotSupported: Boolean,
-        val simprintsItems: List<SimprintsIdentifiedItem>
+        val simprintsItems: List<SimprintsIdentifiedItem>,
+        val scannedCredential: ScannedCredential?
     ) : SequentialSearch(previousSearch, nextActions)
 
     data class AttributeSearch(
