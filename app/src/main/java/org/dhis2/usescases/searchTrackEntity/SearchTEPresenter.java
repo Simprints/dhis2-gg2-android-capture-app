@@ -43,6 +43,7 @@ import org.dhis2.commons.schedulers.SchedulerProvider;
 import org.dhis2.commons.schedulers.SingleEventEnforcer;
 import org.dhis2.commons.schedulers.SingleEventEnforcerImpl;
 
+import org.dhis2.data.biometrics.biometricsClient.models.ScannedCredential;
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsConfirmIdentityItem;
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem;
 import org.dhis2.data.service.SyncStatusController;
@@ -64,6 +65,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import io.reactivex.Observable;
@@ -377,7 +379,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
 
     @Override
     public void onSearchTEIModelClick(SearchTeiModel item, SequentialSearch sequentialSearch) {
-        String TeiUid = item.getTei().uid();
+        String teiUid = item.getTei().uid();
         String enrollmentUid = item.getSelectedEnrollment() != null ?
                 item.getSelectedEnrollment().uid() :
                 null;
@@ -387,13 +389,34 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
         if (sequentialSearch instanceof SequentialSearch.BiometricsSearch) {
             view.showBiometricsSearchConfirmation(item);
             biometricsSearchStatus = false;
+        }
+        else if (previousIsBiometricsSearchAndContainCredentials (sequentialSearch)) {
+            view.showBiometricsSearchConfirmation(item);
+            biometricsSearchStatus = false;
         } else {
             if (!isOnline) {
-                openDashboard(TeiUid, enrollmentUid);
+                openDashboard(teiUid, enrollmentUid);
             } else {
-                downloadTei(TeiUid, enrollmentUid);
+                downloadTei(teiUid, enrollmentUid);
             }
         }
+    }
+
+    public boolean previousIsBiometricsSearchAndContainCredentials(SequentialSearch sequentialSearch){
+        boolean isMatchByCredentials;
+        SequentialSearch.BiometricsSearch biometricsSearch = null;
+
+        if (sequentialSearch != null && sequentialSearch.getPreviousSearch() instanceof SequentialSearch.BiometricsSearch){
+            biometricsSearch = (SequentialSearch.BiometricsSearch) sequentialSearch.getPreviousSearch();
+        }
+
+        if (biometricsSearch != null) {
+            isMatchByCredentials = biometricsSearch.getScannedCredential() != null;
+        } else {
+            isMatchByCredentials = false;
+        }
+
+        return isMatchByCredentials;
     }
 
     @Override
@@ -681,13 +704,16 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     }
 
     @Override
-    public void searchOnBiometrics(List<SimprintsIdentifiedItem> simprintsIdentifiedItems, String sessionId, Boolean ageNotSupported) {
+    public void searchOnBiometrics(List<SimprintsIdentifiedItem> simprintsIdentifiedItems,
+                                   String sessionId, Boolean ageNotSupported,
+                                   ScannedCredential scannedCredential) {
         if (biometricsSearchListener != null) {
             this.sessionId = sessionId;
 
             biometricsSearchStatus = true;
 
-            biometricsSearchListener.onBiometricsSearch(simprintsIdentifiedItems, biometricAttributeId, simprintsIdentifiedItems, sessionId, ageNotSupported);
+            biometricsSearchListener.onBiometricsSearch(simprintsIdentifiedItems, biometricAttributeId,
+                    simprintsIdentifiedItems, sessionId, ageNotSupported,  scannedCredential);
         }
     }
 
@@ -736,7 +762,11 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     }
 
     public interface BiometricsSearchListener {
-        void onBiometricsSearch(List<SimprintsIdentifiedItem> simprintsIdentifiedItems, String biometricAttributeUid, List<SimprintsIdentifiedItem> items, @Nullable String sessionId, Boolean ageNotSupported);
+        void onBiometricsSearch(List<SimprintsIdentifiedItem> simprintsIdentifiedItems,
+                                String biometricAttributeUid, List<SimprintsIdentifiedItem> items,
+                                @Nullable String sessionId,
+                                Boolean ageNotSupported,
+                                ScannedCredential scannedCredential);
     }
 
     private String getBiometricsAttributeValue(String teiUid) {
