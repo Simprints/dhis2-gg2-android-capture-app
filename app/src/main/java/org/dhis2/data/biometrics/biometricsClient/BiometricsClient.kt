@@ -29,6 +29,7 @@ import org.dhis2.data.biometrics.biometricsClient.models.sid.RefusalFormSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.RegistrationSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.ScannedCredentialSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.VerificationSID
+import org.json.JSONObject
 import timber.log.Timber
 
 // TODO: This constants should be in libsimprints
@@ -175,6 +176,7 @@ class BiometricsClient(
     }
 
     fun handleRegisterResponse(resultCode: Int, data: Intent): RegisterResult {
+        printIntent(data)
         Timber.d("Result code: $resultCode")
 
         if (resultCode != Activity.RESULT_OK) {
@@ -268,6 +270,7 @@ class BiometricsClient(
     }
 
     fun handleIdentifyResponse(resultCode: Int, data: Intent?): IdentifyResult {
+        printIntent(data)
         Timber.d("Result code: $resultCode")
 
         if (resultCode != Activity.RESULT_OK || data == null) {
@@ -293,14 +296,19 @@ class BiometricsClient(
             val sessionId: String = data.getStringExtra(Constants.SIMPRINTS_SESSION_ID) ?: ""
 
             val scannedCredentialJson = data.getStringExtra(SIMPRINTS_SCANNED_CREDENTIAL)
-            val scannedCredential: ScannedCredentialSID? = scannedCredentialJson?.let {
+            val scannedCredentialSID: ScannedCredentialSID? = scannedCredentialJson?.let {
                 Gson().fromJson(it, ScannedCredentialSID::class.java)
             }
+
+            val scannedCredential = if (scannedCredentialSID == null) null else ScannedCredential(
+                scannedCredentialSID.type,
+                scannedCredentialSID.value
+            )
 
             return if (identifications == null && refusalForm != null) {
                 IdentifyResult.BiometricsDeclined
             } else if (identifications.isNullOrEmpty()) {
-                IdentifyResult.UserNotFound(sessionId)
+                IdentifyResult.UserNotFound(sessionId, scannedCredential)
             } else {
                 val finalIdentifications =
                     identifications.filter { it.confidence >= confidenceScoreFilter && !it.isLinkedToCredential } +
@@ -308,7 +316,7 @@ class BiometricsClient(
 
                 if (finalIdentifications.isEmpty()) {
                     Timber.w("Identify returns data but no match with confidence score filter")
-                    IdentifyResult.UserNotFound(sessionId)
+                    IdentifyResult.UserNotFound(sessionId, scannedCredential)
                 } else {
                     IdentifyResult.Completed(
                         finalIdentifications.map {
@@ -320,10 +328,7 @@ class BiometricsClient(
                             )
                         },
                         sessionId,
-                        scannedCredential = if (scannedCredential == null) null else ScannedCredential(
-                            scannedCredential.type,
-                            scannedCredential.value
-                        )
+                        scannedCredential = scannedCredential
                     )
                 }
             }
@@ -333,6 +338,7 @@ class BiometricsClient(
     }
 
     fun handleVerifyResponse(resultCode: Int, data: Intent): VerifyResult {
+        printIntent(data)
         Timber.d("Result code: $resultCode")
 
         if (resultCode != Activity.RESULT_OK) {
@@ -352,6 +358,7 @@ class BiometricsClient(
     }
 
     fun handleConfirmIdentityResponse(resultCode: Int, data: Intent?): ConfirmIdentityResult {
+        printIntent(data)
         Timber.d("Result code: $resultCode")
 
         if (data == null) {
@@ -642,6 +649,29 @@ class BiometricsClient(
 
     private fun printMetadata(metadata: Metadata) {
         Timber.d("metadata: $metadata")
+    }
+
+
+    private fun printIntent(intent: Intent?) {
+        if (intent == null) {
+            Timber.d("Intent is null")
+            return
+        }
+        try {
+            val json = JSONObject().apply {
+                put("action", intent.action ?: JSONObject.NULL)
+                put("data", intent.data?.toString() ?: JSONObject.NULL)
+                put("package", intent.`package` ?: JSONObject.NULL)
+                val extrasJson = JSONObject()
+                intent.extras?.keySet()?.forEach { key ->
+                    extrasJson.put(key, intent.extras?.get(key)?.toString() ?: JSONObject.NULL)
+                }
+                put("extras", extrasJson)
+            }
+            Timber.d("Register response Intent (JSON): %s", json.toString(2))
+        } catch (e: Exception) {
+            Timber.w(e, "Could not serialize Intent to JSON")
+        }
     }
 
     companion object {
