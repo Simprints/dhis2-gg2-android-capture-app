@@ -9,7 +9,8 @@ sealed class IdentifyResult {
     ) : IdentifyResult()
 
     data object BiometricsDeclined : IdentifyResult()
-    data class UserNotFound(val sessionId: String) : IdentifyResult()
+    data class UserNotFound(val sessionId: String,
+                            val scannedCredential: ScannedCredential?) : IdentifyResult()
     data object Failure : IdentifyResult()
     data object AgeGroupNotSupported : IdentifyResult()
 

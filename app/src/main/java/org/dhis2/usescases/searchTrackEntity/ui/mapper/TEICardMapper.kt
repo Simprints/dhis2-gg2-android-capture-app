@@ -185,10 +185,10 @@ class TEICardMapper(
                 )
             }
 
-            if (searchTEIModel.displayOrgUnit) {
+            if (searchTEIModel.displayOrgUnit && !searchTEIModel.enrolledOrgUnit.isNullOrBlank()) {
                 checkEnrolledIn(
                     list = list,
-                    enrolledOrgUnit = searchTEIModel.enrolledOrgUnit,
+                    enrolledOrgUnit = searchTEIModel.enrolledOrgUnit!!,
                 )
             }
 
