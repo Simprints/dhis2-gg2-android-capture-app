@@ -183,6 +183,7 @@ android {
             dimension = "default"
             versionCode = libs.versions.vCode.get().toInt()
             versionName = libs.versions.vName.get()
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 
