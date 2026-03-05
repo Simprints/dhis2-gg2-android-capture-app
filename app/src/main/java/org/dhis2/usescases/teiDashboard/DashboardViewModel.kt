@@ -82,6 +82,10 @@ class DashboardViewModel(
         MutableStateFlow<RelationshipTopBarIconState>(RelationshipTopBarIconState.List())
     val relationshipTopBarIconState = _relationshipTopBarIconState.asStateFlow()
 
+    // EyeSeeTea customization - avoid calls to database in recompositions
+    private val _teiCanBeTransferred = MutableStateFlow(false)
+    val teiCanBeTransferredState = _teiCanBeTransferred.asStateFlow()
+
     init {
         fetchDashboardModel()
         fetchGrouping()
@@ -108,8 +112,16 @@ class DashboardViewModel(
                             model.currentEnrollment.aggregatedSyncState()
                         _noEnrollmentSelected.value = false
                         loadNavigationBarItems()
+                        // EyeSeeTea customization - avoid calls to database in recompositions
+                        viewModelScope.launch(dispatcher.io()) {
+                            val can = repository.teiCanBeTransferred()
+                            withContext(dispatcher.ui()) {
+                                _teiCanBeTransferred.value = can
+                            }
+                        }
                     } else {
                         _noEnrollmentSelected.value = true
+                        _teiCanBeTransferred.value = false
                     }
                 } catch (e: Exception) {
                     Timber.e(e)
@@ -289,7 +301,8 @@ class DashboardViewModel(
         _navigationBarUIState.value = _navigationBarUIState.value.copy(selectedItem = itemId)
     }
 
-    fun checkIfTeiCanBeTransferred(): Boolean = repository.teiCanBeTransferred()
+    // EyeSeeTea customization - avoid calls to database in recompositions
+    fun checkIfTeiCanBeTransferred(): Boolean = _teiCanBeTransferred.value
 
     fun transferTei(
         newOrgUnitId: String,

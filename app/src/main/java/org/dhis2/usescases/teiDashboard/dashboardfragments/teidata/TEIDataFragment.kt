@@ -257,6 +257,9 @@ class TEIDataFragment :
                 )
                 val eventCount by presenter.events.map { it.count() }.observeAsState(0)
 
+                // EyeSeeTea customization - avoid calls to database in recompositions
+                val teiCanBeTransferred by dashboardViewModel.teiCanBeTransferredState.collectAsState(initial = false)
+
                 val syncInfoBar =
                     dashboardModel.takeIf { it is DashboardEnrollmentModel }?.let {
                         infoBarMapper.map(
@@ -352,7 +355,7 @@ class TEIDataFragment :
                         (dashboardModel as? DashboardEnrollmentModel)?.let {
                             quickActionsMapper.map(
                                 it,
-                                dashboardViewModel.checkIfTeiCanBeTransferred(),
+                                teiCanBeTransferred,
                             ) { quickActionType ->
                                 onQuickAction(quickActionType)
                             }
