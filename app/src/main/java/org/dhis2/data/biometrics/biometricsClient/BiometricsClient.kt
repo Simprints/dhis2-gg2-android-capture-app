@@ -338,6 +338,7 @@ class BiometricsClient(
     }
 
     fun handleVerifyResponse(resultCode: Int, data: Intent): VerifyResult {
+        printIntent(data)
         Timber.d("Result code: $resultCode")
 
         if (resultCode != Activity.RESULT_OK) {
@@ -357,6 +358,7 @@ class BiometricsClient(
     }
 
     fun handleConfirmIdentityResponse(resultCode: Int, data: Intent?): ConfirmIdentityResult {
+        printIntent(data)
         Timber.d("Result code: $resultCode")
 
         if (data == null) {
