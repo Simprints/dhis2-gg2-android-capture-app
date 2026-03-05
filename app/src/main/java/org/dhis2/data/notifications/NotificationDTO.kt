@@ -10,7 +10,9 @@ data class NotificationDTO(
     val createdAt: String?,
     val id: String,
     val readBy: List<ReadByDTO>,
-    val recipients: RecipientsDTO
+    val recipients: RecipientsDTO,
+    val permissions: PermissionsDTO?,
+    val translations: Map<String, String>?
 )
 
 @Serializable
@@ -37,4 +39,25 @@ data class RefDTO(
 @Serializable
 data class UserGroupsDTO(
     val userGroups: List<RefDTO>,
+)
+
+@Serializable
+data class PermissionsDTO(
+    val publicAccess: String,
+    val userAccesses: List<UserAccessesDTO>,
+    val userGroupAccesses: List<UserGroupAccessesDTO>,
+)
+
+@Serializable
+data class UserAccessesDTO(
+    val access: String,
+    val id: String,
+    val name: String,
+)
+
+@Serializable
+data class UserGroupAccessesDTO(
+    val access: String,
+    val id: String,
+    val name: String,
 )

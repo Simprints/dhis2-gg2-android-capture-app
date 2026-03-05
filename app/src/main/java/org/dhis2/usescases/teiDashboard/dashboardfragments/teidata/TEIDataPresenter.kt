@@ -13,16 +13,18 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.processors.BehaviorProcessor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import org.dhis2.R
 import org.dhis2.commons.Constants
 import org.dhis2.commons.bindings.canCreateEventInEnrollment
 import org.dhis2.commons.bindings.enrollment
 import org.dhis2.commons.bindings.event
 import org.dhis2.commons.bindings.program
 import org.dhis2.commons.data.EventCreationType
-import org.dhis2.commons.data.EventViewModel
+import org.dhis2.commons.data.EventModel
 import org.dhis2.commons.data.EventViewModelType
 import org.dhis2.commons.data.StageSection
 import org.dhis2.commons.prefs.BasicPreferenceProvider
+import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.resources.D2ErrorUtils
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
@@ -60,10 +62,10 @@ import org.dhis2.usescases.eventsWithoutRegistration.eventInitial.EventInitialAc
 import org.dhis2.usescases.programStageSelection.ProgramStageSelectionActivity
 import org.dhis2.usescases.teiDashboard.DashboardEnrollmentModel
 import org.dhis2.usescases.teiDashboard.DashboardRepository
+import org.dhis2.usescases.teiDashboard.dashboardfragments.teidata.TEIDataFragment.Companion.PREF_COMPLETED_EVENT
 import org.dhis2.usescases.teiDashboard.dashboardfragments.teidata.TeiDataIdlingResourceSingleton.decrement
 import org.dhis2.usescases.teiDashboard.dashboardfragments.teidata.TeiDataIdlingResourceSingleton.increment
 import org.dhis2.usescases.teiDashboard.domain.GetNewEventCreationTypeOptions
-import org.dhis2.utils.Result
 import org.dhis2.utils.analytics.AnalyticsHelper
 import org.dhis2.utils.analytics.CREATE_EVENT_TEI
 import org.dhis2.utils.analytics.TYPE_EVENT_TEI
@@ -99,6 +101,7 @@ class TEIDataPresenter(
     private val dispatcher: DispatcherProvider,
     private val createEventUseCase: CreateEventUseCase,
     private val d2ErrorUtils: D2ErrorUtils,
+    private val preferences: PreferenceProvider,
     private val basicPreferenceProvider: BasicPreferenceProvider,
     private val resourceManager: ResourceManager,
     private val lastBiometricsSearchSessionId: String?,
@@ -113,8 +116,8 @@ class TEIDataPresenter(
     private val _shouldDisplayEventCreationButton = MutableLiveData(false)
     val shouldDisplayEventCreationButton: LiveData<Boolean> = _shouldDisplayEventCreationButton
 
-    private val _events: MutableLiveData<List<EventViewModel>> = MutableLiveData()
-    val events: LiveData<List<EventViewModel>> = _events
+    private val _events: MutableLiveData<List<EventModel>> = MutableLiveData()
+    val events: LiveData<List<EventModel>> = _events
 
     private val singleEventEnforcer = SingleEventEnforcer.get()
 
@@ -132,41 +135,44 @@ class TEIDataPresenter(
     fun init() {
         programUid?.let {
             val program = d2.program(it) ?: throw NullPointerException()
-            val sectionFlowable = view.observeStageSelection(program)
-                .startWith(StageSection("", false, false))
-                .map { (stageUid, showOptions, showAllEvents) ->
-                    currentStage = if (stageUid == currentStage && !showOptions) "" else stageUid
-                    StageSection(currentStage, showOptions, showAllEvents)
-                }
+            val sectionFlowable =
+                view
+                    .observeStageSelection(program)
+                    .startWith(StageSection("", false, false))
+                    .map { (stageUid, showOptions, showAllEvents) ->
+                        currentStage = if (stageUid == currentStage && !showOptions) "" else stageUid
+                        StageSection(currentStage, showOptions, showAllEvents)
+                    }
             val programHasGrouping = dashboardRepository.getGrouping()
             val groupingFlowable = groupingProcessor.startWith(programHasGrouping)
 
             compositeDisposable.add(
-                Flowable.combineLatest<StageSection?, Boolean?, Pair<StageSection, Boolean>>(
-                    sectionFlowable,
-                    groupingFlowable,
-                    ::Pair,
-                )
-                    .doOnNext { increment() }
+                Flowable
+                    .combineLatest<StageSection?, Boolean?, Pair<StageSection, Boolean>>(
+                        sectionFlowable,
+                        groupingFlowable,
+                        ::Pair,
+                    ).doOnNext { increment() }
                     .switchMap { stageAndGrouping ->
-                        Flowable.zip(
-                            teiDataRepository.getTEIEnrollmentEvents(
-                                stageAndGrouping.first,
-                                stageAndGrouping.second,
-                            ).toFlowable(),
-                            Flowable.fromCallable {
-                                ruleEngineHelper?.refreshContext()
-                                (ruleEngineHelper?.evaluate() ?: emptyList())
-                                    .let { ruleEffects -> Result.success(ruleEffects) }
-                            },
-                        ) { events, calcResult ->
-                            applyEffects(
-                                events,
-                                calcResult,
-                            )
-                        }.subscribeOn(schedulerProvider.io())
-                    }
-                    .subscribeOn(schedulerProvider.io())
+                        Flowable
+                            .zip(
+                                teiDataRepository
+                                    .getTEIEnrollmentEvents(
+                                        stageAndGrouping.first,
+                                        stageAndGrouping.second,
+                                    ).toFlowable(),
+                                Flowable.fromCallable {
+                                    ruleEngineHelper?.refreshContext()
+                                    (ruleEngineHelper?.evaluate() ?: emptyList())
+                                        .let { ruleEffects -> Result.success(ruleEffects) }
+                                },
+                            ) { events, calcResult ->
+                                applyEffects(
+                                    events,
+                                    calcResult,
+                                )
+                            }.subscribeOn(schedulerProvider.io())
+                    }.subscribeOn(schedulerProvider.io())
                     .observeOn(schedulerProvider.ui())
                     .subscribe(
                         { events ->
@@ -205,7 +211,7 @@ class TEIDataPresenter(
                     { model ->
                         if (model is DashboardEnrollmentModel) {
                             dashboardModel = model
-                            programUid = model.currentProgram().uid()
+                            programUid = model.currentProgram()?.uid()
                             orgUnitUid = model.orgUnits[0].uid()
 
                             refreshVerificationStatus()
@@ -225,31 +231,33 @@ class TEIDataPresenter(
             val enrollment = d2.enrollment(enrollmentUid)
             val showButton =
                 enrollment != null &&
-                    !isGrouping && enrollment.status() == EnrollmentStatus.ACTIVE &&
+                    !isGrouping &&
+                    enrollment.status() == EnrollmentStatus.ACTIVE &&
                     canAddNewEvents()
             _shouldDisplayEventCreationButton.postValue(showButton)
         }
     }
 
     private fun applyEffects(
-        events: List<EventViewModel>,
-        calcResult: Result<RuleEffect>,
-    ): List<EventViewModel> {
+        events: List<EventModel>,
+        calcResult: Result<List<RuleEffect>>,
+    ): List<EventModel> {
         Timber.d("APPLYING EFFECTS")
-        if (calcResult.error() != null) {
-            Timber.e(calcResult.error())
+        if (calcResult.isFailure) {
+            Timber.e(calcResult.exceptionOrNull())
             view.showProgramRuleErrorMessage()
             return emptyList()
         }
-        val (_, _, _, _, _, _, stagesToHide1) = RulesUtilsProviderImpl(
-            d2,
-            optionsRepository,
-        ).applyRuleEffects(
-            false,
-            HashMap(),
-            calcResult.items(),
-            valueStore,
-        )
+        val (_, _, _, _, _, _, stagesToHide1) =
+            RulesUtilsProviderImpl(
+                d2,
+                optionsRepository,
+            ).applyRuleEffects(
+                false,
+                HashMap(),
+                calcResult.getOrNull() ?: emptyList(),
+                valueStore,
+            )
         stagesToHide = stagesToHide1
         return events.mapNotNull {
             it.applyHideStage(stagesToHide.contains(it.stage?.uid()))
@@ -259,7 +267,8 @@ class TEIDataPresenter(
     @VisibleForTesting
     fun getEventsWithoutCatCombo() {
         compositeDisposable.add(
-            teiDataRepository.eventsWithoutCatCombo()
+            teiDataRepository
+                .eventsWithoutCatCombo()
                 .subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.ui())
                 .subscribe(
@@ -269,13 +278,17 @@ class TEIDataPresenter(
         )
     }
 
-    fun changeCatOption(eventUid: String?, catOptionComboUid: String?) {
+    fun changeCatOption(
+        eventUid: String?,
+        catOptionComboUid: String?,
+    ) {
         dashboardRepository.saveCatOption(eventUid, catOptionComboUid)
     }
 
     fun displayGenerateEvent(eventUid: String?) {
         compositeDisposable.add(
-            dashboardRepository.displayGenerateEvent(eventUid)
+            dashboardRepository
+                .displayGenerateEvent(eventUid)
                 .subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.ui())
                 .subscribe({ programStage ->
@@ -292,16 +305,29 @@ class TEIDataPresenter(
         )
     }
 
+    fun checkIfHasToDisplayGenerateEvent() {
+        preferences.getString(PREF_COMPLETED_EVENT, null)?.let { eventUid ->
+            displayGenerateEvent(eventUid)
+            preferences.removeValue(PREF_COMPLETED_EVENT)
+        }
+    }
+
     fun completeEnrollment() {
         val hasWriteAccessInProgram =
-            programUid?.let { d2.program(it)?.access()?.data()?.write() } == true
+            programUid?.let {
+                d2
+                    .program(it)
+                    ?.access()
+                    ?.data()
+                    ?.write()
+            } == true
 
         if (hasWriteAccessInProgram) {
             compositeDisposable.add(
-                Completable.fromCallable {
-                    dashboardRepository.completeEnrollment(enrollmentUid).blockingFirst()
-                }
-                    .subscribeOn(schedulerProvider.computation())
+                Completable
+                    .fromCallable {
+                        dashboardRepository.completeEnrollment(enrollmentUid).blockingFirst()
+                    }.subscribeOn(schedulerProvider.computation())
                     .observeOn(schedulerProvider.ui())
                     .subscribe(
                         {},
@@ -328,8 +354,12 @@ class TEIDataPresenter(
             programUid,
         )
         bundle.putString(Constants.TRACKED_ENTITY_INSTANCE, teiUid)
-        teiDataRepository.getEnrollment().blockingGet()?.organisationUnit()
-            ?.takeIf { enrollmentOrgUnitInCaptureScope(it) }?.let {
+        teiDataRepository
+            .getEnrollment()
+            .blockingGet()
+            ?.organisationUnit()
+            ?.takeIf { enrollmentOrgUnitInCaptureScope(it) }
+            ?.let {
                 bundle.putString(Constants.ORG_UNIT, it)
             }
 
@@ -343,7 +373,10 @@ class TEIDataPresenter(
         }
     }
 
-    fun onScheduleSelected(uid: String?, sharedView: View?) {
+    fun onScheduleSelected(
+        uid: String?,
+        sharedView: View?,
+    ) {
         uid?.let {
             view.displayEnterEvent(
                 eventUid = it,
@@ -353,7 +386,18 @@ class TEIDataPresenter(
         }
     }
 
-    fun onEventSelected(uid: String, eventStatus: EventStatus) {
+    fun onScheduleEventWithoutAccess(enrollmentOrgUnitName: String?) {
+        enrollmentOrgUnitName?.let {
+            view.displayNoAccessToEventSnackbar(
+                enrollmentOrgUnit = it,
+            )
+        }
+    }
+
+    fun onEventSelected(
+        uid: String,
+        eventStatus: EventStatus,
+    ) {
         when (eventStatus) {
             EventStatus.ACTIVE, EventStatus.COMPLETED, EventStatus.SKIPPED -> {
                 val intent = Intent(view.context, EventCaptureActivity::class.java)
@@ -366,6 +410,7 @@ class TEIDataPresenter(
                 )
                 view.openEventCapture(intent)
             }
+
             else -> {
                 val event = d2.event(uid)
                 val intent = Intent(view.context, EventInitialActivity::class.java)
@@ -388,7 +433,10 @@ class TEIDataPresenter(
         }
     }
 
-    fun setProgram(program: Program, enrollmentUid: String?) {
+    fun setProgram(
+        program: Program,
+        enrollmentUid: String?,
+    ) {
         program.uid()?.let { uid ->
             programUid = uid
             enrollmentUid?.let { view.restoreAdapter(uid, teiUid, it) }
@@ -418,18 +466,16 @@ class TEIDataPresenter(
         view.showSyncDialog(eventUid, enrollmentUid)
     }
 
-    fun enrollmentOrgUnitInCaptureScope(enrollmentOrgUnit: String) =
-        teiDataRepository.enrollmentOrgUnitInCaptureScope(enrollmentOrgUnit)
+    fun enrollmentOrgUnitInCaptureScope(enrollmentOrgUnit: String) = teiDataRepository.enrollmentOrgUnitInCaptureScope(enrollmentOrgUnit)
 
-    private fun canAddNewEvents(): Boolean {
-        return d2.canCreateEventInEnrollment(enrollmentUid, stagesToHide)
-    }
+    private fun canAddNewEvents(): Boolean = d2.canCreateEventInEnrollment(enrollmentUid, stagesToHide)
 
-    fun getOrgUnitName(orgUnitUid: String): String {
-        return teiDataRepository.getOrgUnitName(orgUnitUid)
-    }
+    fun getOrgUnitName(orgUnitUid: String): String = teiDataRepository.getOrgUnitName(orgUnitUid)
 
-    fun onAddNewEventOptionSelected(eventCreationType: EventCreationType, stage: ProgramStage?) {
+    fun onAddNewEventOptionSelected(
+        eventCreationType: EventCreationType,
+        stage: ProgramStage?,
+    ) {
         singleEventEnforcer.processEvent {
             manageAddNewEventOptionSelected(eventCreationType, stage)
         }
@@ -441,10 +487,12 @@ class TEIDataPresenter(
     ) {
         if (stage != null) {
             when (eventCreationType) {
-                EventCreationType.ADDNEW -> programUid?.let { program ->
-                    val orgUnitUid = d2.enrollment(enrollmentUid)?.organisationUnit()
-                    orgUnitUid?.let { onNewEventSelected(orgUnitUid, stage.uid()) } ?: checkOrgUnitCount(program, stage.uid())
-                }
+                EventCreationType.ADDNEW ->
+                    programUid?.let { program ->
+                        val orgUnitUid = d2.enrollment(enrollmentUid)?.organisationUnit()
+                        orgUnitUid?.let { onNewEventSelected(orgUnitUid, stage.uid()) }
+                            ?: checkOrgUnitCount(program, stage.uid())
+                    }
 
                 EventCreationType.SCHEDULE -> {
                     view.displayScheduleEvent(
@@ -458,9 +506,12 @@ class TEIDataPresenter(
             }
         } else {
             when (eventCreationType) {
-                EventCreationType.REFERAL -> {
+                EventCreationType.REFERAL,
+                EventCreationType.ADDNEW,
+                -> {
                     createEventInEnrollment(eventCreationType)
                 }
+
                 else -> {
                     view.displayScheduleEvent(
                         programStage = null,
@@ -474,16 +525,19 @@ class TEIDataPresenter(
 
     fun getNewEventOptionsByStages(stage: ProgramStage?): List<MenuItemData<EventCreationType>> {
         val options = programUid?.let { getNewEventCreationTypeOptions(stage, it) }
-        return options?.let { eventCreationOptionsMapper.mapToEventsByStage(it, stage?.displayEventLabel()) } ?: emptyList()
+        return options?.let {
+            eventCreationOptionsMapper.mapToEventsByStage(
+                it,
+                stage?.displayEventLabel(),
+            )
+        } ?: emptyList()
     }
 
     fun fetchEvents() {
         groupingProcessor.onNext(dashboardRepository.getGrouping())
     }
 
-    fun getEnrollment(): Enrollment? {
-        return teiDataRepository.getEnrollment().blockingGet()
-    }
+    fun getEnrollment(): Enrollment? = teiDataRepository.getEnrollment().blockingGet()
 
     fun filterAvailableStages(programStages: List<ProgramStage>): List<ProgramStage> =
         programStages
@@ -497,7 +551,10 @@ class TEIDataPresenter(
                     } == true
             }.sortedBy { stage -> stage.sortOrder() }
 
-    fun checkOrgUnitCount(programUid: String, programStageUid: String) {
+    fun checkOrgUnitCount(
+        programUid: String,
+        programStageUid: String,
+    ) {
         CoroutineScope(dispatcher.io()).launch {
             val orgUnits = teiDataRepository.programOrgListInCaptureScope(programUid)
             if (orgUnits.count() == 1) {
@@ -508,7 +565,10 @@ class TEIDataPresenter(
         }
     }
 
-    fun onNewEventSelected(orgUnitUid: String, programStageUid: String) {
+    fun onNewEventSelected(
+        orgUnitUid: String,
+        programStageUid: String,
+    ) {
         CoroutineScope(dispatcher.io()).launch {
             programUid?.let {
                 createEventUseCase(

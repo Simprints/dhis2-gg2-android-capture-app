@@ -1,4 +1,4 @@
-
+package org.dhis2.data.notifications
 import org.dhis2.data.notifications.NotificationDTO
 import org.dhis2.data.notifications.UserGroupsDTO
 import org.hisp.dhis.android.core.arch.api.HttpServiceClient

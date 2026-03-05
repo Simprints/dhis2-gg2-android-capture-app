@@ -1,7 +1,5 @@
 package org.dhis2.data.service
 
-import NotificationsApi
-import UserGroupsApi
 import dagger.Module
 import dagger.Provides
 import org.dhis2.commons.di.dagger.PerService
@@ -9,7 +7,6 @@ import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.data.biometrics.BiometricsConfigApi
 import org.dhis2.data.biometrics.BiometricsConfigRepositoryImpl
-import org.dhis2.data.notifications.NotificationD2Repository
 import org.dhis2.data.service.workManager.WorkManagerController
 import org.dhis2.usescases.biometrics.repositories.BiometricsConfigRepository
 import org.dhis2.usescases.notifications.domain.NotificationRepository
@@ -20,9 +17,7 @@ import org.hisp.dhis.android.core.D2
 class SyncInitWorkerModule {
     @Provides
     @PerService
-    fun syncRepository(d2: D2): SyncRepository {
-        return SyncRepositoryImpl(d2)
-    }
+    fun syncRepository(d2: D2): SyncRepository = SyncRepositoryImpl(d2)
 
     @Provides
     @PerService
@@ -33,19 +28,6 @@ class SyncInitWorkerModule {
         val biometricsConfigApi = BiometricsConfigApi(d2.httpServiceClient())
 
         return BiometricsConfigRepositoryImpl(d2, basicPreferences, biometricsConfigApi)
-    }
-
-    @Provides
-    @PerService
-    fun notificationsRepository(
-        d2: D2,
-        preference: BasicPreferenceProvider
-    ): NotificationRepository {
-        val notificationsApi = NotificationsApi(d2.httpServiceClient())
-
-        val userGroupsApi = UserGroupsApi(d2.httpServiceClient())
-
-        return NotificationD2Repository(d2, preference, notificationsApi, userGroupsApi)
     }
 
 
@@ -60,8 +42,8 @@ class SyncInitWorkerModule {
         syncRepository: SyncRepository,
         biometricsConfigRepository: BiometricsConfigRepository,
         notificationsRepository: NotificationRepository
-    ): SyncPresenter {
-        return SyncPresenterImpl(
+    ): SyncPresenter =
+        SyncPresenterImpl(
             d2,
             preferences,
             workManagerController,
@@ -71,5 +53,4 @@ class SyncInitWorkerModule {
             biometricsConfigRepository,
             notificationsRepository
         )
-    }
 }

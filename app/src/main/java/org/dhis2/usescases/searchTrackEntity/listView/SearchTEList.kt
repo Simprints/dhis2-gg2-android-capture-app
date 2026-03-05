@@ -66,7 +66,6 @@ const val ARG_FROM_RELATIONSHIP = "ARG_FROM_RELATIONSHIP"
 private const val DIRECTION_DOWN = 1
 
 class SearchTEList : FragmentGlobalAbstract() {
-
     @Inject
     lateinit var viewModelFactory: SearchTeiViewModelFactory
 
@@ -138,24 +137,26 @@ class SearchTEList : FragmentGlobalAbstract() {
     private var currentLastClickedTeiUid: String? = null
 
     companion object {
-        fun get(fromRelationships: Boolean): SearchTEList {
-            return SearchTEList().apply {
+        fun get(fromRelationships: Boolean): SearchTEList =
+            SearchTEList().apply {
                 arguments = bundleArguments(fromRelationships)
             }
-        }
+
+        private const val KEY_SCROLL_POSITION = "scroll_position"
     }
 
-    private fun bundleArguments(fromRelationships: Boolean): Bundle {
-        return Bundle().apply {
+    private fun bundleArguments(fromRelationships: Boolean): Bundle =
+        Bundle().apply {
             putBoolean(ARG_FROM_RELATIONSHIP, fromRelationships)
         }
-    }
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        (context as SearchTEActivity).searchComponent?.plus(
-            SearchTEListModule(),
-        )?.inject(this)
+        (context as SearchTEActivity)
+            .searchComponent
+            ?.plus(
+                SearchTEListModule(),
+            )?.inject(this)
     }
 
     @ExperimentalAnimationApi
@@ -163,25 +164,24 @@ class SearchTEList : FragmentGlobalAbstract() {
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?,
-    ): View {
-        return FragmentSearchListBinding.inflate(inflater, container, false).apply {
-            configureList(
-                scrollView,
-                savedInstanceState?.getInt(KEY_SCROLL_POSITION),
-                savedInstanceState?.getString(KEY_LAST_CLICKED_TEI_UID)
-            )
-
-            configureOpenSearchButton(openSearchButton)
-
-            //EyeSeeTea customization
-            configureCreateButton(createButton)
-            configureSequentialSearchNextAction(nextActions)
-            configureBiometricsLoader(biometricsLoader)
-            configureRecyclerVisibility()
-        }.root.also {
-            observeNewData()
-        }
-    }
+    ): View =
+        FragmentSearchListBinding
+            .inflate(inflater, container, false)
+            .apply {
+                configureList(
+                    scrollView,
+                    savedInstanceState?.getInt(KEY_SCROLL_POSITION),
+                    savedInstanceState?.getString(KEY_LAST_CLICKED_TEI_UID)
+                )
+                configureOpenSearchButton(openSearchButton)
+                //EyeSeeTea customization
+                configureCreateButton(createButton)
+                configureSequentialSearchNextAction(nextActions)
+                configureBiometricsLoader(biometricsLoader)
+                configureRecyclerVisibility()
+            }.also {
+                observeNewData()
+            }.root
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -205,51 +205,63 @@ class SearchTEList : FragmentGlobalAbstract() {
         currentLastClickedTeiUid = lastClickedTeiUid
 
         val layoutManager = scrollView.layoutManager as? LinearLayoutManager
-        scrollView.apply {
-            adapter = listAdapter
-            // Deactivate ItemAnimator to avoid crash:
-            // java.lang.IllegalArgumentException: Tmp detached view should be removed from RecyclerView before it can be recycled
-            itemAnimator = null
-            addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
-                    super.onScrollStateChanged(recyclerView, newState)
-                    if (newState == RecyclerView.SCROLL_STATE_IDLE) {
-                        CoroutineTracker.decrement()
-                    } else if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
-                        CoroutineTracker.increment()
-                    }
-                    if (!recyclerView.canScrollVertically(DIRECTION_DOWN)) {
-                        viewModel.isScrollingDown.value = false
-                    }
-                }
-
-                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    super.onScrolled(recyclerView, dx, dy)
-                    if (dy > 0) {
-                        viewModel.isScrollingDown.value = true
-                        currentPosition = layoutManager?.findFirstCompletelyVisibleItemPosition()
-                    } else if (dy < 0) {
-                        viewModel.isScrollingDown.value = false
-                        currentPosition = layoutManager?.findFirstCompletelyVisibleItemPosition()
-                    }
-                }
-            })
-            lifecycleScope.launch {
-                liveAdapter.loadStateFlow.collectLatest {
-                    if (currentLastClickedTeiUid != null) {
-                        val position =
-                            liveAdapter.snapshot().items.indexOfFirst { it.tei.uid() == currentLastClickedTeiUid }
-                        if (position != -1) {
-                            layoutManager?.scrollToPositionWithOffset(position, 0)
+        scrollView
+            .apply {
+                adapter = listAdapter
+                // Deactivate ItemAnimator to avoid crash:
+                // java.lang.IllegalArgumentException: Tmp detached view should be removed from RecyclerView before it can be recycled
+                itemAnimator = null
+                addOnScrollListener(
+                    object : RecyclerView.OnScrollListener() {
+                        override fun onScrollStateChanged(
+                            recyclerView: RecyclerView,
+                            newState: Int,
+                        ) {
+                            super.onScrollStateChanged(recyclerView, newState)
+                            if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                                CoroutineTracker.decrement()
+                            } else if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                                CoroutineTracker.increment()
+                            }
+                            if (!recyclerView.canScrollVertically(DIRECTION_DOWN)) {
+                                viewModel.isScrollingDown.value = false
+                            }
                         }
-                    } else {
-                        scrollToPosition(currentPosition ?: 0)
+
+                        override fun onScrolled(
+                            recyclerView: RecyclerView,
+                            dx: Int,
+                            dy: Int,
+                        ) {
+                            super.onScrolled(recyclerView, dx, dy)
+                            if (dy > 0) {
+                                viewModel.isScrollingDown.value = true
+                                currentPosition =
+                                    layoutManager?.findFirstCompletelyVisibleItemPosition()
+                            } else if (dy < 0) {
+                                viewModel.isScrollingDown.value = false
+                                currentPosition =
+                                    layoutManager?.findFirstCompletelyVisibleItemPosition()
+                            }
+                        }
+                    },
+                )
+                lifecycleScope.launch {
+                    liveAdapter.loadStateFlow.collectLatest {
+                        if (currentLastClickedTeiUid != null) {
+                            val position =
+                                liveAdapter.snapshot().items.indexOfFirst { it.tei.uid() == currentLastClickedTeiUid }
+                            if (position != -1) {
+                                layoutManager?.scrollToPositionWithOffset(position, 0)
+                            }
+                        } else {
+                            scrollToPosition(currentPosition ?: 0)
+                        }
                     }
                 }
+            }.also {
+                recycler = it
             }
-        }.also {
-            recycler = it
-        }
     }
 
     @ExperimentalAnimationApi
@@ -273,10 +285,12 @@ class SearchTEList : FragmentGlobalAbstract() {
 
                     val isFilterOpened by viewModel.filtersOpened.observeAsState(false)
                     val createButtonVisibility by viewModel
-                        .createButtonScrollVisibility.observeAsState(true)
-                    val queryData = remember(viewModel.uiState) {
-                        viewModel.uiState.searchedItems
-                    }
+                        .createButtonScrollVisibility
+                        .observeAsState(true)
+                    val queryData =
+                        remember(viewModel.searchParametersUiState) {
+                            viewModel.searchParametersUiState.searchedItems
+                        }
 
                     FullSearchButtonAndWorkingList(
                         teTypeName = teTypeName!!,
@@ -312,12 +326,15 @@ class SearchTEList : FragmentGlobalAbstract() {
             setContent {
                 val isScrollingDown by viewModel.isScrollingDown.observeAsState(false)
                 val createButtonVisibility by viewModel
-                    .createButtonScrollVisibility.observeAsState(true)
+                    .createButtonScrollVisibility
+                    .observeAsState(true)
                 val filtersOpened by viewModel.filtersOpened.observeAsState(false)
                 val teTypeName by viewModel.teTypeName.observeAsState()
-                val hasQueryData = remember(viewModel.uiState) {
-                    viewModel.queryData.isNotEmpty()
-                }
+                val hasQueryData =
+                    remember(viewModel.searchParametersUiState) {
+                        viewModel.queryData.isNotEmpty()
+                    }
+
                 val sequentialSearch by viewModel.sequentialSearch.observeAsState()
 
                 val newPatientAction = sequentialSearch?.nextActions?.firstOrNull {
@@ -325,16 +342,21 @@ class SearchTEList : FragmentGlobalAbstract() {
                 }
 
                 updateLayoutParams<CoordinatorLayout.LayoutParams> {
-                    val bottomMargin = if (viewModel.isBottomNavigationBarVisible()) {
-                        56.dp
-                    } else {
-                        16.dp
-                    }
+                    val bottomMargin =
+                        if (viewModel.isBottomNavigationBarVisible()) {
+                            56.dp
+                        } else {
+                            16.dp
+                        }
                     setMargins(0, 0, 0, bottomMargin)
                 }
 
                 val orientation = LocalConfiguration.current.orientation
-                if (newPatientAction != null && (hasQueryData || orientation == Configuration.ORIENTATION_LANDSCAPE) && createButtonVisibility && !filtersOpened && !teTypeName.isNullOrBlank()) {
+                if (newPatientAction != null && (hasQueryData || orientation == Configuration.ORIENTATION_LANDSCAPE) &&
+                    createButtonVisibility &&
+                    !filtersOpened &&
+                    !teTypeName.isNullOrBlank()
+                ) {
                     CreateNewButton(
                         modifier = Modifier,
                         extended = !isScrollingDown,
@@ -348,11 +370,12 @@ class SearchTEList : FragmentGlobalAbstract() {
 
 
     private fun displayImageDetail(imagePath: String) {
-        val intent = ImageDetailActivity.intent(
-            context = requireContext(),
-            title = null,
-            imagePath = imagePath,
-        )
+        val intent =
+            ImageDetailActivity.intent(
+                context = requireContext(),
+                title = null,
+                imagePath = imagePath,
+            )
 
         startActivity(intent)
     }
@@ -465,12 +488,18 @@ class SearchTEList : FragmentGlobalAbstract() {
     private fun onInitDataLoaded() {
         viewModel.onDataLoaded(
             programResultCount = liveAdapter.itemCount,
-            globalResultCount = if (globalAdapter.itemCount > 0) {
-                globalAdapter.itemCount
-            } else {
-                null
-            },
-            onlineErrorCode = liveAdapter.snapshot().items.lastOrNull()?.onlineErrorCode,
+            globalResultCount =
+                if (globalAdapter.itemCount > 0) {
+                    globalAdapter.itemCount
+                } else {
+                    null
+                },
+            onlineErrorCode =
+                liveAdapter
+                    .snapshot()
+                    .items
+                    .lastOrNull()
+                    ?.onlineErrorCode,
         )
         hideToolBarProgress()
     }

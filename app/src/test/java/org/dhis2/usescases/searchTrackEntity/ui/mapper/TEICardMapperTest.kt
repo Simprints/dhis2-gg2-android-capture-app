@@ -31,7 +31,6 @@ import java.util.Calendar
 import java.util.Date
 
 class TEICardMapperTest {
-
     private val context: Context = mock()
     private val resourceManager: ResourceManager = mock()
     private val sharedPreferences: SharedPreferences = mock()
@@ -63,12 +62,13 @@ class TEICardMapperTest {
     fun shouldReturnCardFull() {
         val model = createFakeModel(isOverdue = true)
 
-        val result = mapper.map(
-            searchTEIModel = model,
-            onSyncIconClick = {},
-            onCardClick = {},
-            onImageClick = {},
-        )
+        val result =
+            mapper.map(
+                searchTEIModel = model,
+                onSyncIconClick = {},
+                onCardClick = {},
+                onImageClick = {},
+            )
 
         assertEquals(result.title, model.header)
         assertEquals(result.lastUpdated, model.tei.lastUpdated().toDateSpan(context))
@@ -102,12 +102,13 @@ class TEICardMapperTest {
 
         val model = createFakeModel(overdueDate.time, true)
 
-        val result = mapper.map(
-            searchTEIModel = model,
-            onSyncIconClick = {},
-            onCardClick = {},
-            onImageClick = {},
-        )
+        val result =
+            mapper.map(
+                searchTEIModel = model,
+                onSyncIconClick = {},
+                onCardClick = {},
+                onImageClick = {},
+            )
         assertEquals(
             result.additionalInfo[4].value,
             model.overdueDate.toOverdueOrScheduledUiText(resourceManager),
@@ -190,54 +191,63 @@ class TEICardMapperTest {
         isOverdue: Boolean = false,
     ): SearchTeiModel {
         val attributeValues = LinkedHashMap<String, TrackedEntityAttributeValue>()
-        attributeValues["Name"] = TrackedEntityAttributeValue.builder()
-            .value("Peter")
-            .build()
-
-        val model = SearchTeiModel().apply {
-            header = "TEI header"
-            tei = TrackedEntityInstance.builder()
-                .uid("TEIUid")
-                .lastUpdated(currentDate)
-                .organisationUnit("OrgUnit")
-                .aggregatedSyncState(State.SYNCED)
+        attributeValues["Name"] =
+            TrackedEntityAttributeValue
+                .builder()
+                .value("Peter")
                 .build()
-            enrolledOrgUnit = "OrgUnit"
-            displayOrgUnit = true
-            setCurrentEnrollment(
-                Enrollment.builder()
-                    .uid("EnrollmentUid")
-                    .program("programUid")
-                    .status(EnrollmentStatus.COMPLETED)
-                    .build(),
-            )
-            setAttributeValues(attributeValues)
-            attributeValues.forEach { (key, value) -> addToAllAttributes(key, value) }
 
-            addProgramInfo(
-                Program.builder()
-                    .uid("Program1Uid")
-                    .displayName("Program 1")
-                    .build(),
-                null,
-            )
-            addProgramInfo(
-                Program.builder()
-                    .uid("Program2Uid")
-                    .displayName("Program 2")
-                    .build(),
-                null,
-            )
-            overdueDate = currentDate
-            isHasOverdue = isOverdue
+        val model =
+            SearchTeiModel().apply {
+                header = "TEI header"
+                tei =
+                    TrackedEntityInstance
+                        .builder()
+                        .uid("TEIUid")
+                        .lastUpdated(currentDate)
+                        .organisationUnit("OrgUnit")
+                        .aggregatedSyncState(State.SYNCED)
+                        .build()
+                enrolledOrgUnit = "OrgUnit"
+                displayOrgUnit = true
+                setCurrentEnrollment(
+                    Enrollment
+                        .builder()
+                        .uid("EnrollmentUid")
+                        .program("programUid")
+                        .status(EnrollmentStatus.COMPLETED)
+                        .build(),
+                )
+                setAttributeValues(attributeValues)
+                attributeValues.forEach { (key, value) -> addToAllAttributes(key, value) }
 
-            addEnrollment(
-                Enrollment.builder()
-                    .uid("EnrollmentUid")
-                    .followUp(true)
-                    .build(),
-            )
-        }
+                addProgramInfo(
+                    Program
+                        .builder()
+                        .uid("Program1Uid")
+                        .displayName("Program 1")
+                        .build(),
+                    null,
+                )
+                addProgramInfo(
+                    Program
+                        .builder()
+                        .uid("Program2Uid")
+                        .displayName("Program 2")
+                        .build(),
+                    null,
+                )
+                overdueDate = currentDate
+                isHasOverdue = isOverdue
+
+                addEnrollment(
+                    Enrollment
+                        .builder()
+                        .uid("EnrollmentUid")
+                        .followUp(true)
+                        .build(),
+                )
+            }
         return model
     }
 }

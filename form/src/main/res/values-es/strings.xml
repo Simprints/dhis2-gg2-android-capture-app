@@ -71,7 +71,6 @@
     <string name="enrollment_single_section_label">Atributos - %s</string>
     <string name="tei_coordinates">Coordenadas para</string>
     <string name="no_reserved_values">No quedan valores reservados. Contacte con el administrador del sistema.</string>
-    <string name="enrollmment_date">Fecha de inscripción</string>
     <string name="incident_date">Fecha del incidente</string>
     <string name="location_permission_denied">Se requiere el permiso de localización para obtener coordenadas. Por favor, habilítelo desde los ajustes del dispositivo.</string>
     <string name="open_with">Abrir con</string>
@@ -90,5 +89,4 @@
     <string name="no_options">No hay opciones disponibles</string>
     <string name="cat_combo">Cat Combo</string>
     <string name="storage_permission_denied">No se ha concedido el permiso de almacenamiento.\nDebes activarlo para usar esta función.</string>
-
-</resources>
+    </resources>

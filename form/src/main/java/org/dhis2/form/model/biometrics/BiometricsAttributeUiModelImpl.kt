@@ -1,6 +1,5 @@
 package org.dhis2.form.model.biometrics
 
-import org.dhis2.commons.orgunitselector.OrgUnitSelectorScope
 import org.dhis2.form.model.EventCategory
 import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.KeyboardActionType
@@ -12,6 +11,8 @@ import org.dhis2.form.model.UiRenderType
 import org.dhis2.form.ui.event.UiEventFactory
 import org.dhis2.form.ui.intent.FormIntent
 import org.dhis2.form.ui.intent.FormIntent.OnFocus
+import org.dhis2.mobile.commons.model.CustomIntentModel
+import org.dhis2.mobile.commons.orgunit.OrgUnitSelectorScope
 import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.mobile.ui.designsystem.component.SelectableDates
 
@@ -26,7 +27,8 @@ data class BiometricsAttributeUiModelImpl(
     override val periodSelector: PeriodSelector?,
     override val url: String?,
     override val editable: Boolean = true,
-    val ageUnderThreshold: Boolean = false
+    val ageUnderThreshold: Boolean = false,
+    override var customIntent: CustomIntentModel?
 ) : FieldUiModel, BiometricsTEIRegistrationUIModel {
 
     private var callback: FieldUiModel.Callback? = null
@@ -106,6 +108,9 @@ data class BiometricsAttributeUiModelImpl(
     override fun setDisplayName(displayName: String?) = this.copy()
 
     override fun setKeyBoardActionDone() = this.copy()
+    override fun setOptionSetConfiguration(optionSetConfiguration: OptionSetConfiguration): FieldUiModel {
+        TODO("Not yet implemented")
+    }
 
     override fun setFocus() = this.copy()
 

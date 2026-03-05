@@ -1,8 +1,8 @@
 package org.dhis2.usescases.biometrics.ui.buttons
 
 import androidx.compose.foundation.layout.Row
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color

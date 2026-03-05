@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.Button
@@ -42,14 +40,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.dhis2.ui.R
-import org.dhis2.ui.icons.SyncingIcon
-import org.dhis2.ui.items.SyncStatusItem
-import org.dhis2.ui.theme.colorPrimary
-import org.dhis2.ui.theme.textPrimary
-import org.dhis2.ui.theme.textSecondary
-import org.dhis2.ui.theme.textSubtitle
 import org.hisp.dhis.mobile.ui.designsystem.component.Button
 import org.hisp.dhis.mobile.ui.designsystem.component.ButtonStyle
+import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
 
 @Composable
 fun BottomSheetDialogUi(
@@ -62,17 +55,19 @@ fun BottomSheetDialogUi(
     (() -> Unit)? = null,
 ) {
     Column(
-        modifier = Modifier
-            .background(color = Color.White, shape = RoundedCornerShape(28.dp, 28.dp))
-            .padding(24.dp)
-            .fillMaxWidth(),
+        modifier =
+            Modifier
+                .background(color = Color.White, shape = RoundedCornerShape(28.dp, 28.dp))
+                .padding(24.dp)
+                .fillMaxWidth(),
         verticalArrangement = spacedBy(24.dp),
     ) {
         Column(
             horizontalAlignment = CenterHorizontally,
-            modifier = Modifier
-                .wrapContentHeight()
-                .fillMaxWidth(),
+            modifier =
+                Modifier
+                    .wrapContentHeight()
+                    .fillMaxWidth(),
         ) {
             icon?.invoke() ?: Icon(
                 painter = painterResource(bottomSheetDialogUiModel.iconResource),
@@ -83,18 +78,19 @@ fun BottomSheetDialogUi(
             Text(
                 text = bottomSheetDialogUiModel.title,
                 style = MaterialTheme.typography.headlineSmall,
-                color = textPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
-                modifier = Modifier
-                    .testTag(TITLE)
-                    .padding(horizontal = 16.dp),
+                modifier =
+                    Modifier
+                        .testTag(TITLE)
+                        .padding(horizontal = 16.dp),
             )
             bottomSheetDialogUiModel.subtitle?.let { subtitle ->
                 Spacer(modifier = Modifier.size(4.dp))
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = textSubtitle,
+                    color = TextColor.OnDisabledSurface,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -105,33 +101,37 @@ fun BottomSheetDialogUi(
                     Text(
                         text = message,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = textSecondary,
+                        color = TextColor.OnSurfaceLight,
                         textAlign = TextAlign.Start,
                         modifier = Modifier.fillMaxWidth(),
                     )
                 } else {
                     ClickableText(
-                        modifier = Modifier
-                            .testTag(CLICKABLE_TEXT_TAG)
-                            .fillMaxWidth(),
-                        text = buildAnnotatedString {
-                            val originalText = message
-                            val clickableWord = bottomSheetDialogUiModel.clickableWord!!
-                            val clickableWordIndex = originalText.indexOf(clickableWord)
-                            append(originalText)
-                            addStyle(
-                                style = SpanStyle(
-                                    color = colorPrimary,
-                                    textDecoration = TextDecoration.Underline,
-                                ),
-                                start = clickableWordIndex,
-                                end = clickableWordIndex + clickableWord.length,
-                            )
-                        },
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            color = textSecondary,
-                            textAlign = TextAlign.Start,
-                        ),
+                        modifier =
+                            Modifier
+                                .testTag(CLICKABLE_TEXT_TAG)
+                                .fillMaxWidth(),
+                        text =
+                            buildAnnotatedString {
+                                val originalText = message
+                                val clickableWord = bottomSheetDialogUiModel.clickableWord!!
+                                val clickableWordIndex = originalText.indexOf(clickableWord)
+                                append(originalText)
+                                addStyle(
+                                    style =
+                                        SpanStyle(
+                                            color = MaterialTheme.colorScheme.primary,
+                                            textDecoration = TextDecoration.Underline,
+                                        ),
+                                    start = clickableWordIndex,
+                                    end = clickableWordIndex + clickableWord.length,
+                                )
+                            },
+                        style =
+                            MaterialTheme.typography.bodyMedium.copy(
+                                color = TextColor.OnSurfaceLight,
+                                textAlign = TextAlign.Start,
+                            ),
                         onClick = {
                             onMessageClick()
                         },
@@ -142,9 +142,10 @@ fun BottomSheetDialogUi(
         extraContent?.let {
             HorizontalDivider()
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 250.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 250.dp),
             ) {
                 it.invoke()
             }
@@ -157,26 +158,43 @@ fun BottomSheetDialogUi(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                (bottomSheetDialogUiModel.secondaryButton?.textLabel ?: bottomSheetDialogUiModel.secondaryButton?.textResource?.let { stringResource(id = it) })?.let {
+                (
+                    bottomSheetDialogUiModel.secondaryButton?.textLabel
+                        ?: bottomSheetDialogUiModel.secondaryButton?.textResource?.let {
+                            stringResource(
+                                id = it,
+                            )
+                        }
+                )?.let {
                     Button(
                         modifier = Modifier.testTag(SECONDARY_BUTTON_TAG),
-                        shape = RoundedCornerShape(
-                            bottomSheetDialogUiModel.secondaryRoundedCornersSizeDp().dp,
-                        ),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.White,
-                            disabledContainerColor = Color.White,
-                        ),
-                        elevation = ButtonDefaults.buttonElevation(
-                            bottomSheetDialogUiModel.secondaryElevationDp().dp,
-                        ),
+                        shape =
+                            RoundedCornerShape(
+                                bottomSheetDialogUiModel.secondaryRoundedCornersSizeDp().dp,
+                            ),
+                        colors =
+                            ButtonDefaults.buttonColors(
+                                containerColor = Color.White,
+                                disabledContainerColor = Color.White,
+                            ),
+                        elevation =
+                            ButtonDefaults.buttonElevation(
+                                bottomSheetDialogUiModel.secondaryElevationDp().dp,
+                            ),
                         onClick = { onSecondaryButtonClicked() },
                         content = provideButtonContent(bottomSheetDialogUiModel.secondaryButton),
                         enabled = bottomSheetDialogUiModel.secondaryButton != null,
                     )
                 }
 
-                (bottomSheetDialogUiModel.mainButton?.textLabel ?: bottomSheetDialogUiModel.mainButton?.textResource?.let { stringResource(id = it) })?.let {
+                (
+                    bottomSheetDialogUiModel.mainButton?.textLabel
+                        ?: bottomSheetDialogUiModel.mainButton?.textResource?.let {
+                            stringResource(
+                                id = it,
+                            )
+                        }
+                )?.let {
                     Button(
                         modifier = Modifier.testTag(MAIN_BUTTON_TAG),
                         style = ButtonStyle.FILLED,
@@ -188,64 +206,71 @@ fun BottomSheetDialogUi(
         }
     }
 }
+
 const val ERROR_MESSAGE = "Enter text"
 const val DATE_BIRTH = "Date of birth"
 
-private fun provideButtonContent(
-    buttonStyle: DialogButtonStyle?,
-): @Composable (RowScope.() -> Unit) = {
-    buttonStyle?.let { style ->
-        style.iconResource?.let { icon ->
-            Icon(
-                painter = painterResource(id = icon),
-                contentDescription = "",
-                tint = style.colorResource ?: Color.Unspecified,
-                modifier = Modifier.padding(end = 8.dp),
+private fun provideButtonContent(buttonStyle: DialogButtonStyle?): @Composable (RowScope.() -> Unit) =
+    {
+        buttonStyle?.let { style ->
+            style.iconResource?.let { icon ->
+                Icon(
+                    painter = painterResource(id = icon),
+                    contentDescription = "",
+                    tint = style.colorResource ?: Color.Unspecified,
+                    modifier = Modifier.padding(end = 8.dp),
+                )
+            }
+            Text(
+                text =
+                    style.textLabel ?: stringResource(id = style.textResource)
+                        .lowercase()
+                        .replaceFirstChar { it.uppercase() },
+                color = style.colorResource ?: Color.Unspecified,
             )
         }
-        Text(
-            text = style.textLabel ?: stringResource(id = style.textResource)
-                .lowercase()
-                .replaceFirstChar { it.uppercase() },
-            color = style.colorResource ?: Color.Unspecified,
-        )
     }
-}
 
 @Composable
-fun IssueItem(fieldWithIssue: FieldWithIssue, onClick: () -> Unit) {
+fun IssueItem(
+    fieldWithIssue: FieldWithIssue,
+    onClick: () -> Unit,
+) {
     Row(
         Modifier
             .testTag(fieldWithIssue.issueType.name)
             .clickable { onClick.invoke() },
     ) {
         Icon(
-            painter = painterResource(
-                when (fieldWithIssue.issueType) {
-                    IssueType.ERROR,
-                    IssueType.ERROR_ON_COMPLETE,
-                    IssueType.MANDATORY,
-                    -> R.drawable.ic_error_outline
-                    else -> R.drawable.ic_warning_alert
-                },
-            ),
+            painter =
+                painterResource(
+                    when (fieldWithIssue.issueType) {
+                        IssueType.ERROR,
+                        IssueType.ERROR_ON_COMPLETE,
+                        IssueType.MANDATORY,
+                        -> R.drawable.ic_error_outline
+
+                        else -> R.drawable.ic_warning_alert
+                    },
+                ),
             contentDescription = "",
             tint = Color.Unspecified,
-            modifier = Modifier
-                .width(20.dp)
-                .height(20.dp)
-                .align(Alignment.CenterVertically),
+            modifier =
+                Modifier
+                    .width(20.dp)
+                    .height(20.dp)
+                    .align(Alignment.CenterVertically),
         )
         Column(Modifier.padding(start = 11.dp)) {
             Text(
                 text = fieldWithIssue.fieldName,
-                color = textPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 14.sp,
             )
             if (fieldWithIssue.message.isNotEmpty()) {
                 Text(
                     text = fieldWithIssue.message,
-                    color = textSecondary,
+                    color = TextColor.OnSurfaceLight,
                     fontSize = 14.sp,
                 )
             }
@@ -257,13 +282,14 @@ fun IssueItem(fieldWithIssue: FieldWithIssue, onClick: () -> Unit) {
 @Composable
 fun DialogPreview1() {
     BottomSheetDialogUi(
-        bottomSheetDialogUiModel = BottomSheetDialogUiModel(
-            title = "Saved",
-            message = "If you exit now all the information in the form will be discarded.",
-            iconResource = R.drawable.ic_saved_check,
-            mainButton = DialogButtonStyle.MainButton(R.string.keep_editing),
-            secondaryButton = DialogButtonStyle.DiscardButton(),
-        ),
+        bottomSheetDialogUiModel =
+            BottomSheetDialogUiModel(
+                title = "Saved",
+                message = "If you exit now all the information in the form will be discarded.",
+                iconResource = R.drawable.ic_saved_check,
+                mainButton = DialogButtonStyle.MainButton(R.string.keep_editing),
+                secondaryButton = DialogButtonStyle.DiscardButton(),
+            ),
         onMainButtonClicked = {},
         onSecondaryButtonClicked = {},
     )
@@ -273,13 +299,14 @@ fun DialogPreview1() {
 @Composable
 fun DialogPreview2() {
     BottomSheetDialogUi(
-        bottomSheetDialogUiModel = BottomSheetDialogUiModel(
-            title = "Saved",
-            message = "Do you want to mark this form as complete?",
-            iconResource = R.drawable.ic_saved_check,
-            mainButton = DialogButtonStyle.CompleteButton,
-            secondaryButton = DialogButtonStyle.SecondaryButton(R.string.not_now),
-        ),
+        bottomSheetDialogUiModel =
+            BottomSheetDialogUiModel(
+                title = "Saved",
+                message = "Do you want to mark this form as complete?",
+                iconResource = R.drawable.ic_saved_check,
+                mainButton = DialogButtonStyle.CompleteButton,
+                secondaryButton = DialogButtonStyle.SecondaryButton(R.string.not_now),
+            ),
         onMainButtonClicked = {},
         onSecondaryButtonClicked = {},
     )
@@ -288,16 +315,18 @@ fun DialogPreview2() {
 @Preview
 @Composable
 fun DialogPreview3() {
-    val fieldsWithIssues = listOf(
-        FieldWithIssue("uid", "Age", IssueType.MANDATORY, "Field Mandatory"),
-    )
+    val fieldsWithIssues =
+        listOf(
+            FieldWithIssue("uid", "Age", IssueType.MANDATORY, "Field Mandatory"),
+        )
     BottomSheetDialogUi(
-        bottomSheetDialogUiModel = BottomSheetDialogUiModel(
-            title = "Not saved",
-            message = "Some mandatory fields are missing and the form cannot be saved.",
-            iconResource = R.drawable.ic_warning_alert,
-            mainButton = DialogButtonStyle.MainButton(R.string.review),
-        ),
+        bottomSheetDialogUiModel =
+            BottomSheetDialogUiModel(
+                title = "Not saved",
+                message = "Some mandatory fields are missing and the form cannot be saved.",
+                iconResource = R.drawable.ic_warning_alert,
+                mainButton = DialogButtonStyle.MainButton(R.string.review),
+            ),
         onMainButtonClicked = {},
     ) {
         ErrorFieldList(fieldsWithIssues = fieldsWithIssues)
@@ -307,25 +336,28 @@ fun DialogPreview3() {
 @Preview
 @Composable
 fun DialogPreview4() {
-    val fieldsWithIssues = listOf(
-        FieldWithIssue("Uid", "Age", IssueType.ERROR, ERROR_MESSAGE),
-        FieldWithIssue("Uid", DATE_BIRTH, IssueType.ERROR, ""),
-        FieldWithIssue("Uid", DATE_BIRTH, IssueType.ERROR, ERROR_MESSAGE),
-        FieldWithIssue("Uid", DATE_BIRTH, IssueType.ERROR, ERROR_MESSAGE),
-        FieldWithIssue("Uid", DATE_BIRTH, IssueType.ERROR, ERROR_MESSAGE),
-        FieldWithIssue("Uid", DATE_BIRTH, IssueType.ERROR, ERROR_MESSAGE),
-        FieldWithIssue("Uid", DATE_BIRTH, IssueType.ERROR, ERROR_MESSAGE),
-        FieldWithIssue("Uid", DATE_BIRTH, IssueType.ERROR, ERROR_MESSAGE),
-    )
+    val fieldsWithIssues =
+        listOf(
+            FieldWithIssue("Uid", "Age", IssueType.ERROR, ERROR_MESSAGE),
+            FieldWithIssue("Uid", DATE_BIRTH, IssueType.ERROR, ""),
+            FieldWithIssue("Uid", DATE_BIRTH, IssueType.ERROR, ERROR_MESSAGE),
+            FieldWithIssue("Uid", DATE_BIRTH, IssueType.ERROR, ERROR_MESSAGE),
+            FieldWithIssue("Uid", DATE_BIRTH, IssueType.ERROR, ERROR_MESSAGE),
+            FieldWithIssue("Uid", DATE_BIRTH, IssueType.ERROR, ERROR_MESSAGE),
+            FieldWithIssue("Uid", DATE_BIRTH, IssueType.ERROR, ERROR_MESSAGE),
+            FieldWithIssue("Uid", DATE_BIRTH, IssueType.ERROR, ERROR_MESSAGE),
+        )
     BottomSheetDialogUi(
-        bottomSheetDialogUiModel = BottomSheetDialogUiModel(
-            title = "Not saved",
-            message = "Some fields have errors and they are not saved." +
-                "If you exit now the changes will be discarded.",
-            iconResource = R.drawable.ic_error_outline,
-            mainButton = DialogButtonStyle.MainButton(R.string.review),
-            secondaryButton = DialogButtonStyle.DiscardButton(),
-        ),
+        bottomSheetDialogUiModel =
+            BottomSheetDialogUiModel(
+                title = "Not saved",
+                message =
+                    "Some fields have errors and they are not saved." +
+                        "If you exit now the changes will be discarded.",
+                iconResource = R.drawable.ic_error_outline,
+                mainButton = DialogButtonStyle.MainButton(R.string.review),
+                secondaryButton = DialogButtonStyle.DiscardButton(),
+            ),
         onMainButtonClicked = {},
     ) {
         ErrorFieldList(fieldsWithIssues = fieldsWithIssues)
@@ -334,73 +366,15 @@ fun DialogPreview4() {
 
 @Preview
 @Composable
-fun SubtitleDialogPreview() {
-    BottomSheetDialogUi(
-        bottomSheetDialogUiModel = BottomSheetDialogUiModel(
-            title = "Title",
-            subtitle = "subtitle",
-            message = "Content message. Content message. Content message",
-            iconResource = R.drawable.ic_warning_alert,
-            mainButton = DialogButtonStyle.MainButton(R.string.review),
-        ),
-        onMainButtonClicked = {},
-    ) {
-        LazyColumn(
-            verticalArrangement = spacedBy(8.dp),
-        ) {
-            items(listOf("a")) {
-                SyncStatusItem(
-                    title = "Name",
-                    subtitle = "Description",
-                    onClick = {
-                    },
-                ) {
-                    SyncingIcon()
-                }
-            }
-        }
-    }
-}
-
-@Preview
-@Composable
-fun SubtitleNoMessageDialogPreview() {
-    BottomSheetDialogUi(
-        bottomSheetDialogUiModel = BottomSheetDialogUiModel(
-            title = "Title",
-            subtitle = "subtitle",
-            iconResource = R.drawable.ic_warning_alert,
-            mainButton = DialogButtonStyle.MainButton(R.string.review),
-        ),
-        onMainButtonClicked = {},
-    ) {
-        LazyColumn(
-            verticalArrangement = spacedBy(8.dp),
-        ) {
-            items(listOf("a")) {
-                SyncStatusItem(
-                    title = "Name",
-                    subtitle = "Description",
-                    onClick = {
-                    },
-                ) {
-                    SyncingIcon()
-                }
-            }
-        }
-    }
-}
-
-@Preview
-@Composable
 fun SubtitleNoMessageNoContentDialogPreview() {
     BottomSheetDialogUi(
-        bottomSheetDialogUiModel = BottomSheetDialogUiModel(
-            title = "Title",
-            subtitle = "subtitle",
-            iconResource = R.drawable.ic_warning_alert,
-            mainButton = DialogButtonStyle.MainButton(R.string.review),
-        ),
+        bottomSheetDialogUiModel =
+            BottomSheetDialogUiModel(
+                title = "Title",
+                subtitle = "subtitle",
+                iconResource = R.drawable.ic_warning_alert,
+                mainButton = DialogButtonStyle.MainButton(R.string.review),
+            ),
         onMainButtonClicked = {},
     )
 }
