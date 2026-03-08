@@ -164,8 +164,8 @@ android {
         create("dhis2Training") {
             signingConfig = signingConfigs.getByName("training")
         }
-        create("widp") {
-            applicationId = "com.eyeseetea.widp"
+        create("eyeseetea") {
+            applicationId = "com.eyeseetea.dhis2"
             dimension = "default"
             versionCode = libs.versions.vCode.get().toInt()
             versionName = libs.versions.vName.get()
