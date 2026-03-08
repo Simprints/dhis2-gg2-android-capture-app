@@ -37,11 +37,6 @@
             android:title="@string/set_pin" />
 
         <item
-            android:id="@+id/change_url"
-            android:icon="@drawable/ic_edit"
-            android:title="@string/change_server_url" />
-
-        <item
             android:id="@+id/logout_button"
             android:icon="@drawable/ic_menu_logout"
             android:title="@string/log_out" />
