@@ -170,13 +170,6 @@ android {
             versionCode = libs.versions.vCode.get().toInt()
             versionName = libs.versions.vName.get()
         }
-
-        create("psi") {
-            applicationId = "org.dhis2.psi"
-            dimension = "default"
-            versionCode = libs.versions.vCode.get().toInt()
-            versionName = libs.versions.vName.get()
-        }
     }
 
     compileOptions {

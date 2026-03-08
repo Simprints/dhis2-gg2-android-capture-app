@@ -140,9 +140,6 @@ android {
         create("widp") {
             buildConfigField("String", "LOGIN_TEST", "\"test\"")
         }
-        create("psi") {
-            buildConfigField("String", "LOGIN_TEST", "\"test\"")
-        }
     }
 }
 
