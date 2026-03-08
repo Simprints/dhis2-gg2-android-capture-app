@@ -232,7 +232,6 @@ public abstract class ActivityGlobalAbstract extends SessionManagerActivity
 
     private void showNotification(Notification notification) {
 
-
         String content = getNotificationContent(notification);
 
         new MaterialAlertDialogBuilder(this, R.style.DhisMaterialDialog)

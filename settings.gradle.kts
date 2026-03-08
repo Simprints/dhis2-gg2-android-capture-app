@@ -27,15 +27,14 @@ include(
     ":app",
     ":dhis_android_analytics", ":form", ":commons",
     ":dhis2_android_maps", ":compose-table", ":ui-components",
-    ":stock-usecase", 
-    // EyeSeeTea customization - Include SDK's modules
-    //":core",":processor", ":annotations"
+    ":stock-usecase"
 )
 include(":dhis2-mobile-program-rules")
 include(":tracker")
 include(":aggregates")
 include(":commonskmm")
 include(":login")
+include(":sync")
 
 // EyeSeeTea customization - Include SDK's modules
 // 🔗 Composite Build: use local SDK local o JitPack according to gradle.properties or local.properties

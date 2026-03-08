@@ -134,6 +134,7 @@ class EnrollmentRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
     }
 
     fun typeOnInputDateField(dateValue: String, title: String) {
+        composeTestRule.waitForIdle()
         composeTestRule.apply {
             onNode(
                 hasTestTag(

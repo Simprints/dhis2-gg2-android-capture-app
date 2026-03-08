@@ -386,7 +386,7 @@ class EventDetailsRepository(
                     .categoryModule()
                     .categoryCombos()
                     .withCategories()
-                    .uid(program.categoryComboUid())
+                    .uid(program.categoryCombo()?.uid())
                     .get()
             }.blockingGet()
 
