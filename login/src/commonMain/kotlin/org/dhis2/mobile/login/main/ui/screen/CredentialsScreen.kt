@@ -50,7 +50,6 @@ import androidx.compose.ui.unit.dp
 import coil3.PlatformContext
 import coil3.compose.LocalPlatformContext
 import org.dhis2.mobile.commons.resources.getDrawableResource
-import org.dhis2.mobile.login.main.domain.model.TwoFactorState
 import org.dhis2.mobile.login.main.ui.components.TaskExecutorButton
 import org.dhis2.mobile.login.main.ui.state.AfterLoginAction
 import org.dhis2.mobile.login.main.ui.state.CredentialsAction
@@ -76,11 +75,6 @@ import org.dhis2.mobile.login.resources.privacy_policy
 import org.dhis2.mobile.login.resources.tracking_description
 import org.dhis2.mobile.login.resources.tracking_description_link
 import org.dhis2.mobile.login.resources.tracking_title
-import org.dhis2.mobile.login.resources.two_factor_email_hint
-import org.dhis2.mobile.login.resources.two_factor_resend_email
-import org.dhis2.mobile.login.resources.two_factor_resend_sms
-import org.dhis2.mobile.login.resources.two_factor_sms_hint
-import org.dhis2.mobile.login.resources.two_factor_totp_hint
 import org.dhis2.mobile.login.resources.username_hint
 import org.hisp.dhis.mobile.ui.designsystem.component.AdditionalInfoItem
 import org.hisp.dhis.mobile.ui.designsystem.component.Avatar
@@ -209,21 +203,9 @@ fun CredentialsScreen(
                 }
             },
         )
-        // EyeSeeTea customization - Two Factor Authentication fields
-        if (screenState.twoFactorState != null) {
-            TwoFactorContainer(
-                twoFactorState = screenState.twoFactorState!!,
-                twoFactorCode = screenState.twoFactorCode,
-                isLoggingIn = isLoggingIn,
-                onCodeChanged = viewModel::updateTwoFactorCode,
-                onResendEmail = viewModel::onResendEmailTwoFactor,
-                onResendSms = viewModel::onResendSmsTwoFactor,
-            )
-        }
         LoginStatus(
             isLoggingIn = isLoggingIn,
             loginErrorMessage = screenState.errorMessage,
-            loginInfoMessage = screenState.infoMessage,
             onCancelLogin = viewModel::cancelLogin,
         )
         if (isLoggingIn.not()) {
@@ -476,7 +458,6 @@ private fun getInputState(
 private fun LoginStatus(
     isLoggingIn: Boolean,
     loginErrorMessage: String?,
-    loginInfoMessage: String?,
     onCancelLogin: () -> Unit,
 ) {
     if (isLoggingIn) {
@@ -500,21 +481,6 @@ private fun LoginStatus(
                     imageVector = Icons.Outlined.Info,
                     contentDescription = "",
                     tint = MaterialTheme.colorScheme.onErrorContainer,
-                )
-            },
-        )
-    } else if (loginInfoMessage != null) {
-        // EyeSeeTea customization - Show info message in blue (e.g., "Email with two factor code sent")
-        InfoBar(
-            modifier = Modifier,
-            text = loginInfoMessage,
-            textColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            backgroundColor = MaterialTheme.colorScheme.primaryContainer,
-            icon = {
-                Icon(
-                    imageVector = Icons.Outlined.Info,
-                    contentDescription = "",
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             },
         )
@@ -768,129 +734,4 @@ private fun BiometricsDialog(onPermissionResult: (granted: Boolean) -> Unit) {
             onPermissionResult(false)
         },
     )
-}
-
-// EyeSeeTea customization - Two Factor Authentication container
-@Composable
-private fun TwoFactorContainer(
-    twoFactorState: TwoFactorState,
-    twoFactorCode: String,
-    isLoggingIn: Boolean,
-    onCodeChanged: (String) -> Unit,
-    onResendEmail: () -> Unit,
-    onResendSms: () -> Unit,
-) {
-    // EyeSeeTea customization - Preserve cursor position by not resetting on twoFactorCode changes
-    // Use twoFactorState type as key to only reset when 2FA type changes (TOTP -> Email -> SMS)
-    // This prevents the cursor from jumping to the beginning when the user types
-    // Pattern follows InputProvider.kt: use a stable key (type) instead of the value
-    val twoFactorTypeKey = when (twoFactorState) {
-        is TwoFactorState.TotpVerification -> "TOTP"
-        is TwoFactorState.EmailVerification -> "EMAIL"
-        is TwoFactorState.SmsVerification -> "SMS"
-        null -> "NONE"
-    }
-    
-    // Initialize with the current code, placing cursor at the end
-    // State is managed locally and only synced upward via onCodeChanged callback
-    // This matches the pattern in InputProvider.kt where remember uses inputData.id (stable key)
-    var codeTextValue by remember(twoFactorTypeKey) {
-        mutableStateOf(
-            TextFieldValue(
-                text = twoFactorCode,
-                selection = TextRange(twoFactorCode.length),
-            ),
-        )
-    }
-
-    var hasFocus by remember {
-        mutableStateOf(false)
-    }
-
-    val inputShellState by remember(isLoggingIn, hasFocus) {
-        mutableStateOf(getInputState(isLoggingIn, hasFocus))
-    }
-
-    val focusManager = LocalFocusManager.current
-
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = spacedBy(Spacing.Spacing8),
-    ) {
-        when (twoFactorState) {
-            is TwoFactorState.TotpVerification -> {
-                InputText(
-                    modifier = Modifier.fillMaxWidth(),
-                    title = stringResource(Res.string.two_factor_totp_hint),
-                    state = inputShellState,
-                    inputTextFieldValue = codeTextValue,
-                    onNextClicked = {
-                        focusManager.clearFocus()
-                        onCodeChanged(codeTextValue.text)
-                    },
-                    onValueChanged = {
-                        // Preserve cursor position from the new TextFieldValue
-                        codeTextValue = it ?: TextFieldValue("")
-                        onCodeChanged(codeTextValue.text)
-                    },
-                    onFocusChanged = { hasFocus = it },
-                    imeAction = ImeAction.Done,
-                )
-            }
-            is TwoFactorState.EmailVerification -> {
-                InputText(
-                    modifier = Modifier.fillMaxWidth(),
-                    title = stringResource(Res.string.two_factor_email_hint),
-                    state = inputShellState,
-                    inputTextFieldValue = codeTextValue,
-                    onNextClicked = {
-                        focusManager.clearFocus()
-                        onCodeChanged(codeTextValue.text)
-                    },
-                    onValueChanged = {
-                        // Preserve cursor position from the new TextFieldValue
-                        codeTextValue = it ?: TextFieldValue("")
-                        onCodeChanged(codeTextValue.text)
-                    },
-                    onFocusChanged = { hasFocus = it },
-                    imeAction = ImeAction.Done,
-                )
-                if (twoFactorState.resendEnabled) {
-                    Button(
-                        modifier = Modifier.fillMaxWidth(),
-                        text = stringResource(Res.string.two_factor_resend_email),
-                        style = ButtonStyle.TONAL,
-                        onClick = onResendEmail,
-                    )
-                }
-            }
-            is TwoFactorState.SmsVerification -> {
-                InputText(
-                    modifier = Modifier.fillMaxWidth(),
-                    title = stringResource(Res.string.two_factor_sms_hint),
-                    state = inputShellState,
-                    inputTextFieldValue = codeTextValue,
-                    onNextClicked = {
-                        focusManager.clearFocus()
-                        onCodeChanged(codeTextValue.text)
-                    },
-                    onValueChanged = {
-                        // Preserve cursor position from the new TextFieldValue
-                        codeTextValue = it ?: TextFieldValue("")
-                        onCodeChanged(codeTextValue.text)
-                    },
-                    onFocusChanged = { hasFocus = it },
-                    imeAction = ImeAction.Done,
-                )
-                if (twoFactorState.resendEnabled) {
-                    Button(
-                        modifier = Modifier.fillMaxWidth(),
-                        text = stringResource(Res.string.two_factor_resend_sms),
-                        style = ButtonStyle.TONAL,
-                        onClick = onResendSms,
-                    )
-                }
-            }
-        }
-    }
 }

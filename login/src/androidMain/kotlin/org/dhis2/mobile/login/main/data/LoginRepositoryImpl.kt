@@ -16,16 +16,12 @@ import org.dhis2.mobile.commons.reporting.AnalyticActions
 import org.dhis2.mobile.commons.reporting.CrashReportController
 import org.dhis2.mobile.commons.resources.D2ErrorMessageProvider
 import org.dhis2.mobile.login.main.domain.model.ServerValidationResult
-import org.dhis2.mobile.login.main.domain.model.TwoFactorRequiredException
-import org.dhis2.mobile.login.main.domain.model.TwoFactorType
 import org.dhis2.mobile.login.resources.Res
 import org.dhis2.mobile.login.resources.openid_invalid_auth_result
 import org.dhis2.mobile.login.resources.openid_process_cancelled
 import org.dhis2.mobile.login.resources.server_url_error
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.arch.helpers.Result
-import org.hisp.dhis.android.core.maintenance.D2Error
-import org.hisp.dhis.android.core.maintenance.D2ErrorCode
 import org.hisp.dhis.android.core.user.openid.IntentWithRequestCode
 import org.hisp.dhis.android.core.user.openid.OpenIDConnectConfig
 import org.jetbrains.compose.resources.getString
@@ -97,25 +93,19 @@ class LoginRepositoryImpl(
         username: String,
         password: String,
         isNetworkAvailable: Boolean,
-        twoFactorCode: String?,
     ) = withContext(dispatcher.io) {
         try {
-            d2.userModule().blockingLogIn(username, password, serverUrl, twoFactorCode)
+            d2.userModule().blockingLogIn(username, password, serverUrl, null)
             kotlin.Result.success(Unit)
         } catch (e: Exception) {
-            if (e is D2Error && isTwoFactorError(e.errorCode())) {
-                // EyeSeeTea customization - Detect 2FA errors
-                handleTwoFactorError(e, isNetworkAvailable)
-            } else {
-                kotlin.Result.failure(
-                    Exception(
-                        d2ErrorMessageProvider.getErrorMessage(
-                            e,
-                            isNetworkAvailable,
-                        ),
+            kotlin.Result.failure(
+                Exception(
+                    d2ErrorMessageProvider.getErrorMessage(
+                        e,
+                        isNetworkAvailable,
                     ),
-                )
-            }
+                ),
+            )
         }
     }
 
@@ -419,80 +409,4 @@ class LoginRepositoryImpl(
             }
         }
 
-    // EyeSeeTea customization -
-    private fun isTwoFactorError(errorCode: D2ErrorCode): Boolean {
-        return errorCode == D2ErrorCode.INCORRECT_TWO_FACTOR_CODE ||
-                errorCode == D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_TOTP ||
-                errorCode == D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_EMAIL ||
-                errorCode == D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_SMS ||
-                errorCode == D2ErrorCode.TWO_FACTOR_MANY_SEND_ATTEMPTS ||
-                errorCode == D2ErrorCode.EMAIL_TWO_FACTOR_CODE_SENT ||
-                errorCode == D2ErrorCode.SMS_TWO_FACTOR_CODE_SENT
-    }
-
-    private suspend fun handleTwoFactorError(
-        e: D2Error,
-        isNetworkAvailable: Boolean
-    ): kotlin.Result<Unit> {
-        val errorMessage = d2ErrorMessageProvider.getErrorMessage(e, isNetworkAvailable)
-
-        when (e.errorCode()) {
-            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE,
-            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_TOTP -> {
-                return kotlin.Result.failure(
-                    TwoFactorRequiredException(
-                        type = TwoFactorType.TOTP,
-                        errorMessage = errorMessage,
-                    )
-                )
-            }
-
-            D2ErrorCode.EMAIL_TWO_FACTOR_CODE_SENT -> {
-                return kotlin.Result.failure(
-                    TwoFactorRequiredException(
-                        TwoFactorType.EMAIL,
-                        errorMessage = errorMessage,
-                    )
-                )
-            }
-
-            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_EMAIL -> {
-                return kotlin.Result.failure(
-                    TwoFactorRequiredException(
-                        type = TwoFactorType.EMAIL,
-                        errorMessage = errorMessage,
-                    )
-                )
-            }
-
-            D2ErrorCode.SMS_TWO_FACTOR_CODE_SENT -> {
-                return kotlin.Result.failure(
-                    TwoFactorRequiredException(
-                        TwoFactorType.SMS,
-                        errorMessage = errorMessage,
-                    )
-                )
-            }
-
-            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_SMS -> {
-                return kotlin.Result.failure(
-                    TwoFactorRequiredException(
-                        type = TwoFactorType.SMS,
-                        errorMessage = errorMessage,
-                    )
-                )
-            }
-
-            else -> {
-                return kotlin.Result.failure(
-                    Exception(
-                        d2ErrorMessageProvider.getErrorMessage(
-                            e,
-                            isNetworkAvailable,
-                        ),
-                    ),
-                )
-            }
-        }
-    }
 }

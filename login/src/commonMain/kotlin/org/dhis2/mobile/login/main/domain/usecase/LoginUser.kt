@@ -11,9 +11,8 @@ class LoginUser(
         username: String,
         password: String,
         isNetworkAvailable: Boolean,
-        twoFactorCode: String? = null,
     ): LoginResult {
-        val result = repository.loginUser(serverUrl, username, password, isNetworkAvailable, twoFactorCode)
+        val result = repository.loginUser(serverUrl, username, password, isNetworkAvailable)
         return handleResult(result, serverUrl, username)
     }
 }

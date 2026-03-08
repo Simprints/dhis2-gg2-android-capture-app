@@ -1,7 +1,6 @@
 package org.dhis2.mobile.login.main.ui.state
 
 import kotlinx.serialization.Serializable
-import org.dhis2.mobile.login.main.domain.model.TwoFactorState
 
 data class CredentialsUiState(
     val serverInfo: ServerInfo,
@@ -15,10 +14,6 @@ data class CredentialsUiState(
     val displayBiometricsDialog: Boolean,
     val hasOtherAccounts: Boolean,
     val isSessionLocked: Boolean,
-    // EyeSeeTea customization - Two Factor Authentication
-    val twoFactorState: TwoFactorState? = null,
-    val twoFactorCode: String = "",
-    val infoMessage: String?,
 ) {
     fun username() = serverInfo.username ?: credentialsInfo.username
 }

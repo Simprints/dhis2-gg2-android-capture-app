@@ -15,8 +15,6 @@ import org.dhis2.mobile.commons.extensions.withMinimumDuration
 import org.dhis2.mobile.commons.network.NetworkStatusProvider
 import org.dhis2.mobile.login.main.domain.model.LoginResult
 import org.dhis2.mobile.login.main.domain.model.LoginScreenState
-import org.dhis2.mobile.login.main.domain.model.TwoFactorState
-import org.dhis2.mobile.login.main.domain.model.TwoFactorType
 import org.dhis2.mobile.login.main.domain.usecase.BiometricLogin
 import org.dhis2.mobile.login.main.domain.usecase.GetAvailableUsernames
 import org.dhis2.mobile.login.main.domain.usecase.GetBiometricInfo
@@ -89,9 +87,6 @@ class CredentialsViewModel(
             hasOtherAccounts = false,
             isSessionLocked = false,
             displayBiometricsDialog = false,
-            twoFactorState = null,
-            twoFactorCode = "",
-            infoMessage = null,
         )
 
     private var loginJob: Job? = null
@@ -135,9 +130,6 @@ class CredentialsViewModel(
                     hasOtherAccounts = getHasOtherAccounts(),
                     isSessionLocked = getIsSessionLockedUseCase(),
                     displayBiometricsDialog = biometricInfo.canUseBiometrics && !fromHome,
-                    twoFactorState = null,
-                    twoFactorCode = "",
-                    infoMessage = null,
                 ),
             )
         }
@@ -159,7 +151,6 @@ class CredentialsViewModel(
                         LoginState.Disabled
                     },
                 errorMessage = null,
-                infoMessage = null,
             )
         }
     }
@@ -180,7 +171,6 @@ class CredentialsViewModel(
                         LoginState.Disabled
                     },
                 errorMessage = null,
-                infoMessage = null,
             )
         }
     }
@@ -192,9 +182,6 @@ class CredentialsViewModel(
                 username = _credentialsScreenState.value.credentialsInfo.username,
                 password = _credentialsScreenState.value.credentialsInfo.password,
                 isNetworkAvailable = isNetworkOnline.value,
-                twoFactorCode = _credentialsScreenState.value.twoFactorCode.takeIf {
-                    _credentialsScreenState.value.twoFactorState != null
-                },
             )
         }
     }
@@ -251,10 +238,7 @@ class CredentialsViewModel(
                                 }
                                 add(AfterLoginAction.NavigateToNextScreen(result.initialSyncDone))
                             },
-                        twoFactorState = null,
-                        twoFactorCode = "",
-                        errorMessage = null, // EyeSeeTea customization - Clear error message on successful login
-                        infoMessage = null, // EyeSeeTea customization - Clear info message on successful login
+                        errorMessage = null,
                     )
                 }
             }
@@ -268,41 +252,6 @@ class CredentialsViewModel(
             }
 
             // EyeSeeTea customization - Two Factor Authentication required
-            is LoginResult.TwoFactorError -> {
-                _credentialsScreenState.update {
-                    val code = it.twoFactorState?.code ?: ""
-
-                    val newTwoFactorState = when (result.type) {
-                        TwoFactorType.TOTP -> TwoFactorState.TotpVerification(code)
-                        TwoFactorType.EMAIL -> TwoFactorState.EmailVerification(
-                            code,
-                            resendEnabled = true
-                        )
-
-                        TwoFactorType.SMS -> TwoFactorState.SmsVerification(
-                            code,
-                            resendEnabled = true
-                        )
-                    }
-                    
-                    // EyeSeeTea customization - Determine if message is error or info based on 2FA type
-                    // EMAIL_TWO_FACTOR_CODE_SENT and SMS_TWO_FACTOR_CODE_SENT are info messages (blue)
-                    // INCORRECT_TWO_FACTOR_CODE_* are error messages (red)
-                    // For TOTP: show error only if field is already visible
-                    val isInfoMessage = result.type == TwoFactorType.EMAIL || result.type == TwoFactorType.SMS
-                    val shouldShowError = when {
-                        isInfoMessage -> false // EMAIL/SMS code sent is always info
-                        it.twoFactorState == null && result.type == TwoFactorType.TOTP -> false // First time TOTP, don't show error
-                        else -> true // TOTP code incorrect or other errors
-                    }
-                    
-                    it.copy(
-                        twoFactorState = newTwoFactorState,
-                        errorMessage = if (shouldShowError && result.message != null) result.message else null,
-                        infoMessage = if (isInfoMessage && result.message != null) result.message else null,
-                    )
-                }
-            }
         }
 
     fun cancelLogin() {
@@ -431,103 +380,4 @@ class CredentialsViewModel(
         }
     }
 
-    // EyeSeeTea customization - Two Factor Authentication methods
-    fun updateTwoFactorCode(code: String) {
-        _credentialsScreenState.update {
-            val updatedState = when (val currentState = it.twoFactorState) {
-                is TwoFactorState.TotpVerification -> {
-                    TwoFactorState.TotpVerification(code)
-                }
-
-                is TwoFactorState.EmailVerification -> {
-                    TwoFactorState.EmailVerification(code, currentState.resendEnabled)
-                }
-
-                is TwoFactorState.SmsVerification -> {
-                    TwoFactorState.SmsVerification(code, currentState.resendEnabled)
-                }
-
-                null -> null
-            }
-            it.copy(
-                twoFactorState = updatedState,
-                twoFactorCode = code,
-                loginState = if (code.isNotBlank() && it.credentialsInfo.username.isNotBlank() && it.credentialsInfo.password.isNotBlank()) {
-                    LoginState.Enabled
-                } else {
-                    LoginState.Disabled
-                },
-            )
-        }
-    }
-
-    fun onResendEmailTwoFactor() {
-        val currentState =
-            _credentialsScreenState.value.twoFactorState as? TwoFactorState.EmailVerification
-        if (currentState?.resendEnabled == true) {
-            // Disable resend for 30 seconds
-            _credentialsScreenState.update {
-                it.copy(
-                    twoFactorState = currentState.copy(resendEnabled = false),
-                )
-            }
-            // Re-login to trigger email resend
-            startLoginJob {
-                loginUser(
-                    serverUrl = _credentialsScreenState.value.serverInfo.serverUrl,
-                    username = _credentialsScreenState.value.credentialsInfo.username,
-                    password = _credentialsScreenState.value.credentialsInfo.password,
-                    isNetworkAvailable = isNetworkOnline.value,
-                    twoFactorCode = null, // No code to trigger resend
-                )
-            }
-            // Re-enable after 30 seconds
-            launchUseCase {
-                kotlinx.coroutines.delay(30000)
-                _credentialsScreenState.update {
-                    val state = it.twoFactorState as? TwoFactorState.EmailVerification
-                    if (state != null) {
-                        it.copy(twoFactorState = state.copy(resendEnabled = true))
-                    } else {
-                        it
-                    }
-                }
-            }
-        }
-    }
-
-    fun onResendSmsTwoFactor() {
-        val currentState =
-            _credentialsScreenState.value.twoFactorState as? TwoFactorState.SmsVerification
-        if (currentState?.resendEnabled == true) {
-            // Disable resend for 30 seconds
-            _credentialsScreenState.update {
-                it.copy(
-                    twoFactorState = currentState.copy(resendEnabled = false),
-                )
-            }
-            // Re-login to trigger SMS resend
-            startLoginJob {
-                loginUser(
-                    serverUrl = _credentialsScreenState.value.serverInfo.serverUrl,
-                    username = _credentialsScreenState.value.credentialsInfo.username,
-                    password = _credentialsScreenState.value.credentialsInfo.password,
-                    isNetworkAvailable = isNetworkOnline.value,
-                    twoFactorCode = null, // No code to trigger resend
-                )
-            }
-            // Re-enable after 30 seconds
-            launchUseCase {
-                kotlinx.coroutines.delay(30000)
-                _credentialsScreenState.update {
-                    val state = it.twoFactorState as? TwoFactorState.SmsVerification
-                    if (state != null) {
-                        it.copy(twoFactorState = state.copy(resendEnabled = true))
-                    } else {
-                        it
-                    }
-                }
-            }
-        }
-    }
 }
