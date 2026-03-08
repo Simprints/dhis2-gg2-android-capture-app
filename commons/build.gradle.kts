@@ -66,12 +66,9 @@ dependencies {
     api(project(":ui-components"))
     implementation(project(":commonskmm"))
 
-    //EyeSeeTea customization - SDK as submodule
    api(libs.dhis2.android.sdk) {
         this.isChanging = true
     }
-
-    //api(project(":core"))
 
     api(libs.dhis2.ruleengine) {
         exclude("junit", "junit")

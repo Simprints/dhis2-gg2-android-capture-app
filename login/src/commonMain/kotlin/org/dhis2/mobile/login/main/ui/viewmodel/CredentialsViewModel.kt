@@ -250,8 +250,6 @@ class CredentialsViewModel(
                     )
                 }
             }
-
-            // EyeSeeTea customization - Two Factor Authentication required
         }
 
     fun cancelLogin() {

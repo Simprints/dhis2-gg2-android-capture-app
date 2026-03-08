@@ -324,13 +324,6 @@ dependencies {
     androidTestImplementation(libs.test.rx2.idler)
     androidTestImplementation(libs.test.compose.ui.test)
     androidTestImplementation(libs.test.hamcrest)
-
-    //EyeSeeTea customization
-    implementation(libs.eyeseetea.atv)
-    implementation(libs.eyeseetea.markwon)
-    implementation(libs.eyeseetea.coroutinesCore)
-    implementation(libs.eyeseetea.coroutinesAndroid)
-
 }
 
 sentry {

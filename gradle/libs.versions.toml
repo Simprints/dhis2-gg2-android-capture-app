@@ -98,10 +98,6 @@ biometric = "1.1.0"
 coil = "3.3.0"
 cyclonedx = "2.1.0"
 
-#Eyeseetea
-atv = "1.2.9"
-markwon = "4.6.0"
-
 [libraries]
 gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "gradle" }
 kotlinPlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -225,12 +221,6 @@ ktxml = { module = "org.kobjects.ktxml:core", version.ref = "ktxml" }
 commons-text = { module = "org.apache.commons:commons-text", version.ref = "commonsText" }
 coil = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil"}
 coil-network = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil"}
-
-#Eyeseetea
-eyeseetea-atv = { group = "com.github.bmelnychuk", name = "atv", version.ref = "atv" }
-eyeseetea-coroutinesCore = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "kotlinxcoroutines" }
-eyeseetea-coroutinesAndroid = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxcoroutines" }
-eyeseetea-markwon = { group = "io.noties.markwon", name = "core", version.ref = "markwon" }
 
 [plugins]
 kotlin-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

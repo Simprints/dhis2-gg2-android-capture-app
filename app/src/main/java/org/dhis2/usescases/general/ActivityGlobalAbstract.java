@@ -33,6 +33,8 @@ import org.dhis2.utils.granularsync.SyncStatusDialog;
 
 import javax.inject.Inject;
 
+import kotlin.Unit;
+
 
 public abstract class ActivityGlobalAbstract extends SessionManagerActivity
         implements AbstractActivityContracts.View, ActivityResultObservable {
