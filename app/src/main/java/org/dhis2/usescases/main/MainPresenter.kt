@@ -388,10 +388,6 @@ class MainPresenter(
                     _singleProgramNavigationChannel.send(it)
                 }
             }
-            view.markShowNotificationsAsPending()
-        } else {
-            view.markShowNotificationsAsPending()
-            view.refreshNotifications()
         }
     }
 

@@ -5,7 +5,6 @@ import dagger.Provides
 import org.dhis2.commons.di.dagger.PerService
 import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.data.service.workManager.WorkManagerController
-import org.dhis2.usescases.notifications.domain.NotificationRepository
 import org.dhis2.utils.analytics.AnalyticsHelper
 import org.hisp.dhis.android.core.D2
 
@@ -24,7 +23,6 @@ class SyncInitWorkerModule {
         analyticsHelper: AnalyticsHelper,
         syncStatusController: SyncStatusController,
         syncRepository: SyncRepository,
-        notificationsRepository: NotificationRepository
     ): SyncPresenter =
         SyncPresenterImpl(
             d2,
@@ -33,6 +31,5 @@ class SyncInitWorkerModule {
             analyticsHelper,
             syncStatusController,
             syncRepository,
-            notificationsRepository
         )
 }

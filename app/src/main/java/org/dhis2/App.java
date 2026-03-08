@@ -43,7 +43,6 @@ import org.dhis2.data.user.UserModule;
 import org.dhis2.di.KoinInitialization;
 import org.dhis2.maps.MapController;
 import org.dhis2.usescases.crash.CrashActivity;
-import org.dhis2.usescases.notifications.di.NotificationsModule;
 import org.dhis2.usescases.teiDashboard.TeiDashboardComponent;
 import org.dhis2.usescases.teiDashboard.TeiDashboardModule;
 import org.dhis2.utils.analytics.AnalyticsModule;
@@ -201,8 +200,7 @@ public class App extends MultiDexApplication implements Components, LifecycleObs
                 .workManagerController(new WorkManagerModule())
                 .sessionManagerService(new SessionManagerModule())
                 .coroutineDispatchers(new DispatcherModule())
-                .featureConfigModule(new FeatureConfigModule())
-                .notificationsModule(new NotificationsModule());
+                .featureConfigModule(new FeatureConfigModule());
     }
 
     @NonNull
