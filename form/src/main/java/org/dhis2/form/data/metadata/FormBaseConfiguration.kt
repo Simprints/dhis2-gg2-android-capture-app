@@ -5,7 +5,7 @@ import androidx.paging.filter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import org.dhis2.bindings.disableCollapsableSectionsInProgram
+import org.dhis2.commons.bindings.disableCollapsableSectionsInProgram
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.arch.repositories.scope.RepositoryScope

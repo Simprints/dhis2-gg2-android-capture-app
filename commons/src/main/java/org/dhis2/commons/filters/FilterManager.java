@@ -373,10 +373,6 @@ public class FilterManager implements Serializable {
         return ouTreeProcessor;
     }
 
-    public FlowableProcessor<FilterManager> asFlowableProcessor() {
-        return filterProcessor;
-    }
-
     public Flowable<FilterManager> asFlowable() {
         return filterProcessor;
     }

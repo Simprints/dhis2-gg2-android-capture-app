@@ -1,4 +1,4 @@
-package org.dhis2.bindings
+package org.dhis2.commons.bindings
 
 import org.hisp.dhis.android.core.common.ValueType
 

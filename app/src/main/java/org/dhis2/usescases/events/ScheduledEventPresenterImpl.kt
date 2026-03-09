@@ -6,8 +6,8 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
-import org.dhis2.bindings.event
-import org.dhis2.bindings.programStage
+import org.dhis2.commons.bindings.event
+import org.dhis2.commons.bindings.programStage
 import org.dhis2.commons.date.DateUtils
 import org.dhis2.commons.periods.data.EventPeriodRepository
 import org.dhis2.commons.periods.domain.GetEventPeriods

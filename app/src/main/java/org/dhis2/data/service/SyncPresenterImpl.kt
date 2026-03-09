@@ -6,8 +6,8 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.ListenableWorker
 import io.reactivex.Completable
 import io.reactivex.Observable
-import org.dhis2.bindings.enrollment
-import org.dhis2.bindings.program
+import org.dhis2.commons.bindings.enrollment
+import org.dhis2.commons.bindings.program
 import org.dhis2.bindings.toSeconds
 import org.dhis2.commons.date.DateUtils
 import org.dhis2.commons.prefs.Preference.Companion.DATA

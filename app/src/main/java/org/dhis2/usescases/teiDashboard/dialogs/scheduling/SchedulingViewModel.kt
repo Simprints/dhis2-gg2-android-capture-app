@@ -11,9 +11,9 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.dhis2.bindings.enrollment
-import org.dhis2.bindings.event
-import org.dhis2.bindings.programStage
+import org.dhis2.commons.bindings.enrollment
+import org.dhis2.commons.bindings.event
+import org.dhis2.commons.bindings.programStage
 import org.dhis2.commons.date.DateUtils
 import org.dhis2.commons.date.toOverdueOrScheduledUiText
 import org.dhis2.commons.periods.domain.GetEventPeriods

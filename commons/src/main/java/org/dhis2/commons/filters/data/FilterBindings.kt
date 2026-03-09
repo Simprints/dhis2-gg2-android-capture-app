@@ -12,8 +12,8 @@ import org.dhis2.commons.animations.collapse
 import org.dhis2.commons.animations.expand
 import org.dhis2.commons.animations.hide
 import org.dhis2.commons.animations.show
-import org.dhis2.bindings.clipWithAllRoundedCorners
-import org.dhis2.bindings.dp
+import org.dhis2.commons.bindings.clipWithAllRoundedCorners
+import org.dhis2.commons.bindings.dp
 import org.dhis2.commons.filters.CatOptionComboFilter
 import org.dhis2.commons.filters.FilterItem
 import org.dhis2.commons.filters.Filters

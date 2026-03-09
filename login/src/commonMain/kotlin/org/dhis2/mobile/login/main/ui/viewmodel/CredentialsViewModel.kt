@@ -238,7 +238,6 @@ class CredentialsViewModel(
                                 }
                                 add(AfterLoginAction.NavigateToNextScreen(result.initialSyncDone))
                             },
-                        errorMessage = null,
                     )
                 }
             }
@@ -377,5 +376,4 @@ class CredentialsViewModel(
             }
         }
     }
-
 }

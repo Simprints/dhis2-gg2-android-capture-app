@@ -3,7 +3,7 @@ package org.dhis2.android.rtsm.services
 import io.reactivex.Single
 import org.dhis2.android.rtsm.coroutines.StockDispatcherProvider
 import org.dhis2.android.rtsm.exceptions.InitializationException
-import org.dhis2.bindings.stockUseCase
+import org.dhis2.commons.bindings.stockUseCase
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.arch.repositories.scope.RepositoryScope
 import org.hisp.dhis.android.core.dataelement.DataElement

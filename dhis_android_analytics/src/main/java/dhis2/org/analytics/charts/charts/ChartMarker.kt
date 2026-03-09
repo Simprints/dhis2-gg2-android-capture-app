@@ -12,7 +12,7 @@ import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
 import com.github.mikephil.charting.utils.ViewPortHandler
 import dhis2.org.R
-import org.dhis2.bindings.dp
+import org.dhis2.commons.bindings.dp
 import kotlin.math.round
 
 @SuppressLint("ViewConstructor")

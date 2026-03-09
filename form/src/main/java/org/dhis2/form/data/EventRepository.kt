@@ -7,8 +7,8 @@ import io.reactivex.Single
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.dhis2.bindings.blockingGetValueCheck
-import org.dhis2.bindings.program
 import org.dhis2.bindings.userFriendlyValue
+import org.dhis2.commons.bindings.program
 import org.dhis2.commons.date.DateUtils
 import org.dhis2.commons.extensions.inDateRange
 import org.dhis2.commons.extensions.inOrgUnit
@@ -285,7 +285,7 @@ class EventRepository(
             programStageSection = EVENT_CATEGORY_COMBO_SECTION_UID,
             editable = isEventEditable(),
             description = null,
-            eventCategories = categories
+            eventCategories = categories,
         )
     }
 
@@ -428,7 +428,7 @@ class EventRepository(
             programStageSection = EVENT_DETAILS_SECTION_UID,
             editable = accessDataWrite && !shouldBlockEdition,
             description = null,
-            featureType = featureType
+            featureType = featureType,
         )
     }
 
@@ -461,7 +461,7 @@ class EventRepository(
             programStageSection = EVENT_DETAILS_SECTION_UID,
             editable = eventMode == EventMode.NEW,
             description = null,
-            orgUnitSelectorScope = programUid?.let { OrgUnitSelectorScope.ProgramCaptureScope(it) }
+            orgUnitSelectorScope = programUid?.let { OrgUnitSelectorScope.ProgramCaptureScope(it) },
         )
 
     private fun getStoredOrgUnit(): String? =
@@ -500,7 +500,7 @@ class EventRepository(
             allowFutureDates = false,
             editable = isEventEditable(),
             description = null,
-            periodSelector = getPeriodSelector()
+            periodSelector = getPeriodSelector(),
         )
     }
 
@@ -722,8 +722,6 @@ class EventRepository(
         val renderingType = getSectionRenderingType(programStageSection)
         val featureType = getFeatureType(valueType)
 
-        val url = de?.url()
-
         var fieldViewModel =
             fieldFactory.create(
                 uid,
@@ -742,7 +740,7 @@ class EventRepository(
                 de.fieldMask(),
                 optionSetConfig,
                 featureType,
-                customIntentModel = customIntent
+                customIntentModel = customIntent,
             )
 
         if (!error.isNullOrEmpty()) {

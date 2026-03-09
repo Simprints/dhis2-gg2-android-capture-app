@@ -2,7 +2,7 @@ package org.dhis2.maps.managers
 
 import android.graphics.RectF
 import androidx.appcompat.content.res.AppCompatResources
-import org.dhis2.bindings.dp
+import org.dhis2.commons.bindings.dp
 import org.dhis2.maps.R
 import org.dhis2.maps.layer.MapLayerManager
 import org.dhis2.maps.layer.types.PLACES_LAYER_ID

@@ -44,7 +44,7 @@ class DomainErrorMapper(
             D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_EMAIL,
             D2ErrorCode.TWO_FACTOR_MANY_SEND_ATTEMPTS,
             D2ErrorCode.SMS_TWO_FACTOR_CODE_SENT,
-            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_SMS,
+            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_SMS
             -> DomainError.AuthenticationError(errorMessage)
 
             // User account issues (disabled, locked)

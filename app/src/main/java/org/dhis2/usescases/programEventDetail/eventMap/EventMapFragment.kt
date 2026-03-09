@@ -22,7 +22,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.activityViewModels
 import org.dhis2.R
-import org.dhis2.bindings.launchImageDetail
+import org.dhis2.commons.bindings.launchImageDetail
 import org.dhis2.commons.data.ProgramEventViewModel
 import org.dhis2.commons.locationprovider.LocationSettingLauncher
 import org.dhis2.commons.ui.SyncButtonProvider

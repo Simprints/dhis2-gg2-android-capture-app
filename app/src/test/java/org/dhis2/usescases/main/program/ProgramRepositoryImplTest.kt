@@ -172,7 +172,7 @@ class ProgramRepositoryImplTest {
                 .blockingGet(),
         ) doReturnConsecutively mockedPrograms()
         whenever(
-            filterPresenter.filteredEventProgram(any())
+            filterPresenter.filteredEventProgram(any()),
         ) doReturn mock()
         whenever(
             filterPresenter.filteredEventProgram(any()).blockingGet(),

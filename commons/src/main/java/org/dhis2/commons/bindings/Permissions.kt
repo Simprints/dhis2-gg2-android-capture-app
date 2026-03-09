@@ -1,4 +1,4 @@
-package org.dhis2.bindings
+package org.dhis2.commons.bindings
 
 import android.content.Context
 import android.content.pm.PackageManager

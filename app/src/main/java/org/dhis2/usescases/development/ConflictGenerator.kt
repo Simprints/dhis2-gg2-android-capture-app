@@ -1,9 +1,9 @@
 package org.dhis2.usescases.development
 
 import kotlinx.coroutines.runBlocking
-import org.dhis2.bindings.enrollment
-import org.dhis2.bindings.event
-import org.dhis2.bindings.tei
+import org.dhis2.commons.bindings.enrollment
+import org.dhis2.commons.bindings.event
+import org.dhis2.commons.bindings.tei
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.common.State
 import org.hisp.dhis.android.core.datavalue.DataValue

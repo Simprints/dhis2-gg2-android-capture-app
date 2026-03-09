@@ -10,9 +10,9 @@ import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.Icon
 import org.dhis2.R
 import org.dhis2.bindings.userFriendlyValue
-import org.dhis2.bindings.enrollment
-import org.dhis2.bindings.fromCache
-import org.dhis2.bindings.tei
+import org.dhis2.commons.bindings.enrollment
+import org.dhis2.commons.bindings.fromCache
+import org.dhis2.commons.bindings.tei
 import org.dhis2.commons.date.DateLabelProvider
 import org.dhis2.commons.date.DateUtils
 import org.dhis2.commons.date.toOverdueOrScheduledUiText

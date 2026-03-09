@@ -41,7 +41,6 @@ import org.hisp.dhis.android.core.settings.DataSetFilter
 import org.hisp.dhis.android.core.settings.HomeFilter
 import org.hisp.dhis.android.core.settings.ProgramFilter
 import org.hisp.dhis.android.core.trackedentity.search.TrackedEntitySearchCollectionRepository
-import timber.log.Timber
 import javax.inject.Inject
 
 class FilterRepository

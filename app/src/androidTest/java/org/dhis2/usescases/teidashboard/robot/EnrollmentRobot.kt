@@ -51,6 +51,7 @@ class EnrollmentRobot(val composeTestRule: ComposeTestRule) : BaseRobot() {
         Intents.intended(allOf(hasComponent(TeiProgramListActivity::class.java.name)))
     }
 
+
     fun clickOnAcceptInDatePicker() {
         waitForView(withId(R.id.acceptBtn)).perform(click())
     }

@@ -45,12 +45,6 @@
     <string name="openid_or">Or</string>
     <string name="action_openid_log_in">Log in with openID</string>
     <string name="action_manage_account">Manage accounts</string>
-    <!-- EyeSeeTea customization - Two Factor Authentication strings -->
-    <string name="two_factor_totp_hint">TOTP Code</string>
-    <string name="two_factor_email_hint">Email Verification Code</string>
-    <string name="two_factor_sms_hint">SMS Verification Code</string>
-    <string name="two_factor_resend_email">Resend Email Code</string>
-    <string name="two_factor_resend_sms">Resend SMS Code</string>
     <string name="tracking_title">Do you want to help us improve this app?</string>
     <string name="tracking_description">If you say yes the app will send anonymous statistics and error logs which help us improve user experience and performance.</string>
     <string name="tracking_description_link">For further details, please refer to our </string>

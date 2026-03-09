@@ -16,7 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.databinding.Observable
 import com.google.android.material.chip.ChipGroup
-import org.dhis2.bindings.scrollToPosition
+import org.dhis2.commons.bindings.scrollToPosition
 import org.dhis2.commons.databinding.ItemFilterWorkingListChipBinding
 import org.dhis2.commons.filters.FilterManager
 import org.dhis2.commons.filters.WorkingListFilter

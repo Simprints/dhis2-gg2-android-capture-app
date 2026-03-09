@@ -10,7 +10,7 @@ import com.github.mikephil.charting.data.Entry
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.utils.MPPointF
 import dhis2.org.R
-import org.dhis2.bindings.dp
+import org.dhis2.commons.bindings.dp
 
 @SuppressLint("ViewConstructor")
 class RadarChartMarker(

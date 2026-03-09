@@ -328,7 +328,6 @@
     <string name="enrollment_date_edition_warning_event_label">There are planned %s that won\'t be re-scheduled</string>
     <string name="enrollment_reopen">re-open</string>
 
-
     <string name="sync_retry">Retry sync</string>
     <string name="syncing">Synchronizing...</string>
     <string name="remove">Remove</string>

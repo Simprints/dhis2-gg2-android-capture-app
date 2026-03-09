@@ -1,6 +1,5 @@
 package org.dhis2.bindings
 
-import org.dhis2.bindings.withValueTypeCheck
 import org.hisp.dhis.android.core.common.ValueType
 import org.junit.Assert.assertTrue
 import org.junit.Test

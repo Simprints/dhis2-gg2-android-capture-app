@@ -35,7 +35,7 @@ data class FieldUiModelImpl(
     override val selectableDates: SelectableDates? = null,
     override val eventCategories: List<EventCategory>? = null,
     override val periodSelector: PeriodSelector? = null,
-    override var customIntent: CustomIntentModel? = null
+    override var customIntent: CustomIntentModel? = null,
 ) : FieldUiModel {
     private var callback: FieldUiModel.Callback? = null
 
