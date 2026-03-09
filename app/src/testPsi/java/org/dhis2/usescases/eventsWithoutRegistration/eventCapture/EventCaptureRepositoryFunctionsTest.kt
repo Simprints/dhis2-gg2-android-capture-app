@@ -1,6 +1,5 @@
 package org.dhis2.usescases.eventsWithoutRegistration.eventCapture
 
-import org.dhis2.utils.extension.invoke
 import org.hisp.dhis.android.core.option.Option
 import org.junit.Assert
 import org.junit.Test
@@ -22,7 +21,11 @@ class EventCaptureRepositoryFunctionsTest {
         val value = names[uid] ?: ""
 
         if (value is Option) {
-            value.invoke(prop) as String
+            when (prop) {
+                "name" -> value.name()
+                "code" -> value.code()
+                else -> value.displayName()
+            }
         } else {
             value as String
         }
