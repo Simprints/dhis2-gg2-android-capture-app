@@ -82,7 +82,7 @@ if (useLocalSdk && sdkPaths != null) {
     println("🔗 Using local SDK from: ${sdkPaths.absolutePath}")
     includeBuild(sdkPaths) {
         dependencySubstitution {
-            substitute(module("com.github.EyeSeeTea:dhis2-android-sdk:android-core"))
+            substitute(module("com.github.EyeSeeTea:dhis2-android-sdk"))
                 .using(project(":core"))
         }
     }
@@ -112,8 +112,16 @@ dhis2.sdkPath=/Users/your-username/Workspace/dhis2-android-sdk
 
 - **`dhis2.useLocalSdk=true`**: Searches for local SDK, uses Composite Build if found, compiles from source (changes immediate)
 - **`dhis2.useLocalSdk=false`** or SDK not found: Uses JitPack automatically
+  
+The substitution uses `module("com.github.EyeSeeTea:dhis2-android-sdk")` **without version** so it matches whatever version is in `libs.versions.toml` (dhis2sdk).
 
 The same dependency declaration works with both local SDK and JitPack.
+
+### Verifying composite build is active
+
+1. **At build time**: With `dhis2.useLocalSdk=true`, the first line of Gradle output should show `🔗 Using local SDK from: <path>`. If you see `📦 Using JitPack` or `📦 Local SDK not found`, the composite build is not active.
+2. **Dependency report**: Run `./gradlew :app:dependencies --configuration releaseRuntimeClasspath` (or `debugRuntimeClasspath`) and check that `com.github.EyeSeeTea:dhis2-android-sdk` is resolved to a **project** (e.g. `project :core` from the included build), not to a JitPack artifact.
+
 
 ---
 

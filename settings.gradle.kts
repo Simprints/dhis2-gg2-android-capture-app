@@ -72,7 +72,8 @@ if (useLocalSdk && sdkPaths != null) {
     println("🔗 Using local SDK from: ${sdkPaths.absolutePath}")
     includeBuild(sdkPaths) {
         dependencySubstitution {
-            substitute(module("com.github.EyeSeeTea:dhis2-android-sdk:android-core"))
+            // Use group:name only (no version) so any version from libs.versions.toml is matched
+            substitute(module("com.github.EyeSeeTea:dhis2-android-sdk"))
                 .using(project(":core"))
         }
     }

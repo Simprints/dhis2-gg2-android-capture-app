@@ -1,8 +1,6 @@
 @file:Suppress("UnstableApiUsage")
-@file:OptIn(KspExperimental::class)
 
 import com.android.build.api.variant.impl.VariantOutputImpl
-import com.google.devtools.ksp.KspExperimental
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.text.SimpleDateFormat
 import java.util.Date
