@@ -1,4 +1,4 @@
-package org.dhis2.commons.bindings
+package org.dhis2.bindings
 
 import androidx.fragment.app.Fragment
 import org.dhis2.commons.dialogs.imagedetail.ImageDetailActivity

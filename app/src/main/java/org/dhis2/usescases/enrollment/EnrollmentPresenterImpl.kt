@@ -4,7 +4,7 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.processors.FlowableProcessor
 import io.reactivex.processors.PublishProcessor
 import org.dhis2.bindings.profilePicturePath
-import org.dhis2.commons.bindings.trackedEntityTypeForTei
+import org.dhis2.bindings.trackedEntityTypeForTei
 import org.dhis2.commons.data.TeiAttributesInfo
 import org.dhis2.commons.date.DateUtils
 import org.dhis2.commons.matomo.Actions.Companion.CREATE_TEI

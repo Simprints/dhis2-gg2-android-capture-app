@@ -5,7 +5,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.FileProvider
-import org.dhis2.commons.bindings.rotateImage
+import org.dhis2.bindings.rotateImage
 import org.dhis2.commons.data.FormFileProvider
 import org.dhis2.mobile.commons.files.GetFileResource
 import org.dhis2.mobile.commons.files.toFileOverWrite

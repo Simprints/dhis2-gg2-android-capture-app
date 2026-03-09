@@ -3,10 +3,10 @@ package org.dhis2.usescases.main
 import dhis2.org.analytics.charts.Charts
 import io.reactivex.Single
 import kotlinx.coroutines.withContext
-import org.dhis2.commons.bindings.dataSet
-import org.dhis2.commons.bindings.dataSetInstanceSummaries
-import org.dhis2.commons.bindings.isStockProgram
-import org.dhis2.commons.bindings.programs
+import org.dhis2.bindings.dataSet
+import org.dhis2.bindings.dataSetInstanceSummaries
+import org.dhis2.bindings.isStockProgram
+import org.dhis2.bindings.programs
 import org.dhis2.commons.prefs.Preference
 import org.dhis2.commons.prefs.Preference.Companion.PIN
 import org.dhis2.commons.prefs.PreferenceProvider

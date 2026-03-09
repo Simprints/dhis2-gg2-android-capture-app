@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.activityViewModels
 import org.dhis2.R
-import org.dhis2.commons.bindings.launchImageDetail
+import org.dhis2.bindings.launchImageDetail
 import org.dhis2.commons.resources.ColorType
 import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.commons.ui.SyncButtonProvider

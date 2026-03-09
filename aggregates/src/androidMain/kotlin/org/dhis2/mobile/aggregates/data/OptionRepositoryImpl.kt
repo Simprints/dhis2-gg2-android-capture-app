@@ -2,7 +2,7 @@ package org.dhis2.mobile.aggregates.data
 
 import androidx.paging.map
 import kotlinx.coroutines.flow.map
-import org.dhis2.commons.bindings.dataElement
+import org.dhis2.bindings.dataElement
 import org.dhis2.mobile.aggregates.model.OptionData
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.arch.repositories.scope.RepositoryScope

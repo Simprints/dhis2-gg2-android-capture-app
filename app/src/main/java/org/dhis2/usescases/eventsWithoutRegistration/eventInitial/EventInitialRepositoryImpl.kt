@@ -555,7 +555,6 @@ class EventInitialRepositoryImpl internal constructor(
             null,
             null,
             null,
-            url = null
         )
     }
 

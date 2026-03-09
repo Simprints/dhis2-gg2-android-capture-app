@@ -10,7 +10,7 @@ import androidx.core.graphics.drawable.DrawableCompat
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.bumptech.glide.request.target.CustomTarget
-import org.dhis2.commons.bindings.dp
+import org.dhis2.bindings.dp
 import org.dhis2.maps.R
 import org.dhis2.maps.TeiMarkers
 import org.dhis2.maps.geometry.mapper.EventsByProgramStage

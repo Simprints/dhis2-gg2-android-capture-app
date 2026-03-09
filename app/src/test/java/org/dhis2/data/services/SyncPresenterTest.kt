@@ -2,7 +2,7 @@ package org.dhis2.data.services
 
 import io.reactivex.Completable
 import io.reactivex.Observable
-import org.dhis2.commons.bindings.program
+import org.dhis2.bindings.program
 import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.data.service.SyncPresenterImpl
 import org.dhis2.data.service.SyncRepository

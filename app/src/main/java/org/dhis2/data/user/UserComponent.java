@@ -79,7 +79,7 @@ import dhis2.org.analytics.charts.ui.di.AnalyticsFragmentModule;
 
 @PerUser
 @Subcomponent(modules = UserModule.class)
-public interface UserComponent extends UserComponentFlavor{
+public interface UserComponent {
 
     FilterPresenter filterPresenter();
 

@@ -845,6 +845,7 @@ class TeiDashboardMobileActivity :
                         analyticsHelper.setEvent(SHOW_HELP, CLICK, SHOW_HELP)
                         showTutorial(true)
                     }
+
                     EnrollmentMenuItem.ENROLLMENTS -> presenter.onEnrollmentSelectorClick()
                     EnrollmentMenuItem.SHARE -> startQRActivity()
                     EnrollmentMenuItem.ACTIVATE ->
@@ -884,5 +885,5 @@ enum class EnrollmentMenuItem {
     DEACTIVATE,
     COMPLETE,
     DELETE,
-    REMOVE
+    REMOVE,
 }

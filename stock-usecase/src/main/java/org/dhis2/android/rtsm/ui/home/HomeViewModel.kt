@@ -28,10 +28,10 @@ import org.dhis2.android.rtsm.ui.home.screens.BottomNavigation
 import org.dhis2.android.rtsm.utils.ParcelUtils
 import org.dhis2.android.rtsm.utils.humanReadableDate
 import org.dhis2.commons.Constants
-import org.dhis2.commons.bindings.distributedTo
-import org.dhis2.commons.bindings.stockCount
-import org.dhis2.commons.bindings.stockDiscarded
-import org.dhis2.commons.bindings.stockDistribution
+import org.dhis2.bindings.distributedTo
+import org.dhis2.bindings.stockCount
+import org.dhis2.bindings.stockDiscarded
+import org.dhis2.bindings.stockDistribution
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.option.Option
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit

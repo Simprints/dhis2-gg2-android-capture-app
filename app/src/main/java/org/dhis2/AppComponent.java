@@ -39,7 +39,7 @@ import dagger.Component;
         LocationModule.class,
         DispatcherModule.class,
         FeatureConfigModule.class,
-        NetworkUtilsModule.class
+        NetworkUtilsModule.class,
 })
 public  interface AppComponent {
 

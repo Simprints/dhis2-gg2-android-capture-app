@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import org.dhis2.R
-import org.dhis2.commons.bindings.addIf
+import org.dhis2.bindings.addIf
 import org.dhis2.commons.date.toDateSpan
 import org.dhis2.commons.ui.icons.toIconData
 import org.dhis2.data.service.SyncStatusData

@@ -13,10 +13,10 @@ import io.reactivex.processors.BehaviorProcessor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.dhis2.commons.Constants
-import org.dhis2.commons.bindings.canCreateEventInEnrollment
-import org.dhis2.commons.bindings.enrollment
-import org.dhis2.commons.bindings.event
-import org.dhis2.commons.bindings.program
+import org.dhis2.bindings.canCreateEventInEnrollment
+import org.dhis2.bindings.enrollment
+import org.dhis2.bindings.event
+import org.dhis2.bindings.program
 import org.dhis2.commons.data.EventCreationType
 import org.dhis2.commons.data.EventModel
 import org.dhis2.commons.data.EventViewModelType

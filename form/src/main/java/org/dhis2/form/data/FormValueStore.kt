@@ -1,8 +1,8 @@
 package org.dhis2.form.data
 
 import io.reactivex.Flowable
-import org.dhis2.commons.bindings.blockingSetCheck
-import org.dhis2.commons.bindings.withValueTypeCheck
+import org.dhis2.bindings.blockingSetCheck
+import org.dhis2.bindings.withValueTypeCheck
 import org.dhis2.commons.data.EntryMode
 import org.dhis2.commons.extensions.toDate
 import org.dhis2.commons.network.NetworkUtils

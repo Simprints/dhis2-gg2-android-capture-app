@@ -27,7 +27,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.launch
 import org.dhis2.R
 import org.dhis2.bindings.app
-import org.dhis2.commons.bindings.launchImageDetail
+import org.dhis2.bindings.launchImageDetail
 import org.dhis2.commons.locationprovider.LocationSettingLauncher
 import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.form.model.EventMode

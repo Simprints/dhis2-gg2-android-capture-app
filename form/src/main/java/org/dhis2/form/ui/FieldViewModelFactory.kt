@@ -36,8 +36,7 @@ interface FieldViewModelFactory {
         selectableDates: SelectableDates? = null,
         eventCategories: List<EventCategory>? = null,
         periodSelector: PeriodSelector? = null,
-        customIntentModel: CustomIntentModel? = null,
-        url: String?,
+        customIntentModel: CustomIntentModel? = null
     ): FieldUiModel
 
     fun createSingleSection(singleSectionName: String): FieldUiModel

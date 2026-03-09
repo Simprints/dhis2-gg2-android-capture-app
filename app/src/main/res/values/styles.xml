@@ -150,11 +150,4 @@
         <item name="android:dropDownHorizontalOffset">-16dp</item>
         <item name="android:dropDownVerticalOffset">4dp</item>
     </style>
-
-    <style name="spinner"/>
-
-    <style name="primaryCheckBox" parent="Widget.AppCompat.CompoundButton.CheckBox">
-        <item name="buttonTint">?colorPrimary</item>
-    </style>
-
 </resources>

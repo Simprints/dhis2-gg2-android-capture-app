@@ -1,8 +1,8 @@
 package org.dhis2.commons.periods.data
 
-import org.dhis2.commons.bindings.enrollment
-import org.dhis2.commons.bindings.eventsBy
-import org.dhis2.commons.bindings.program
+import org.dhis2.bindings.enrollment
+import org.dhis2.bindings.eventsBy
+import org.dhis2.bindings.program
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.event.EventStatus
 import org.hisp.dhis.android.core.period.PeriodType

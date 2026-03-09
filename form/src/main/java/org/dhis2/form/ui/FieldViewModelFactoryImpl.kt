@@ -57,7 +57,6 @@ class FieldViewModelFactoryImpl(
         eventCategories: List<EventCategory>?,
         periodSelector: PeriodSelector?,
         customIntentModel: CustomIntentModel?,
-        url: String?
     ): FieldUiModel {
         isNull(valueType, "type must be supplied")
         return FieldUiModelImpl(
@@ -107,7 +106,6 @@ class FieldViewModelFactoryImpl(
             eventCategories = eventCategories,
             periodSelector = periodSelector,
             customIntent = customIntentModel,
-            url = url,
         )
     }
 
@@ -134,7 +132,6 @@ class FieldViewModelFactoryImpl(
             null,
             null,
             true,
-            null,
             0,
             0,
             0,
@@ -174,7 +171,6 @@ class FieldViewModelFactoryImpl(
             null,
             null,
             isOpen,
-            null,
             totalFields,
             completedFields,
             0,
@@ -206,7 +202,6 @@ class FieldViewModelFactoryImpl(
             null,
             null,
             false,
-            null,
             0,
             0,
             0,

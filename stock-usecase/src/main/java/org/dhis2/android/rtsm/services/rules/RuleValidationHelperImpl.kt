@@ -11,7 +11,7 @@ import org.dhis2.android.rtsm.data.models.Transaction
 import org.dhis2.android.rtsm.utils.ConfigUtils
 import org.dhis2.android.rtsm.utils.RuleEngineHelper
 import org.dhis2.android.rtsm.utils.printRuleEffects
-import org.dhis2.commons.bindings.distributedTo
+import org.dhis2.bindings.distributedTo
 import org.dhis2.commons.rules.RuleEngineContextData
 import org.dhis2.mobileProgramRules.toRuleDataValue
 import org.dhis2.mobileProgramRules.toRuleEngineInstant

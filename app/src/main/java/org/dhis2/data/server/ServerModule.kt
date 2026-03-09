@@ -41,7 +41,6 @@ import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.D2Configuration
 import org.hisp.dhis.android.core.D2Manager
 import org.hisp.dhis.android.core.D2Manager.blockingInstantiateD2
-import org.hisp.dhis.android.core.arch.helpers.FileResizerHelper
 
 @Module
 class ServerModule {
@@ -191,7 +190,6 @@ class ServerModule {
                 .networkInterceptors(interceptors)
                 .writeTimeoutInSeconds(10 * 60)
                 .context(context)
-                .fileResizerDimension(FileResizerHelper.Dimension.MEDIUM)
                 .build()
         }
     }

@@ -1,4 +1,4 @@
-package org.dhis2.commons.bindings
+package org.dhis2.bindings
 
 import io.reactivex.Single
 import org.hisp.dhis.android.core.D2

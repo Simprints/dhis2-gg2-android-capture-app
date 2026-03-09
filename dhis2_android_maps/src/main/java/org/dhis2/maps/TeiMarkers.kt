@@ -6,7 +6,7 @@ import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import androidx.core.content.ContextCompat
-import org.dhis2.commons.bindings.dp
+import org.dhis2.bindings.dp
 
 object TeiMarkers {
     fun getMarker(

@@ -1,4 +1,4 @@
-package org.dhis2.commons.bindings
+package org.dhis2.bindings
 
 import android.view.View
 import android.widget.ImageView

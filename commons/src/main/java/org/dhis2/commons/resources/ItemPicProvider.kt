@@ -10,8 +10,8 @@ import com.bumptech.glide.load.resource.bitmap.CircleCrop
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestOptions
-import org.dhis2.commons.bindings.clipWithAllRoundedCorners
-import org.dhis2.commons.bindings.dp
+import org.dhis2.bindings.clipWithAllRoundedCorners
+import org.dhis2.bindings.dp
 import java.io.File
 import java.util.Locale
 

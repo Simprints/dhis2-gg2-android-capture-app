@@ -6,11 +6,11 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import org.dhis2.commons.bindings.enrollment
-import org.dhis2.commons.bindings.event
-import org.dhis2.commons.bindings.organisationUnit
-import org.dhis2.commons.bindings.program
-import org.dhis2.commons.bindings.programStage
+import org.dhis2.bindings.enrollment
+import org.dhis2.bindings.event
+import org.dhis2.bindings.organisationUnit
+import org.dhis2.bindings.program
+import org.dhis2.bindings.programStage
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.arch.repositories.scope.RepositoryScope
 import org.hisp.dhis.android.core.enrollment.Enrollment

@@ -1,7 +1,7 @@
 package org.dhis2.usescases.teiDashboard.dashboardfragments.relationships
 
-import org.dhis2.commons.bindings.event
-import org.dhis2.commons.bindings.program
+import org.dhis2.bindings.event
+import org.dhis2.bindings.program
 import org.dhis2.maps.model.MapItemModel
 import org.dhis2.maps.model.RelatedInfo
 import org.dhis2.tracker.relationships.model.RelationshipOwnerType

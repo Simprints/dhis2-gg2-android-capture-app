@@ -1,4 +1,4 @@
-package org.dhis2.commons.bindings
+package org.dhis2.bindings
 
 import android.content.Context
 import android.graphics.Bitmap

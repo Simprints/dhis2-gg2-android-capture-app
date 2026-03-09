@@ -9,8 +9,8 @@ import io.reactivex.Observable
 import io.reactivex.Single
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import org.dhis2.commons.bindings.canCreateEventInEnrollment
-import org.dhis2.commons.bindings.enrollment
+import org.dhis2.bindings.canCreateEventInEnrollment
+import org.dhis2.bindings.enrollment
 import org.dhis2.commons.data.EventCreationType
 import org.dhis2.commons.data.EventModel
 import org.dhis2.commons.data.EventViewModelType

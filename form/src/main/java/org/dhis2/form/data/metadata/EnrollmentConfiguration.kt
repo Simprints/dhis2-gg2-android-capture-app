@@ -1,13 +1,13 @@
 package org.dhis2.form.data.metadata
 
-import org.dhis2.commons.bindings.enrollment
-import org.dhis2.commons.bindings.enrollmentImportConflicts
-import org.dhis2.commons.bindings.program
-import org.dhis2.commons.bindings.tei
-import org.dhis2.commons.bindings.teiAttribute
-import org.dhis2.commons.bindings.trackedEntityType
+import org.dhis2.bindings.enrollment
+import org.dhis2.bindings.enrollmentImportConflicts
+import org.dhis2.bindings.program
+import org.dhis2.bindings.tei
+import org.dhis2.bindings.teiAttribute
+import org.dhis2.bindings.trackedEntityType
 import org.dhis2.commons.viewmodel.DispatcherProvider
-import org.dhis2.commons.bindings.userFriendlyValue
+import org.dhis2.bindings.userFriendlyValue
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.arch.repositories.scope.RepositoryScope
 import org.hisp.dhis.android.core.organisationunit.OrganisationUnit

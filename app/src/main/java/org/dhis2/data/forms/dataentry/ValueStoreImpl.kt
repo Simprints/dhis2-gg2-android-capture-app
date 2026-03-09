@@ -1,8 +1,8 @@
 package org.dhis2.data.forms.dataentry
 
 import io.reactivex.Flowable
-import org.dhis2.commons.bindings.blockingSetCheck
-import org.dhis2.commons.bindings.withValueTypeCheck
+import org.dhis2.bindings.blockingSetCheck
+import org.dhis2.bindings.withValueTypeCheck
 import org.dhis2.commons.data.EntryMode
 import org.dhis2.commons.network.NetworkUtils
 import org.dhis2.commons.resources.ResourceManager
@@ -201,9 +201,7 @@ class ValueStoreImpl(
         var newValue = value.withValueTypeCheck(valueType) ?: ""
         if (optionSet == null && isFile(valueType) && value != null) {
             try {
-                // EyeSeeetea customization no resize
-                //newValue = saveFileResource(value, valueType == ValueType.IMAGE)
-                newValue = saveFileResource(value, false)
+                newValue = saveFileResource(value, valueType == ValueType.IMAGE)
             } catch (e: Exception) {
                 return Flowable.just(
                     StoreResult(

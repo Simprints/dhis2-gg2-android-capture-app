@@ -4,17 +4,9 @@ import static org.dhis2.utils.analytics.AnalyticsConstants.CLICK;
 import static org.dhis2.utils.analytics.AnalyticsConstants.SHOW_HELP;
 
 import android.content.Context;
-import android.content.pm.ActivityInfo;
-import android.os.Bundle;
-import android.util.AttributeSet;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
-
-import androidx.annotation.Nullable;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -25,7 +17,6 @@ import org.dhis2.commons.Constants;
 import org.dhis2.commons.dialogs.CustomDialog;
 import org.dhis2.commons.popupmenu.AppMenuHelper;
 import org.dhis2.mobile.commons.reporting.CrashReportController;
-import org.dhis2.data.server.ServerComponent;
 import org.dhis2.utils.HelpManager;
 import org.dhis2.utils.OnDialogClickListener;
 import org.dhis2.utils.analytics.AnalyticsHelper;
@@ -60,12 +51,6 @@ public abstract class ActivityGlobalAbstract extends SessionManagerActivity
         );
     }
 
-    @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        ServerComponent serverComponent = ((App) getApplicationContext()).getServerComponent();
-
-        super.onCreate(savedInstanceState);
-    }
 
     @Override
     public void setTutorial() {

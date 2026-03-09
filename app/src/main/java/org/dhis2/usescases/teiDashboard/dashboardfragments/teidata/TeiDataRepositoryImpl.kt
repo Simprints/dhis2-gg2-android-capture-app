@@ -2,8 +2,8 @@ package org.dhis2.usescases.teiDashboard.dashboardfragments.teidata
 
 import io.reactivex.Single
 import org.dhis2.bindings.profilePicturePath
-import org.dhis2.commons.bindings.program
-import org.dhis2.commons.bindings.userFriendlyValue
+import org.dhis2.bindings.userFriendlyValue
+import org.dhis2.bindings.program
 import org.dhis2.commons.data.EventModel
 import org.dhis2.commons.data.EventViewModelType
 import org.dhis2.commons.data.StageSection

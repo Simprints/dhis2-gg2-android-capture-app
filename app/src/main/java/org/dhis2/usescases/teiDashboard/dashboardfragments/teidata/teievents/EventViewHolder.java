@@ -13,7 +13,7 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.dhis2.R;
-import org.dhis2.commons.bindings.BindingsKt;
+import org.dhis2.bindings.BindingsKt;
 import org.dhis2.commons.data.EventModel;
 import org.dhis2.commons.databinding.ItemFieldValueBinding;
 import org.dhis2.commons.resources.ColorUtils;

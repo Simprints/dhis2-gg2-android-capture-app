@@ -2,7 +2,7 @@ package org.dhis2.usescases.main.program
 
 import io.reactivex.Flowable
 import io.reactivex.parallel.ParallelFlowable
-import org.dhis2.commons.bindings.isStockProgram
+import org.dhis2.bindings.isStockProgram
 import org.dhis2.commons.filters.data.FilterPresenter
 import org.dhis2.commons.resources.MetadataIconProvider
 import org.dhis2.commons.resources.ResourceManager

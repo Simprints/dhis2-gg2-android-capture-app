@@ -1,6 +1,6 @@
 package org.dhis2.mobile.aggregates.data
 
-import org.dhis2.commons.bindings.dataElement
+import org.dhis2.bindings.dataElement
 import org.dhis2.commons.periods.data.PeriodLabelProvider
 import org.dhis2.mobile.aggregates.data.mappers.toCustomTitle
 import org.dhis2.mobile.aggregates.data.mappers.toDataSetDetails

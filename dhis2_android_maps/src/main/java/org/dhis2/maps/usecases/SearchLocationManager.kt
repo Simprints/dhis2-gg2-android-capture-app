@@ -3,7 +3,7 @@ package org.dhis2.maps.usecases
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import org.apache.commons.text.similarity.JaroWinklerDistance
-import org.dhis2.commons.bindings.addIf
+import org.dhis2.bindings.addIf
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.mobile.ui.designsystem.component.model.LocationItemModel
 

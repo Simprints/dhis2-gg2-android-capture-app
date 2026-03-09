@@ -1,6 +1,6 @@
 package org.dhis2.form.data
 
-import org.dhis2.commons.bindings.formatData
+import org.dhis2.bindings.formatData
 import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.ValueStoreResult
 import org.hisp.dhis.android.core.D2

@@ -1,4 +1,4 @@
-package org.dhis2.commons.bindings
+package org.dhis2.bindings
 
 import org.dhis2.commons.date.DateUtils
 import org.dhis2.commons.extensions.toPercentage
