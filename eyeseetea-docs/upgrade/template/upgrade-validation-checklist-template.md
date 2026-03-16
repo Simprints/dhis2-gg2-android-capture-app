@@ -16,15 +16,16 @@ This file is not for:
 - merge progress
 - implementation details
 - raw diff tracking
+- file-level inventories
 
 ## Template
 
 ### 1. [Customization title]
 
-Main files:
-- `path/to/file`
+Preconditions:
+- Describe the required starting state, user, data, or navigation point.
 
-Minimal manual flow:
+Manual flow:
 1. Step one.
 2. Step two.
 3. Step three.
@@ -34,10 +35,10 @@ Expected result:
 
 ### 2. [Customization title]
 
-Main files:
-- `path/to/file`
+Preconditions:
+- Describe the required starting state, user, data, or navigation point.
 
-Minimal manual flow:
+Manual flow:
 1. Step one.
 2. Step two.
 

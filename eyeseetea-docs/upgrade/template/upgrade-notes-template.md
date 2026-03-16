@@ -17,6 +17,7 @@ This file is not for:
 - stable merge rules
 - final customization inventory
 - long-term functional documentation
+- final source-of-truth status for the client
 
 ## Header
 
@@ -57,3 +58,9 @@ This file is not for:
 - surviving customizations moved to `customization-files.md`: `yes/no`
 - stable rules moved to `conflict-rules.md`: `yes/no`
 - temporary notes ready to archive/remove: `yes/no`
+
+## Maintenance rule
+
+- treat this file as temporary working state only
+- when the upgrade is closed, archive or remove it
+- do not keep this file as the stable source of truth for the client

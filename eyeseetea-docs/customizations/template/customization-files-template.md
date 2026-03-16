@@ -8,14 +8,24 @@ Recommended filename after copying:
 ## Purpose
 
 This file is for:
-- listing where each client customization is implemented
+- listing where each confirmed client customization is implemented
 - separating direct flavor files from shared-code implementation points
-- tracking supporting files that belong to the same customization area
+- tracking the technical status of each customization against `develop-eyeseetea`
 
 This file is not for:
 - raw full diff dumps
 - temporary upgrade progress
 - stable merge rules
+- functional intent or business justification
+
+## Mandatory header
+
+- Client: `<client>`
+- Flavor: `<flavor>`
+- Base branch: `develop-eyeseetea`
+- Base commit: `<commit>`
+- Generated on: `<yyyy-mm-dd>`
+- Working tree status: `clean | dirty`
 
 ## Scope
 
@@ -39,19 +49,40 @@ This inventory is based on:
 
 ### 2.1 [Customization title]
 
+Status: `active | absorbed | removed | needs_validation`
+
+Main implementation points:
 - `path/to/main/implementation`
 - `path/to/another/implementation`
 
-Supporting files differing in the same workflow:
+Supporting files in the same workflow:
 - `path/to/supporting/file`
+
+Technical note:
+- short explanation of why this customization still differs from `develop-eyeseetea`
 
 ### 2.2 [Customization title]
 
+Status: `active | absorbed | removed | needs_validation`
+
+Main implementation points:
 - `path/to/main/implementation`
 
-## 3. Shared drift still differing but not mapped to a documented customization title
+Technical note:
+- short explanation of the current technical state
 
-- `path/to/file`
+## 3. Shared drift still differing
+
+Use this section only for temporary or still-unclassified differences.
+
+Rules:
+- every entry must include a short note explaining why it is still here
+- this section must not remain open indefinitely after an upgrade is closed
+- confirmed customizations must move to section 2
+- absorbed or obsolete differences should be removed instead of living here forever
+
+Example:
+- `path/to/file` - pending classification because the diff is still under review
 
 ## 4. Notes
 

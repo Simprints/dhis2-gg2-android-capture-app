@@ -39,6 +39,14 @@ Per client, use:
 - `upgrade/template/upgrade-validation-checklist-template.md`
 - `upgrade/template/upgrade-notes-template.md`
 
+### Support automation
+
+- `scripts/check_upgrade_docs.py`
+  Lightweight consistency checks for docs and customization titles.
+
+Run it from the repository root with:
+- `python3 eyeseetea-docs/scripts/check_upgrade_docs.py --client spocc`
+
 ## Which document to read
 
 ### I want to understand the whole model
@@ -81,3 +89,8 @@ Read:
 - `upgrade/<client>/upgrade-validation-checklist.md` is the source of truth for manual validation of a client.
 - `customizations/<client>/customization-files.md` is the source of truth for the surviving technical customization inventory of a client.
 - `upgrade/<client>/upgrade-<version>-notes.md` is temporary and should not be treated as a stable long-term source of truth.
+
+## Promotion rule
+
+- if a guide, rule, template, or automation helper no longer mentions a specific client and can be reused for any fork, move it to `develop-eyeseetea`
+- if a document describes one client's behavior, validation, inventory, or temporary upgrade state, keep it in that client branch
