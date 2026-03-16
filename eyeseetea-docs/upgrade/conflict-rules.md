@@ -1,0 +1,504 @@
+# Flavor Conflict Resolution Rules
+
+Operational guide for resolving merge conflicts in the flavor branch after bringing changes from `develop-eyeseetea`.
+
+This file is meant to be reusable by any agent or model in future sessions.
+
+## Purpose
+
+This document is **not** the canonical inventory of client customizations.
+
+Its purpose is:
+- define how conflicts should be resolved
+- record which files are conflict-prone and why
+- stay reusable across upgrades and clients
+
+The canonical customization inventory must remain in:
+- `eyeseetea-docs/customizations/<flavor>/customization-files.md`
+
+## Document split
+
+Use the documents with this responsibility split:
+
+- `customization-files.md`
+  Final-state inventory.
+  Only keep confirmed `<flavor>` customizations that still exist on top of `develop-eyeseetea`.
+
+- `conflict-rules.md`
+  Working merge guide.
+  Keep reusable rules here only.
+
+- `upgrade-<version>-notes.md`
+  Temporary upgrade notes.
+  Keep version-specific progress, decisions, and unresolved questions there while the upgrade is active.
+
+## Baseline
+
+- Base branch for all client forks: `develop-eyeseetea`
+Rule of record:
+
+- `develop-eyeseetea` is the EyeSeeTea reference branch
+- Oslo upgrades must be integrated into `develop-eyeseetea` first
+- Client forks must be upgraded from `develop-eyeseetea`, not directly from Oslo
+
+Never do this:
+
+- merge Oslo directly into a client branch
+- compare a client fork only against Oslo when `develop-eyeseetea` already contains the shared EyeSeeTea baseline
+
+All conflict decisions should answer this question:
+
+> What is the minimum flavor-specific logic that must survive on top of `develop-eyeseetea`?
+
+## Core principles
+
+1. Prefer `develop-eyeseetea` by default.
+   If a change is not clearly flavor-specific, keep the base branch version.
+
+2. Keep client customizations isolated when possible.
+   Prefer flavor-specific code under `app/src/<flavor>/` or `app/src/<flavor>Debug/` over changes in shared `main` code.
+
+3. Reapply minimal deltas, not whole old files.
+   When a shared file conflicts, start from `develop-eyeseetea` and reinsert only the flavor-specific behavior.
+
+4. Do not use conflict resolution as documentation.
+   Temporary merge notes go to `upgrade-<version>-notes.md`; stable confirmed customizations go to `customization-files.md`.
+
+5. If a customization is already absorbed by `develop-eyeseetea`, do not keep a duplicate client fork of it.
+
+6. A future agent must be able to continue from the docs alone.
+   Keep decisions explicit, short, and file-based.
+
+7. When possible, isolate client custom code at the end of the file.
+   If a customization can be extracted into helper functions, constants, mappers, or callbacks without hurting readability, place that custom block near the end of the file so it is easier to identify in future upgrades.
+
+8. Do not force end-of-file extraction when the logic must stay inline.
+   If the customization is naturally tied to a builder chain, Compose tree, model property, constructor parameter, or control-flow branch, keep it where it executes and add the required nearby comment there.
+
+## What an agent should do automatically
+
+An agent may do these steps without asking first:
+
+- inspect git status, current branch, and diff against `develop-eyeseetea`
+- classify files into:
+  - direct flavor files
+  - easy conflicts
+  - manual conflicts
+  - post-merge review files
+- resolve obvious `accept_ours` files under `app/src/<flavor>/**` and `app/src/<flavor>Debug/**`
+- resolve obvious `accept_theirs` files when they are clearly shared-base changes with no client logic
+- update `customization-files.md` only when a customization is confirmed to survive on top of `develop-eyeseetea`
+- when editing shared files, prefer moving separable flavor helpers or constants toward the end of the file
+
+## What an agent should not do automatically
+
+An agent must not do these things without explicit user approval:
+
+- merge Oslo directly into client branch
+- rewrite large groups of shared files just because `theirs` compiles
+- remove shared custom code unless it is clearly obsolete or absorbed by `develop-eyeseetea`
+- assume every conflict means a real customization
+- assume every non-conflict shared diff is a real customization
+- modify `eyeseetea-docs/customizations/eyeseetea/customizations-eyeseetea.md` while working on a client fork inventory
+- treat temporary merge progress as final customization documentation
+- move code to the end of a file if doing so makes the file harder to understand or changes the natural API structure
+
+## Code placement convention for surviving customizations
+
+Apply this convention when resolving shared-code conflicts:
+
+- if a customization can live in a separate helper, mapper, callback, extension, or constant block, place it near the end of the file
+- if a customization must remain inline to be readable or correct, leave it inline and add the required `// EyeSeeTea customization - [title]` comment there
+- prefer small isolated custom helpers over scattering custom conditions across the file
+- do not reorder large parts of the base file only to satisfy this convention
+
+Typical good candidates for end-of-file placement:
+
+- helper functions
+- custom mappers
+- extension functions
+- constants tied only to flavor behavior
+- callback implementations that can be isolated cleanly
+
+Typical bad candidates for forced extraction:
+
+- constructor parameters
+- data model properties
+- sealed class contracts
+- inline UI wiring that is clearer at the call site
+- logic whose extraction would make the base flow harder to follow
+
+## File migration rule: Java to Kotlin
+
+When the old flavor customization was made in a `.java` file but `develop-eyeseetea` now uses a `.kt` replacement, the agent must not assume the old Java conflict is the right place to keep working.
+
+Required process:
+
+- locate the current active replacement file in the new base branch
+- verify whether the old Java file is still used, deprecated, duplicated, or superseded
+- reimplement the surviving customization in the active Kotlin file if that is now the real implementation
+- only then decide whether the old Java file should keep custom code, be resolved as `theirs`, or remain for manual review
+
+Rules:
+
+- if the active Kotlin replacement is clearly located and matches the same responsibility, reimplement the customization there and accept `theirs` in the old Java file
+- this may be done automatically only when the Kotlin destination is clearly identified and the mapping is low-risk
+- if the Kotlin replacement does not exist with a clear one-to-one mapping, or the new implementation is very different, the agent must not resolve it automatically
+- in that case, classify the Java conflict as manual/supervised review and identify the likely Kotlin or replacement area where the customization must be reimplemented
+- do not classify a Java-only conflict as a confirmed customization until the Kotlin replacement has been reviewed
+- do not force a functional customization title onto a technical migration if no documented business behavior matches it
+- if the migration is technical rather than functional, keep it in the technical inventory/rules, not in the functional spec
+
+## Conflict minimization rule
+
+Before editing a conflicted file, the agent should choose the smallest valid resolution strategy.
+
+Preferred order:
+
+1. keep `develop-eyeseetea` and reinsert only the few custom lines needed
+2. resolve only the conflicting hunk and keep the rest of the file untouched
+3. rewrite a local function or block if the conflict is structurally broken
+4. rewrite a whole file only when the file is already corrupted by duplicated conflict content or cannot be safely merged hunk-by-hunk
+
+Rules:
+
+- do not rewrite a whole file just because a simpler merge is possible
+- if the conflict is only a few lines, do not expand the scope to nearby unrelated code
+- if the only evidence for a customization is a test expectation or a weak inference, stop and classify it as `needs_validation`
+- when in doubt, prefer leaving the conflict for manual review over reconstructing behavior from assumptions
+
+Expected delta rule:
+
+- before editing, define the expected functional delta in concrete terms
+- examples:
+  - add one factory and one constructor parameter
+  - replace one method call
+  - change one test assertion
+  - reinsert one helper call
+- if the intended customization can be expressed in 1 to 5 small edits, do not perform a broad rewrite of the file
+
+Stop and redo rule:
+
+- after resolving a conflict, compare the clean diff with the expected functional delta
+- if the clean diff is significantly larger than the intended customization, stop
+- assume the merge is overchanged
+- redo the file from `develop-eyeseetea`
+- reapply only the minimum custom lines
+
+Shared-file safety rule:
+
+- for shared files such as `*Module.kt`, large tests, dependency wiring files, and files with formatting drift, resolve as `theirs` in structure
+- reinsert only the exact flavor behavior
+- do not accept collateral changes in imports, formatting, style, or unrelated APIs unless they are required to compile
+
+Low-change conflict rule:
+
+- if the conflict should result in only one to three real functional changes, prefer this sequence:
+  1. restore the `develop-eyeseetea` version
+  2. add only those exact lines
+  3. review the final diff before staging
+- do not "clean up", "modernize", or reformat the file during this kind of merge
+
+## Recreate a conflict for manual resolution
+
+If the merge is still open and a previously resolved file needs to be reviewed again manually, the original merge conflict for that file can be recreated with:
+
+```bash
+git checkout -m -- path/to/file
+```
+
+Example:
+
+```bash
+git checkout -m -- aggregates/src/commonMain/kotlin/org/dhis2/mobile/aggregates/ui/viewModel/DataSetTableViewModel.kt
+```
+
+Notes:
+- this works while the merge is still in progress
+- if the merge has already been committed, this will no longer recreate the original conflict state
+- use this only for the specific file that needs manual re-resolution
+
+## Comment convention for surviving customizations
+
+Every surviving flavor customization in shared code should use this comment style:
+
+```kotlin
+// EyeSeeTea customization - [title]
+// Base behavior: ...    // only when the customization changes base behavior
+// <flavor> behavior: ...   // optional, only when useful
+```
+
+Rules:
+
+- the first line with `EyeSeeTea customization - [title]` is mandatory
+- add `Base behavior:` only when the customization replaces, restricts, or overrides behavior from `develop-eyeseetea`
+- do not add `Base behavior:` when the customization only adds support and does not change the base behavior
+- if present, keep `Base behavior:` short and updated on every merge
+- add `<flavor> behavior:` only when the custom behavior is not obvious from the code itself
+- do not keep large blocks of old base code commented out
+- do not copy the original code verbatim into comments unless there is a temporary merge reason
+- prefer a short behavior summary over commented-out code
+
+Use this convention especially in:
+
+- shared business logic branches
+- helper functions extracted for flavor behavior
+- places where `develop-eyeseetea` and flavor intentionally diverge
+- areas that historically need review on each upgrade
+
+It is usually not worth adding `Base behavior:` in:
+
+- interface property declarations
+- simple data model fields
+- additive support code that does not change the base flow
+- trivial wiring where the customization is already self-evident
+
+## XML comment convention
+
+For XML resources, use XML comments instead of code-style comments.
+
+Preferred style:
+
+```xml
+<!-- EyeSeeTea customization - [title] -->
+```
+
+Optional extended style when the resource overrides base behavior:
+
+```xml
+<!-- EyeSeeTea customization - [title] -->
+<!-- Base behavior: ... -->
+<!-- <flavor> behavior: ... -->
+```
+
+Rules:
+
+- use the exact same functional title list as in code comments
+- for grouped strings or menu items, one comment above the whole related block is preferred over repeating the same comment on every line
+- only add `Base behavior` in XML when the resource changes visible behavior from `develop-eyeseetea`
+- for flavor-only branding resources, a generic group comment is enough
+- do not add noisy comments to every single XML node if one block comment is clearer
+
+## When the agent should stop and ask the user
+
+The agent should pause and ask before continuing when:
+
+- a shared-code conflict has two plausible business behaviors
+- a conflict affects workflows the agent cannot validate from local context
+- the resolution would remove a known flavor behavior from `main` code
+- multiple files need the same business decision and that decision is product-specific
+- the branch contains unexpected manual edits unrelated to the current merge
+
+## Resolution categories
+
+Each conflict should be classified into one of these categories.
+
+### A. `accept_theirs`
+
+Use when the file is not flavor-specific and the conflict comes from upstream/shared evolution.
+
+Typical signals:
+- no flavor business rule in the file
+- no flavor hook tied to flavor
+- only API migration, refactor, imports, formatting, or test adaptation
+- the old flavor side only preserved older base behavior
+
+Expected action:
+- take `develop-eyeseetea`
+- if needed, verify that no flavor customization is lost
+
+### B. `accept_ours`
+
+Use only when the file is clearly flavor-owned.
+
+Typical signals:
+- file under `app/src/<flavor>/`
+- file under `app/src/<flavor>Debug/`
+- file exists only to support flavor branding/resources
+
+Expected action:
+- keep flavor version
+- only normalize if build or API changes require it
+
+### C. `manual_reapply_on_theirs`
+
+This is the most common class for shared-code conflicts.
+
+Typical signals:
+- file lives under `app/src/main/`, `commons`, `form`, `aggregates`, or `tracker`
+- `develop-eyeseetea` has real new architecture/API changes
+- flavor added business behavior in the same file
+
+Expected action:
+- start from `develop-eyeseetea`
+- port only the flavor-specific logic
+- prefer extracting to flavor hooks if feasible
+
+### D. `defer_after_build_verification`
+
+Use when the customization may already be obsolete or absorbed, but confidence is low.
+
+Expected action:
+- tentatively keep `develop-eyeseetea`
+- verify with compilation/tests/manual path
+- only reintroduce flavor code if behavior is missing
+
+## Default rules by path
+
+### Always `accept_ours`
+
+- `app/src/<flavor>/**`
+- `app/src/<flavor>Debug/**`
+
+### Usually `accept_theirs`
+
+- build/generated or build output
+- formatting-only conflicts
+- tests that only follow shared behavior and do not assert `<flavor>`-specific business logic
+
+### Usually `manual_reapply_on_theirs`
+
+- `app/src/main/java/org/dhis2/usescases/**`
+- `app/src/main/java/org/dhis2/data/**`
+- `commons/src/main/**`
+- `form/src/main/**`
+- `aggregates/src/**`
+- `tracker/src/**`
+
+## Known <flavor>-sensitive areas
+
+When there is files conflict with conflict, assume manual review is needed unless proven otherwise.
+
+
+## Easy conflict rules
+
+These are the conflicts that an agent should usually resolve without asking:
+
+### Easy `accept_ours`
+
+- anything under `app/src/<flavor>/**`
+- anything under `app/src/<flavor>Debug/**`
+- flavor launcher icons, branding strings, and flavor-only resources
+
+### Easy `accept_theirs`
+
+- pure import reorder / formatting conflicts
+- shared test updates that only follow refactors from `develop-eyeseetea`
+- API migrations where the flavor side contains no business logic
+- resources or translations unrelated to flavor behavior
+
+### Easy `manual_reapply_on_theirs`
+
+- shared files where the flavor side only adds a few lines with clearly marked custom behavior
+- files with comments like `EyeSeeTea customization` where the new base structure from `develop-eyeseetea` should be kept
+
+## Hard conflict rules
+
+These should usually be reviewed file by file:
+
+- org unit selection logic
+- enrollment and event creation flows
+- dataset/team change request logic
+- form rendering and field visibility behavior
+- program stage behavior
+- search behavior that may affect flavor workflows
+
+For these files, the safe default is:
+
+1. keep `develop-eyeseetea` structure
+2. port the minimum flavor delta
+3. update `customization-file.md` only if the delta remains after merge
+
+## Merge algorithm
+
+For each conflicted file:
+
+1. Identify whether the file is:
+   - flavor-owned
+   - shared but custom
+   - shared and probably not custom
+
+2. Compare both sides and decide one category:
+   - `accept_theirs`
+   - `accept_ours`
+   - `manual_reapply_on_theirs`
+   - `defer_after_build_verification`
+
+3. If `manual_reapply_on_theirs`:
+   - keep `develop-eyeseetea` structure/API
+   - reinsert smallest flavor logic
+   - add/update `// EyeSeeTea customization - ...` if the code remains in shared modules
+
+4. After resolving:
+   - if the customization is confirmed and still needed, add it to `customization-files.md`
+   - if not needed anymore, do not record it there
+
+## Upgrade workflow
+
+This is the expected process for any future upgrade of flavor or another client fork.
+
+1. Upgrade Oslo into `develop-eyeseetea` first.
+   Never upgrade a client branch directly from Oslo.
+
+2. Validate `develop-eyeseetea`.
+   It must represent the shared EyeSeeTea baseline for that Oslo version.
+
+3. Create or update the client upgrade branch from the client fork.
+
+4. Merge `develop-eyeseetea` into the client branch.
+
+5. Classify differences:
+   - direct flavor files
+   - easy conflicts
+   - manual conflicts
+   - shared non-conflict diffs that may still be custom
+
+6. Resolve easy conflicts using the rules in this file.
+
+7. Stop and ask the user whether to continue after the easy batch, unless the user has explicitly asked for full autonomous resolution.
+
+8. Resolve manual conflicts by reapplying the minimum client-specific behavior on top of `develop-eyeseetea`.
+
+9. Update `customization-files.md` with confirmed surviving customizations only.
+
+10. Run validation:
+   - build if feasible
+   - targeted tests if feasible
+   - sanity review of key workflows
+
+11. Produce a final summary:
+   - resolved by `theirs`
+   - resolved by `ours`
+   - manually merged
+   - still uncertain
+
+## Temporary progress notes during an active merge
+
+If a merge is currently in progress and you need short-lived tracking in this file, keep it minimal and delete it once the merge is stabilized.
+
+Recommended temporary format:
+
+```md
+| File | Category | Status | Notes |
+|------|----------|--------|-------|
+| path/to/file | manual_reapply_on_theirs | pending | Preserve flavor org-unit restriction |
+```
+
+Allowed status values:
+- `pending`
+- `resolved_keep_theirs`
+- `resolved_keep_ours`
+- `resolved_manual_merge`
+- `needs_validation`
+
+Rules:
+- do not keep branch-specific snapshots here once the merge is complete
+- do not treat temporary tracking as the final customization inventory
+- if a customization survives, move the stable result to `customizations-files.md`
+
+## Comment labeling reminder during merge
+
+When a surviving flavor customization remains in shared code:
+- add one nearby `EyeSeeTea customization - [title]` comment
+- use the exact functional title from `customization-specs.md`
+- do not add these comments blindly before the final surviving logic is clear
