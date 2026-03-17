@@ -17,7 +17,6 @@ This file is not for:
 - stable merge rules
 - final customization inventory
 - long-term functional documentation
-- final source-of-truth status for the client
 
 ## Header
 
@@ -38,9 +37,9 @@ This file is not for:
 
 ## Decisions
 
-| File | Decision | Notes |
-|------|----------|-------|
-| path/to/file | keep theirs / keep ours / manual reapply | short reason |
+| File | Classification | Expected delta | Customization | Status | Notes |
+|------|----------------|----------------|---------------|--------|-------|
+| path/to/file | accept_theirs / accept_ours / manual_reapply_on_theirs / defer_after_build_verification | one helper call / one assertion / absorbed in base | customization title or `n/a` | pending / resolved_keep_theirs / resolved_keep_ours / resolved_manual_merge / needs_validation | short reason |
 
 ## Open Questions
 
@@ -58,9 +57,4 @@ This file is not for:
 - surviving customizations moved to `customization-files.md`: `yes/no`
 - stable rules moved to `conflict-rules.md`: `yes/no`
 - temporary notes ready to archive/remove: `yes/no`
-
-## Maintenance rule
-
-- treat this file as temporary working state only
-- when the upgrade is closed, archive or remove it
-- do not keep this file as the stable source of truth for the client
+- unexplained shared drift remaining: `yes/no`

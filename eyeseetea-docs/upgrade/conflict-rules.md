@@ -343,6 +343,41 @@ Expected action:
 - verify with compilation/tests/manual path
 - only reintroduce flavor code if behavior is missing
 
+## Mandatory post-merge preclassification
+
+Immediately after merging `develop-eyeseetea` into the client branch, do not start editing files blindly.
+
+First classify every affected file into one of these buckets:
+
+- direct flavor files
+- conflicted files resolved as `accept_ours`
+- conflicted files resolved as `accept_theirs`
+- conflicted files resolved as `manual_reapply_on_theirs`
+- shared non-conflict diffs that may still represent client behavior
+- obsolete or absorbed differences
+
+Minimum record per file:
+
+- file path
+- classification
+- expected functional delta
+- linked customization title if known
+- status
+
+Recommended temporary format in `upgrade-<version>-notes.md`:
+
+```md
+| File | Classification | Expected delta | Customization | Status | Notes |
+|------|----------------|----------------|---------------|--------|-------|
+| path/to/file | manual_reapply_on_theirs | reinsert one helper call | Select UPG | pending | New base API changed constructor |
+```
+
+Why:
+
+- it prevents easy conflicts from being mixed with surviving drift
+- it exposes absorbed differences before they are documented as customizations
+- it reduces broad rewrites by forcing an expected delta before editing
+
 ## Default rules by path
 
 ### Always `accept_ours`
@@ -364,6 +399,12 @@ Expected action:
 - `form/src/main/**`
 - `aggregates/src/**`
 - `tracker/src/**`
+
+### Usually `defer_after_build_verification`
+
+- tests that only prove a client customization indirectly
+- files where the old client delta may already be absorbed by `develop-eyeseetea`
+- migrations from old Java implementation to new Kotlin implementation when the business delta is still unclear
 
 ## Known <flavor>-sensitive areas
 
@@ -428,10 +469,12 @@ For each conflicted file:
    - keep `develop-eyeseetea` structure/API
    - reinsert smallest flavor logic
    - add/update `// EyeSeeTea customization - ...` if the code remains in shared modules
+   - do not stage the file until the resulting diff still matches the expected delta
 
 4. After resolving:
    - if the customization is confirmed and still needed, add it to `customization-files.md`
    - if not needed anymore, do not record it there
+   - if the file still differs but the business meaning is unclear, keep it out of the final inventory and mark it `needs_validation`
 
 ## Upgrade workflow
 
@@ -452,6 +495,7 @@ This is the expected process for any future upgrade of flavor or another client 
    - easy conflicts
    - manual conflicts
    - shared non-conflict diffs that may still be custom
+   - obsolete or absorbed differences
 
 6. Resolve easy conflicts using the rules in this file.
 
@@ -471,6 +515,7 @@ This is the expected process for any future upgrade of flavor or another client 
    - resolved by `ours`
    - manually merged
    - still uncertain
+   - still differing without confirmed customization title
 
 ## Temporary progress notes during an active merge
 
@@ -479,9 +524,9 @@ If a merge is currently in progress and you need short-lived tracking in this fi
 Recommended temporary format:
 
 ```md
-| File | Category | Status | Notes |
-|------|----------|--------|-------|
-| path/to/file | manual_reapply_on_theirs | pending | Preserve flavor org-unit restriction |
+| File | Category | Expected delta | Customization | Status | Notes |
+|------|----------|----------------|---------------|--------|-------|
+| path/to/file | manual_reapply_on_theirs | Preserve one org-unit restriction | Validate or hide orgunit by Teamprofile | pending | Constructor migrated in base branch |
 ```
 
 Allowed status values:
@@ -495,6 +540,7 @@ Rules:
 - do not keep branch-specific snapshots here once the merge is complete
 - do not treat temporary tracking as the final customization inventory
 - if a customization survives, move the stable result to `customizations-files.md`
+- if a file reaches the end of the upgrade without a confirmed customization title, it must not be silently dropped from the notes
 
 ## Comment labeling reminder during merge
 
