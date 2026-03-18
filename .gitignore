@@ -8,6 +8,7 @@
 .externalNativeBuild
 /app/dhis_keystore.jks
 /app/src/main/res/raw/testing_credentials.json
+/app/src/**/google-services.json
 /venv
 /*.secrets.yml
 /gradle.deps
