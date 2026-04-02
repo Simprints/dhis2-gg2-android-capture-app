@@ -23,6 +23,38 @@ Use `eyeseetea-docs/README.md` to understand the model first. Use this file as t
 - the merge-base with `develop-eyeseetea` is known
 - the developer has domain knowledge of which customizations are intentional
 
+## Customization code placement rule
+
+Every line changed in an Oslo file is a future merge conflict. To minimize upgrade pain, always place customization code as far from the original Oslo code as possible.
+
+Preference order (highest to lowest):
+
+1. **Flavor source set** (`app/src/<flavor>/java/...`) — zero conflict risk, maximum isolation
+2. **New file in shared code** (`app/src/main/java/...` in a new file) — separate from Oslo files
+3. **Same file, block at the end** — helpers, constants, extensions grouped at the bottom of the file
+4. **Inline in existing Oslo code** — last resort only
+
+### Customization comment rule
+
+**Every piece of customization code must have a comment** `// EyeSeeTea customization - [title]` regardless of where it is placed. This applies to all placement levels:
+
+- **Flavor source set**: comment at the top of the file (below the package declaration)
+- **New file in shared code**: comment at the top of the file (below the package declaration)
+- **Block at the end of an existing file**: comment before the block
+- **Inline in existing Oslo code**: comment on the line immediately above the changed code
+
+Rules:
+- use the **exact functional title** from `customization-specs.md` — the comment and the spec title must match
+- do NOT place comments on import lines — the Oslo GitHub action validates imports and will reject them
+- the same principle applies to resources: prefer flavor resource overrides over modifying shared resources
+- when reviewing existing customizations during upgrades, consider refactoring inline code toward a higher preference level if feasible
+- do not refactor placement during an active merge — do it as a separate follow-up
+
+Why this matters:
+- AI agents use these comments to identify customization boundaries during conflict resolution
+- developers can quickly find all code belonging to a customization by searching `// EyeSeeTea customization - [title]`
+- during upgrades, the comment makes it clear which code must be preserved vs which is upstream
+
 ## Phase 1. Bring shared docs into the fork
 
 Bring the shared `eyeseetea-docs/` structure from `develop-eyeseetea` into the client branch.
@@ -99,6 +131,7 @@ This is the most important phase. It produces the functional spec and the techni
 2. Populate `customization-files.md` with the technical inventory grouped by customization.
 3. Populate `upgrade-validation-checklist.md` with manual validation flows per customization.
 4. List files that still differ but have no confirmed customization title in section 3 of `customization-files.md`.
+5. **Review customization comments in code**: for every file listed in `customization-files.md`, verify that the `// EyeSeeTea customization - [title]` comment exists and uses the exact title from `customization-specs.md`. Add missing comments, fix titles that don't match. Do NOT place comments on import lines (Oslo GitHub action rejects them).
 
 ### Done when
 
@@ -106,6 +139,7 @@ This is the most important phase. It produces the functional spec and the techni
 - the technical inventory is in `customization-files.md`
 - validation flows exist in the checklist
 - unclassified diffs are visible in section 3, not hidden
+- every customization file has a matching `// EyeSeeTea customization - [title]` comment
 
 ## Phase 4. Formalize with OpenSpec (recommended)
 
@@ -281,7 +315,7 @@ Start with:
 1. Remove files that belong to absorbed or removed customizations.
 2. Remove leftover files from previous forks or clients that are not part of any active customization.
 3. Confirm section 3 of `customization-files.md` is empty or contains only items with an explicit reason and next action.
-4. Ensure code comments use exact titles from `customization-specs.md`: `// EyeSeeTea customization - [title]`.
+4. Ensure ALL customization code has `// EyeSeeTea customization - [title]` comments with exact titles from `customization-specs.md` (see "Customization comment rule" above). This includes flavor files, new files, blocks at end of files, and inline changes. Never on import lines.
 5. Run `python3 eyeseetea-docs/scripts/check_upgrade_docs.py --client <client>` to validate consistency.
 
 ### Done when
