@@ -70,7 +70,9 @@ Bring the shared `eyeseetea-docs/` structure from `develop-eyeseetea` into the c
 - `eyeseetea-docs/upgrade/template/`
 - `eyeseetea-docs/customizations/eyeseetea/customizations-eyeseetea.md`
 - `eyeseetea-docs/customizations/template/`
+- `eyeseetea-docs/templates/` — CLAUDE.md and openspec/config.yaml templates used in Phase 4 / Phase 5
 - `eyeseetea-docs/scripts/`
+- `.claude/` — generic Claude Code scaffolding (`commands/opsx/*`, `skills/openspec-*/`, `settings.json`). Do **not** bring `.claude/settings.local.json` (per-developer overrides, gitignored).
 
 ### How
 
@@ -87,19 +89,22 @@ Copy the templates to the client-specific paths.
 
 ### Developer checklist
 
-1. Copy `eyeseetea-docs/customizations/template/customization-specs-template.md` to `eyeseetea-docs/customizations/<client>/customization-specs.md`.
-2. Copy `eyeseetea-docs/customizations/template/customization-files-template.md` to `eyeseetea-docs/customizations/<client>/customization-files.md`.
-3. Copy `eyeseetea-docs/upgrade/template/upgrade-validation-checklist-template.md` to `eyeseetea-docs/upgrade/<client>/upgrade-validation-checklist.md`.
+1. Copy `eyeseetea-docs/customizations/template/customization-files-template.md` to `eyeseetea-docs/customizations/<client>/customization-files.md`.
+2. Copy `eyeseetea-docs/upgrade/template/upgrade-validation-checklist-template.md` to `eyeseetea-docs/upgrade/<client>/upgrade-validation-checklist.md`.
+3. **Optional but recommended for brownfield onboarding**: copy `eyeseetea-docs/customizations/template/customization-specs-template.md` to `eyeseetea-docs/customizations/<client>/customization-specs.md`. This file is an **intermediate draft** used in Phase 3 to dump customizations in narrative form before learning OpenSpec syntax. It is **deleted at the end of Phase 4** once the functional content has been moved into `openspec/specs/`. New greenfield forks can skip this file and go straight to OpenSpec in Phase 4.
 4. Fill the mandatory header in `customization-files.md` (client, flavor, base branch, base commit, date).
 
 ### Done when
 
-- the three client docs exist with the mandatory header filled
+- `customization-files.md` and `upgrade-validation-checklist.md` exist with the mandatory header filled
+- if this is a brownfield onboarding, `customization-specs.md` also exists as a draft placeholder (to be deleted in Phase 4)
 - the content is still template placeholder, not populated yet
 
-## Phase 3. Inventory customizations
+## Phase 3. Inventory customizations (narrative draft)
 
-This is the most important phase. It produces the functional spec and the technical inventory.
+This is the most important phase. It produces a **verified list of customizations** in narrative form — readable by humans, cheap to iterate, and reviewable with the team before any formalization.
+
+Why narrative first: installing OpenSpec and learning its syntax adds friction to a phase that should be about *discovery and confirmation*, not tooling. Writing a short markdown narrative is the fastest way to dump, refine, and review the list with the developer who knows the fork. The narrative draft becomes direct input for Phase 4 and is deleted there.
 
 ### What the developer does
 
@@ -127,122 +132,123 @@ This is the most important phase. It produces the functional spec and the techni
 
 ### Developer checklist
 
-1. Populate `customization-specs.md` with the functional titles, intent, expected behavior, and status.
+1. Populate `customization-specs.md` with the functional titles, intent, expected behavior, and status. **This file is a temporary draft**, not a stable artifact — it will be deleted in Phase 4.
 2. Populate `customization-files.md` with the technical inventory grouped by customization.
 3. Populate `upgrade-validation-checklist.md` with manual validation flows per customization.
 4. List files that still differ but have no confirmed customization title in section 3 of `customization-files.md`.
-5. **Review customization comments in code**: for every file listed in `customization-files.md`, verify that the `// EyeSeeTea customization - [title]` comment exists and uses the exact title from `customization-specs.md`. Add missing comments, fix titles that don't match. Do NOT place comments on import lines (Oslo GitHub action rejects them).
+5. Review the narrative draft with the developer who owns the fork. Do not move to Phase 4 until the list of customizations is confirmed stable.
 
 ### Done when
 
 - every known customization has a title, status, and expected behavior in `customization-specs.md`
+- the narrative draft has been reviewed and signed off by a developer who knows the fork
 - the technical inventory is in `customization-files.md`
 - validation flows exist in the checklist
 - unclassified diffs are visible in section 3, not hidden
 - every customization file has a matching `// EyeSeeTea customization - [title]` comment
 
-## Phase 4. Formalize with OpenSpec (recommended)
+## Phase 4. Formalize with OpenSpec and retire the narrative draft
 
-This phase converts the eyeseetea-docs specs into Structured Specification Documents (SSD) that AI tools can consume more effectively.
+This phase converts the narrative `customization-specs.md` draft from Phase 3 into the **functional source of truth**: one OpenSpec spec per active customization. At the end of this phase, `customization-specs.md` is **deleted** — its content has been absorbed into `openspec/specs/` with stricter structure (SHALL/MUST + WHEN/THEN scenarios).
 
-OpenSpec does not replace eyeseetea-docs. It formalizes the specs in a machine-friendly format while eyeseetea-docs remains the human-readable source of truth for the upgrade workflow.
+eyeseetea-docs remains the home for technical inventory, manual QA, conflict rules, and upgrade runbooks. The *functional contract* (what the app must do for the client, with normative requirements and testable scenarios) lives only in OpenSpec.
 
-### How OpenSpec maps to eyeseetea-docs
+### How the fork documentation is split
 
-| eyeseetea-docs | OpenSpec equivalent | Notes |
-|---|---|---|
-| `customization-specs.md` entry | `openspec/specs/<domain>/spec.md` | Each customization becomes a spec with MUST/SHALL requirements |
-| Upgrade strategy | `openspec/changes/<name>/proposal.md` | The upgrade itself is a change with proposal, design, and tasks |
-| `upgrade-validation-checklist.md` entry | Given-When-Then scenarios in spec.md | Testable scenarios that can generate test code |
-| `conflict-rules.md` | `config.yaml` project context | Referenced as rules in OpenSpec config, not duplicated |
-| `customization-files.md` | Referenced in spec.md | Technical inventory stays in eyeseetea-docs |
+| Concern | Lives in |
+|---|---|
+| Functional meaning, titles, SHALL/MUST requirements, WHEN/THEN scenarios | `openspec/specs/<capability>/spec.md` |
+| Technical inventory of files, line anchors, per-file notes | `eyeseetea-docs/customizations/<client>/customization-files.md` |
+| Manual QA flows | `eyeseetea-docs/upgrade/<client>/upgrade-validation-checklist.md` |
+| Reusable merge/conflict rules | `eyeseetea-docs/upgrade/conflict-rules.md` |
+| Stable upgrade strategy | `eyeseetea-docs/upgrade/<client>/upgrade-<version>-strategy.md` |
+| Upgrade execution (one-off, created in Phase 6, not here) | `openspec/changes/upgrade-<version>/` + `eyeseetea-docs/upgrade/<client>/upgrade-<version>-notes.md` |
+
+This phase only installs OpenSpec and migrates the current customization specs. The upgrade proposal itself is **not** created here — it is the first step of Phase 6 (Execute the upgrade).
 
 ### Steps
 
-1. Install OpenSpec CLI: `npm install -g @fission-ai/openspec@latest`
-2. Initialize: `cd <project-root> && openspec init`
-3. Configure `openspec/config.yaml` with project context:
-   - reference `eyeseetea-docs/upgrade/conflict-rules.md` as merge rules
-   - reference `develop-eyeseetea` as the baseline branch
-   - add per-artifact rules for spec formatting (Given-When-Then scenarios)
-4. Create one spec per active customization under `openspec/specs/<customization-slug>/spec.md`.
-5. Each spec should include:
-   - purpose (from `customization-specs.md` functional intent)
-   - requirements using MUST/SHALL/SHOULD keywords
-   - concrete Given-When-Then scenarios (from `upgrade-validation-checklist.md`)
-6. Model the upgrade as a change: use `/opsx:propose upgrade-to-<version>` or create manually under `openspec/changes/upgrade-<version>/`.
+1. Install OpenSpec CLI: `npm install -g @fission-ai/openspec@latest` (requires Node 20.19.0+).
+2. The Claude Code scaffolding (`.claude/commands/opsx/*`, `.claude/skills/openspec-*`, `.claude/settings.json`) is already inherited from `develop-eyeseetea` in Phase 1 — **do not run `openspec init --tools claude`** (it would overwrite the baseline-provided files). Just create empty `openspec/specs/` and `openspec/changes/` directories at the repo root.
+3. Copy `eyeseetea-docs/templates/openspec-config.yaml.template` to `openspec/config.yaml` and fill in the placeholders (`{{CLIENT_NAME}}`, `{{FLAVOR}}`, `{{APPLICATION_ID}}`, etc.). The template already contains the EyeSeeTea-wide `rules:` section (proposal/specs/design/tasks conventions); only the `context:` block needs fork-specific values. Do **not** create an `openspec/project.md` file — that name is legacy in OpenSpec ≥1.2.0 and triggers a migration warning. All project context goes into `config.yaml`.
+4. Convert each section of the Phase 3 `customization-specs.md` narrative draft into one `openspec/specs/<capability>/spec.md`:
+   - folder name is kebab-case (e.g. `change-server-url`)
+   - top-level `# heading` is the **human title** from the draft (e.g. `# Change Server URL`). This title is the string that MUST appear in code comments as `// EyeSeeTea customization - Change Server URL` and as the section heading in `customization-files.md`.
+   - one `## Purpose` section describing why the customization exists for the client (reuse the "Functional intent" prose from the draft)
+   - one `## Requirements` section with one `### Requirement: <name>` per rule, each containing at least one `#### Scenario:` with `- **WHEN** …` / `- **THEN** …`. Reuse the "Expected behavior" bullets from the draft as seed material.
+   - use SHALL/MUST (normative) — avoid should/may
+5. Run `openspec validate --specs` (and `--strict` in CI) before committing. Fix any structural errors.
+6. **Delete `eyeseetea-docs/customizations/<client>/customization-specs.md`**. Its content now lives in `openspec/specs/`. Leaving both files in the repo creates two sources of truth that will drift.
+
+The upgrade proposal (`openspec/changes/upgrade-<version>/`) is **not** created in this phase — it is the first step of Phase 6 (Execute the upgrade), once Claude tooling (Phase 5) is in place.
 
 ### Spec format example
 
 ```markdown
-# Server URL Change
+# Change Server URL
 
 ## Purpose
 
-Field users can switch the DHIS2 server URL from within the app settings.
+Field users need to switch between different DHIS2 server instances from within
+the installed app, without reinstalling, clearing data, or reconfiguring the
+device. The stock DHIS2 Android client does not expose this capability; it is
+contributed here for the `<client>` flavor.
 
 ## Requirements
 
-### Requirement: Server URL setting
+### Requirement: Settings entry to change the server URL
+The app SHALL expose an explicit "Change server URL" action inside the settings
+menu of the authenticated user.
 
-The app MUST provide a setting that allows the user to change the DHIS2 server URL.
+#### Scenario: Menu entry is visible when logged in
+- **WHEN** an authenticated user opens the settings menu
+- **THEN** the menu shows a "Change server URL" option
 
-The app MUST validate the new URL before applying the change.
+### Requirement: Confirmation warning before applying the change
+The app SHALL show an explicit warning dialog before applying the new server URL.
 
-The app MUST re-authenticate the user after the server URL changes.
-
-#### Scenario: User changes server URL
-
-- GIVEN the user is logged in and opens the settings screen
-- WHEN the user selects the change server URL option
-- AND enters a valid DHIS2 server URL
-- THEN the app applies the new server URL
-- AND the user is prompted to re-authenticate
-
-#### Scenario: User enters an invalid URL
-
-- GIVEN the user is in the change server URL dialog
-- WHEN the user enters an invalid URL
-- THEN the app shows a validation error
-- AND the server URL is not changed
+#### Scenario: User confirms the change
+- **WHEN** the user clicks "Accept" on the warning dialog
+- **THEN** the app proceeds to switch the server URL
 ```
 
 ### Done when
 
-- `openspec/` directory exists with config and specs
-- each active customization has a spec with requirements and scenarios
-- the upgrade is modeled as a change
+- `openspec/config.yaml` exists with `schema`, `context` and per-artifact `rules`
+- every active customization from Phase 3 has a spec under `openspec/specs/<capability>/spec.md`
+- `openspec validate --specs` passes with 0 failures
+- **`customization-specs.md` has been deleted** (it was only a narrative draft for Phase 3)
+- code comments in shared files use the exact `# heading` of the matching spec
 
 ## Phase 5. Set up Claude Code tooling
 
 Configure Claude Code to assist with the upgrade process.
 
-### CLAUDE.md
+### What is already in the baseline
 
-Create a `CLAUDE.md` at the repository root with:
+When you bring `develop-eyeseetea` into the fork (Phase 1), you inherit:
 
-- project identity: app name, fork name, flavor, baseline branch
-- branch model: `develop-eyeseetea` is baseline, never merge Oslo directly
-- key documentation paths: `eyeseetea-docs/README.md`, `conflict-rules.md`, client specs
-- rules: same golden rules from `eyeseetea-docs/README.md`
-- reference to `openspec/` if Phase 4 was done
+- `.claude/settings.json` — generic permissions for `./gradlew *`, `openspec *`, common `git *` and reads under `eyeseetea-docs/**` and `openspec/**`
+- `.claude/commands/opsx/*.md` — 4 OpenSpec commands (`/opsx:explore`, `/opsx:propose`, `/opsx:apply`, `/opsx:archive`)
+- `.claude/skills/openspec-*/SKILL.md` — 4 OpenSpec skills covering the same workflow
 
-### Agents (optional)
+These are generic and ready to use. **No action needed unless you want to extend them for your fork.**
 
-Create specialized agents under `.claude/agents/` if the team wants reusable automation:
+### CLAUDE.md (required)
 
-- `classify-conflicts.md` — classifies conflicted files using `conflict-rules.md` rules
-- `resolve-easy-conflicts.md` — resolves `accept_ours` and `accept_theirs` files automatically
+Copy `eyeseetea-docs/templates/CLAUDE.md.template` to `CLAUDE.md` at the repository root and fill in the placeholders (`{{CLIENT_NAME}}`, `{{FLAVOR}}`, `{{APPLICATION_ID}}`, `{{CURRENT_VERSION}}`, etc.). The template already includes the EyeSeeTea-wide rules (placement hierarchy, comment convention, automerge verification, post-merge check hierarchy, automation extraction rule); your customizations table and identity are the only fork-specific parts to fill.
+
+### Agents (optional, on demand)
+
+Do not create agents speculatively. Wait until a repetitive pattern emerges (3+ identical task structures during the upgrade) and then extract per the **Automation extraction rule** in `CLAUDE.md`. Examples that may surface:
+
+- `classify-conflicts.md` — classifies conflicted files using `conflict-rules.md`
+- `resolve-easy-conflicts.md` — resolves `accept_ours` / `accept_theirs` files automatically
 - `inventory-customizations.md` — analyzes diff and updates `customization-files.md`
 
-### Skills (optional)
+### Additional skills (optional)
 
-If OpenSpec was set up, it generates `.claude/skills/` automatically via `openspec update`.
-
-If not using OpenSpec, consider manual skills for common operations:
-
-- `/upgrade-status` — shows current upgrade progress from `upgrade-<version>-notes.md`
-- `/classify-conflicts` — runs conflict classification
+Beyond the 4 OpenSpec skills already in the baseline, you may add fork-specific skills under `.claude/skills/` if a need emerges (e.g., `/upgrade-status` reading `upgrade-<version>-notes.md`).
 
 ### Done when
 
@@ -256,18 +262,18 @@ Follow `eyeseetea-docs/upgrade/upgrade-plan-client-forks.md` for the full upgrad
 ### Prerequisites from this guide
 
 Before starting the upgrade:
-- Phase 1-3 are complete (docs exist and customizations are inventoried)
-- Phase 4-5 are recommended but not blocking
+- Phases 1-5 are complete (docs exist, customizations are inventoried, OpenSpec is installed with all current specs migrated, Claude Code tooling is configured)
 
 ### Steps
 
-1. Create `eyeseetea-docs/upgrade/<client>/upgrade-<version>-notes.md` from the template.
-2. Merge `develop-eyeseetea` into the client branch.
-3. Classify conflicts using `conflict-rules.md`.
-4. Resolve easy conflicts first, pause for developer review.
-5. Resolve manual conflicts by reapplying minimum client-specific logic.
-6. Validate against the checklist.
-7. Update `customization-files.md` with confirmed surviving customizations.
+1. **Create the upgrade proposal as an OpenSpec change** under `openspec/changes/upgrade-<version>/`. Use `/opsx:propose upgrade-to-<version>` (preferred, interactive) or create the directory manually with `proposal.md`, `design.md`, and `tasks.md`. The proposal lists the upstream target version, the expected conflict surface, and the ordered task breakdown that mirrors the phases of `eyeseetea-docs/upgrade/<client>/upgrade-<version>-strategy.md`. This is the **first action of the upgrade**, before any merge.
+2. Create `eyeseetea-docs/upgrade/<client>/upgrade-<version>-notes.md` from the template (for temporary progress and conflict notes).
+3. Merge `develop-eyeseetea` into the client branch.
+4. Classify conflicts using `conflict-rules.md`.
+5. Resolve easy conflicts first, pause for developer review.
+6. Resolve manual conflicts by reapplying minimum client-specific logic.
+7. Validate against the checklist.
+8. Update `customization-files.md` with confirmed surviving customizations.
 
 ### Done when
 
@@ -315,7 +321,7 @@ Start with:
 1. Remove files that belong to absorbed or removed customizations.
 2. Remove leftover files from previous forks or clients that are not part of any active customization.
 3. Confirm section 3 of `customization-files.md` is empty or contains only items with an explicit reason and next action.
-4. Ensure ALL customization code has `// EyeSeeTea customization - [title]` comments with exact titles from `customization-specs.md` (see "Customization comment rule" above). This includes flavor files, new files, blocks at end of files, and inline changes. Never on import lines.
+4. Ensure code comments use exact titles from `openspec/specs/<capability>/spec.md` top-level `#` heading: `// EyeSeeTea customization - [Title]`.
 5. Run `python3 eyeseetea-docs/scripts/check_upgrade_docs.py --client <client>` to validate consistency.
 
 ### Done when
@@ -333,7 +339,7 @@ Start with:
 | 3. Inventory customizations | lists known customizations, confirms titles and status | analyzes diff, drafts inventory, flags unclassified diffs |
 | 4. Formalize with OpenSpec | reviews and approves specs | generates spec drafts with requirements and scenarios |
 | 5. Set up Claude tooling | reviews CLAUDE.md content | drafts CLAUDE.md and agent/skill files |
-| 6. Execute upgrade | reviews conflicts, confirms business decisions | classifies and resolves easy conflicts, drafts notes |
+| 6. Execute upgrade | reviews the upgrade proposal, reviews conflicts, confirms business decisions | drafts the upgrade proposal (`/opsx:propose`), classifies and resolves easy conflicts, drafts notes |
 | 7. Add tests | reviews test logic and coverage | generates test stubs from scenarios |
 | 8. Clean up | confirms what to remove | identifies candidates for removal |
 

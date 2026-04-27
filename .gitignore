@@ -15,3 +15,6 @@
 .kotlin/
 __pycache__/
 *.pyc
+
+# Claude Code local overrides
+.claude/settings.local.json

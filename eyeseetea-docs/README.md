@@ -44,21 +44,26 @@ flowchart LR
 
 ### What the developer does
 
-1. Create the new client branch from `develop-eyeseetea`.
+1. Create the new client branch from `develop-eyeseetea`. The Claude Code scaffolding (`.claude/commands/opsx/*`, `.claude/skills/openspec-*`, `.claude/settings.json`) is inherited automatically.
 2. Define the client identity and flavor paths.
-3. Copy the templates for:
-   - `customization-specs.md`
-   - `customization-files.md`
-   - `upgrade-validation-checklist.md`
-4. Create the flavor surface in code and resources.
-5. Build the first inventory of flavor files and shared customizations.
-6. Mark shared surviving custom code with `// EyeSeeTea customization - [title]` where relevant.
+3. Install the OpenSpec CLI: `npm install -g @fission-ai/openspec@latest`. **Do not run `openspec init --tools claude`** — the `.claude/` scaffolding is already in baseline; running init would overwrite it. Just create empty `openspec/specs/` and `openspec/changes/` directories.
+4. Copy the templates and fill in placeholders:
+   - `templates/CLAUDE.md.template` → `CLAUDE.md` at repo root (project identity, customizations table)
+   - `templates/openspec-config.yaml.template` → `openspec/config.yaml` (project context + per-artifact rules)
+   - `customizations/template/customization-files-template.md` → `customizations/<client>/customization-files.md` (technical inventory)
+   - `upgrade/template/upgrade-validation-checklist-template.md` → `upgrade/<client>/upgrade-validation-checklist.md` (manual QA flows)
+5. Create one `openspec/specs/<capability>/spec.md` per customization, with SHALL/MUST requirements and WHEN/THEN scenarios.
+6. Create the flavor surface in code and resources.
+7. Build the first inventory of flavor files and shared customizations.
+8. Mark shared surviving custom code with `// EyeSeeTea customization - [Title]` where `[Title]` is the top-level `# heading` of the matching OpenSpec spec.
 
 ```mermaid
 flowchart TD
-    templateSpecs[customization-specs-template.md] --> clientSpecs[customizations/<client>/customization-specs.md]
-    templateFiles[customization-files-template.md] --> clientFiles[customizations/<client>/customization-files.md]
-    templateChecklist[upgrade-validation-checklist-template.md] --> clientChecklist[upgrade/<client>/upgrade-validation-checklist.md]
+    claudeTemplate[templates/CLAUDE.md.template] --> claudeMd[CLAUDE.md]
+    openspecTemplate[templates/openspec-config.yaml.template] --> openspecConfig[openspec/config.yaml]
+    clientSpecs[openspec/specs/&lt;capability&gt;/spec.md created manually]
+    templateFiles[customization-files-template.md] --> clientFiles[customizations/&lt;client&gt;/customization-files.md]
+    templateChecklist[upgrade-validation-checklist-template.md] --> clientChecklist[upgrade/&lt;client&gt;/upgrade-validation-checklist.md]
 ```
 
 ### What the AI agent may help with
@@ -79,7 +84,7 @@ flowchart TD
 When a new fork is correctly created:
 - the branch baseline is `develop-eyeseetea`
 - the flavor surface exists in `app/src/<flavor>/` and related directories
-- functional customizations are described in `customization-specs.md`
+- functional customizations are described as OpenSpec specs under `openspec/specs/<capability>/spec.md`
 - technical implementation points are tracked in `customization-files.md`
 - manual validation flows are defined in `upgrade-validation-checklist.md`
 
@@ -115,7 +120,7 @@ flowchart LR
 4. Classify conflicts and surviving diff immediately after the merge.
 5. Resolve easy conflicts using the reusable rules in `eyeseetea-docs/upgrade/conflict-rules.md`.
 6. Reapply only the minimum client-specific logic in shared files.
-7. Mark surviving shared customizations in code with the exact title from `customization-specs.md`.
+7. Mark surviving shared customizations in code with the exact title from the matching OpenSpec spec (the `# heading` line of `openspec/specs/<capability>/spec.md`).
 8. Validate each surviving customization.
 9. Move only confirmed final customizations into `customization-files.md`.
 10. Close the upgrade only when no unexplained shared drift remains.
@@ -170,10 +175,10 @@ flowchart TD
     classify -->|No| absorbed[Remove it or mark it as absorbed]
     classify -->|Not clear| validation[Keep it in upgrade notes as needs_validation]
     classify -->|Yes| title[Map it to one stable customization title]
-    title --> code[Mark code with EyeSeeTea customization comment]
+    title --> spec[Create or update openspec/specs/&lt;capability&gt;/spec.md]
+    spec --> code[Mark code with EyeSeeTea customization comment using the spec title]
     code --> inventory[Record implementation points in customization-files.md]
     inventory --> checklist[Validate with upgrade-validation-checklist.md]
-    checklist --> spec[Keep status updated in customization-specs.md]
 ```
 
 ### What gets written where during an upgrade
@@ -182,8 +187,8 @@ flowchart TD
   Temporary progress, decisions, unresolved files, and validation status for the current upgrade.
 - `customizations/<client>/customization-files.md`
   Final technical inventory of confirmed customizations that still survive on top of `develop-eyeseetea`.
-- `customizations/<client>/customization-specs.md`
-  Stable functional titles, intent, expected behavior, and lifecycle status.
+- `openspec/specs/<capability>/spec.md`
+  Stable functional source of truth: the human title (top-level `#` heading), lifecycle status, SHALL/MUST requirements, and WHEN/THEN scenarios.
 - `upgrade/<client>/upgrade-validation-checklist.md`
   Manual validation flows for each surviving customization.
 
@@ -213,13 +218,13 @@ flowchart TD
     subgraph stable[Stable documentation]
         baselineDoc[customizations/eyeseetea/customizations-eyeseetea.md<br/>shared EyeSeeTea baseline]
         rulesDoc[upgrade/conflict-rules.md<br/>reusable merge rules]
-        specDoc[customizations/<client>/customization-specs.md<br/>functional meaning]
-        filesDoc[customizations/<client>/customization-files.md<br/>technical inventory]
-        checklistDoc[upgrade/<client>/upgrade-validation-checklist.md<br/>manual validation]
+        specDoc[openspec/specs/&lt;capability&gt;/spec.md<br/>functional meaning + titles]
+        filesDoc[customizations/&lt;client&gt;/customization-files.md<br/>technical inventory]
+        checklistDoc[upgrade/&lt;client&gt;/upgrade-validation-checklist.md<br/>manual validation]
     end
 
     subgraph temporary[Temporary upgrade documentation]
-        notesDoc[upgrade/<client>/upgrade-<version>-notes.md<br/>working notes for one upgrade]
+        notesDoc[upgrade/&lt;client&gt;/upgrade-&lt;version&gt;-notes.md<br/>working notes for one upgrade]
     end
 ```
 
@@ -227,14 +232,16 @@ flowchart TD
   Source of truth for shared EyeSeeTea behavior in `develop-eyeseetea`.
 - `upgrade/conflict-rules.md`
   Source of truth for reusable merge rules.
-- `customizations/<client>/customization-specs.md`
-  Source of truth for client customization titles and functional intent.
+- `openspec/specs/<capability>/spec.md`
+  Source of truth for client customization titles, functional intent, and normative requirements (SHALL/MUST + WHEN/THEN scenarios).
 - `customizations/<client>/customization-files.md`
   Source of truth for the surviving technical customization inventory of a client.
 - `upgrade/<client>/upgrade-validation-checklist.md`
   Source of truth for manual validation of a client.
 - `upgrade/<client>/upgrade-<version>-notes.md`
   Temporary file for one upgrade only. Do not treat it as stable documentation.
+
+> **Migration note (2026-04):** the `customizations/<client>/customization-specs.md` file is **no longer a stable artifact**. Its former role (functional titles + lifecycle status + expected behavior) now lives in `openspec/specs/`. It survives only as an **optional narrative draft during brownfield onboarding** (`onboarding-fork-guide.md` Phase 3): a cheap markdown place to dump and review customizations before installing OpenSpec. It is deleted at the end of Phase 4 once the content has been moved into OpenSpec specs. New greenfield forks can skip it entirely and go straight to creating `openspec/specs/<capability>/spec.md` files from the OpenSpec workflow. Existing forks that still carry a stable `customization-specs.md` should migrate during their next upgrade cycle.
 
 ## 4. Templates and support files
 
@@ -253,10 +260,13 @@ flowchart TD
 
 ### Templates
 
-- `customizations/template/customization-specs-template.md`
-- `customizations/template/customization-files-template.md`
-- `upgrade/template/upgrade-validation-checklist-template.md`
-- `upgrade/template/upgrade-notes-template.md`
+- `templates/CLAUDE.md.template` — project identity for the fork (placement hierarchy, comment convention, automerge verification, post-merge check hierarchy already filled in)
+- `templates/openspec-config.yaml.template` — OpenSpec project context + per-artifact rules (proposal/specs/design/tasks)
+- `customizations/template/customization-files-template.md` — technical file inventory per customization
+- `upgrade/template/upgrade-validation-checklist-template.md` — manual QA flow per customization
+- `upgrade/template/upgrade-notes-template.md` — per-upgrade conflict log
+
+Functional specs themselves are created manually under `openspec/specs/<capability>/spec.md` (one per customization), not from a markdown template — the OpenSpec CLI validates them.
 
 ### Support automation
 
@@ -288,7 +298,7 @@ Read:
 1. `README.md`
 2. `upgrade/upgrade-plan-client-forks.md`
 3. `upgrade/conflict-rules.md`
-4. `customizations/<client>/customization-specs.md`
+4. `openspec/specs/` (all specs — functional reference for client customizations)
 5. `upgrade/<client>/upgrade-validation-checklist.md`
 6. `customizations/<client>/customization-files.md`
 7. `upgrade/<client>/upgrade-<version>-notes.md` if the upgrade is already in progress

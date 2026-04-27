@@ -87,5 +87,5 @@ Example:
 ## 4. Notes
 
 - This inventory reflects the current branch state only.
-- The source of truth for functional titles remains `customization-specs.md`.
-- If code comments and functional titles diverge, prefer the title defined in `customization-specs.md` and update the code comment when possible.
+- The source of truth for functional titles is `openspec/specs/<capability>/spec.md`. Each spec starts with a `# <Title>` line; that `<Title>` is the exact string to use here as a section heading and in `// EyeSeeTea customization - [Title]` code comments.
+- If code comments and functional titles diverge, prefer the title defined in the matching OpenSpec spec and update the code comment when possible.

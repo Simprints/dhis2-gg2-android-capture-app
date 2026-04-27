@@ -185,6 +185,34 @@ Stop and redo rule:
 - redo the file from `develop-eyeseetea`
 - reapply only the minimum custom lines
 
+Automerge verification rule:
+
+Git automerge resolves hunks without conflicts silently. It can drop customization code that is not in a conflicting hunk — for example, a parameter added at the end of a function call when only the beginning of the file conflicts. An IDE three-way merge view shows all changes (conflicting and auto-resolved), but the CLI only shows conflict markers. Code comments (`// EyeSeeTea customization`) may also be missing from some insertion points, so they are not a reliable check.
+
+**This rule applies to every file listed in `customization-files.md` after any merge of the baseline — not only files that git marked as conflicted.** If `develop-eyeseetea` contains commits that removed customization code (as happened in the WIDP 3.3.1 upgrade with commits like `31baf8306 Remove notifications customization`), git can apply those deletions as a clean automerge with no conflict markers, dropping entire customization wiring silently.
+
+For every file in the customization inventory, verify the full delta — not just the conflicted hunks:
+
+```bash
+git diff develop-eyeseetea -- path/to/file
+```
+
+- the diff must contain ALL the customization lines for that file, whether or not git reported a conflict
+- compare the diff against `customization-files.md` to check that every documented insertion point for that customization survived
+- if the diff is smaller than expected (fewer customization lines than documented), the automerge silently dropped code — recover it before staging
+- do not trust conflict markers as the complete picture of what changed; they only cover hunks where both sides touched the same lines
+
+**Inventory completeness is load-bearing.** This rule only catches files that are listed in `customization-files.md`. If a customization's wiring is spread across files that the inventory never captured (e.g. `MainActivity`, `MainView`, `MainPresenter` for the Notifications system, missed in WIDP 3.3.1 post-merge), the rule cannot fire. Keep the inventory complete by deriving it from the feature commits:
+
+```bash
+# for each customization, list all files the original feature commit touched
+git show <feat-commit-sha> --stat
+```
+
+Every file in that output must appear in `customization-files.md` under the corresponding section. `customization-files.md` should track the `Feat commits` SHAs for each customization so this check is reproducible.
+
+This rule applies to both human and agent resolution. It is the CLI equivalent of reviewing the full three-way diff in an IDE.
+
 Shared-file safety rule:
 
 - for shared files such as `*Module.kt`, large tests, dependency wiring files, and files with formatting drift, resolve as `theirs` in structure
@@ -342,6 +370,74 @@ Expected action:
 - tentatively keep `develop-eyeseetea`
 - verify with compilation/tests/manual path
 - only reintroduce flavor code if behavior is missing
+
+## Post-merge fork identity check
+
+After merging `develop-eyeseetea` into a client branch (or after a revert-the-revert), the merge can silently overwrite or delete fork-specific configuration that was not in a conflicting hunk. Run these checks before proceeding to conflict classification or build verification.
+
+### 1. Version and identity strings
+
+Compare `gradle/libs.versions.toml` against the pre-merge fork version:
+
+```bash
+diff <(git show HEAD~1:gradle/libs.versions.toml) gradle/libs.versions.toml
+```
+
+Check that:
+- `vName` still has the client fork name (e.g., `3.3.1-widp-fork-1`, not `3.3.1-eyeseetea-fork-1`)
+- `vCode` is correct for the client release
+- `dhis2sdk` points to the right SDK fork version if the client uses a patched SDK
+
+### 2. Flavor source sets
+
+Verify the client flavor source sets still exist:
+
+```bash
+ls -d app/src/<flavor>/ app/src/<flavor>Debug/ app/src/<flavor>Release/
+```
+
+`develop-eyeseetea` may have renamed source sets (e.g., `widp` → `eyeseetea`). The merge brings the new source sets but deletes the old ones. Both must coexist — restore the client source sets from the pre-merge commit if deleted:
+
+```bash
+git checkout HEAD~1 -- app/src/<flavor>/ app/src/<flavor>Debug/ app/src/<flavor>Release/
+```
+
+### 3. Dependencies
+
+Compare the `[versions]` and `[libraries]` sections of `libs.versions.toml`:
+
+```bash
+diff <(git show HEAD~1:gradle/libs.versions.toml) gradle/libs.versions.toml
+```
+
+Check that:
+- no dependency used by the client fork was removed (search for removed library aliases in `*.kts` and `*.kt` files)
+- no dependency version was downgraded if the client fork patched it
+
+Also check `build.gradle.kts` files in modules that contain client customizations:
+
+```bash
+diff <(git show HEAD~1:app/build.gradle.kts) app/build.gradle.kts
+```
+
+### 4. Build configuration
+
+Check that `app/build.gradle.kts` still defines the client flavor:
+
+```bash
+grep -A5 '<flavor>' app/build.gradle.kts
+```
+
+If the flavor definition was removed or renamed, restore it.
+
+### 5. Files that should not come from develop-eyeseetea
+
+Some files are fork-specific and should never be overwritten by the baseline:
+- `google-services.json` (Firebase config, per-client)
+- Signing configurations
+- CI/CD files specific to the client
+
+If these were overwritten, restore from the pre-merge commit.
 
 ## Mandatory post-merge preclassification
 
@@ -545,6 +641,6 @@ Rules:
 ## Comment labeling reminder during merge
 
 When a surviving flavor customization remains in shared code:
-- add one nearby `EyeSeeTea customization - [title]` comment
-- use the exact functional title from `customization-specs.md`
+- add one nearby `EyeSeeTea customization - [Title]` comment
+- use the exact functional title from the top-level `#` heading of the matching `openspec/specs/<capability>/spec.md`
 - do not add these comments blindly before the final surviving logic is clear

@@ -15,9 +15,11 @@ Use `eyeseetea-docs/README.md` to understand the model first. Use this file as t
 ### 1. Create the documentation
 
 1. Use `eyeseetea-docs/upgrade/conflict-rules.md` as the shared merge guide for future upgrades.
-2. Copy `eyeseetea-docs/customizations/template/customization-specs-template.md` to `eyeseetea-docs/customizations/<client>/customization-specs.md`.
-3. Copy `eyeseetea-docs/upgrade/template/upgrade-validation-checklist-template.md` to `eyeseetea-docs/upgrade/<client>/upgrade-validation-checklist.md`.
-4. Copy `eyeseetea-docs/customizations/template/customization-files-template.md` to `eyeseetea-docs/customizations/<client>/customization-files.md`.
+2. Install OpenSpec CLI: `npm install -g @fission-ai/openspec@latest`. The Claude Code scaffolding (`.claude/commands/opsx/*`, `.claude/skills/openspec-*`, `.claude/settings.json`) is already inherited from `develop-eyeseetea` — no `openspec init` needed.
+3. Create `openspec/config.yaml` by copying `eyeseetea-docs/templates/openspec-config.yaml.template` to `openspec/config.yaml` and filling in the placeholders (`{{CLIENT_NAME}}`, `{{FLAVOR}}`, `{{APPLICATION_ID}}`, `{{CURRENT_VERSION}}`, etc.). The template already includes the EyeSeeTea-wide `rules:` section. Create empty `openspec/specs/` and `openspec/changes/` directories — functional specs for client customizations will live under `openspec/specs/<capability>/spec.md` (one spec per customization).
+4. Create `CLAUDE.md` at the repository root by copying `eyeseetea-docs/templates/CLAUDE.md.template` and filling in the placeholders. The template already includes the EyeSeeTea-wide rules (placement hierarchy, comment convention, automerge verification, post-merge check hierarchy, automation extraction).
+5. Copy `eyeseetea-docs/upgrade/template/upgrade-validation-checklist-template.md` to `eyeseetea-docs/upgrade/<client>/upgrade-validation-checklist.md`.
+6. Copy `eyeseetea-docs/customizations/template/customization-files-template.md` to `eyeseetea-docs/customizations/<client>/customization-files.md`.
 
 ### 2. Define the fork identity
 
@@ -36,12 +38,12 @@ Use `eyeseetea-docs/README.md` to understand the model first. Use this file as t
 1. List direct flavor-specific files.
 2. List current shared files that already differ from `develop-eyeseetea`.
 3. Populate `customization-files.md` with the initial technical inventory.
-4. Populate `customization-specs.md` with the initial functional titles and expected behavior.
+4. Create one `openspec/specs/<capability>/spec.md` per customization with the initial functional title (as the `#` top-level heading), purpose, SHALL/MUST requirements, and WHEN/THEN scenarios. Run `openspec validate --specs` before committing.
 5. Populate `eyeseetea-docs/upgrade/<client>/upgrade-validation-checklist.md` with the manual validation flows that will matter in future upgrades.
 
 ### 5. Mark the customization boundaries
 
-1. Ensure shared custom code uses `// EyeSeeTea customization - [title]` where relevant.
+1. Ensure shared custom code uses `// EyeSeeTea customization - [Title]` where `[Title]` matches the top-level `# heading` of the matching `openspec/specs/<capability>/spec.md`.
 2. Add `Base behavior:` only when the customization replaces or restricts the base behavior.
 3. Keep flavor-only branding and resource differences out of shared-code commentary.
 
@@ -62,6 +64,8 @@ Use `eyeseetea-docs/README.md` to understand the model first. Use this file as t
 ## Done when
 
 1. `customization-files.md` is the technical inventory for this fork.
-2. `customization-specs.md` is the functional reference for this fork.
-3. `upgrade-validation-checklist.md` is the manual validation reference for this fork.
-4. `conflict-rules.md` remains the shared upgrade guide used later when this fork is upgraded.
+2. `openspec/specs/` contains one validated spec per customization and is the functional reference for this fork (`openspec validate --specs` passes).
+3. `openspec/config.yaml` exists at the repo root with placeholders filled in.
+4. `CLAUDE.md` exists at the repo root with placeholders filled in and the active customizations table populated.
+5. `upgrade-validation-checklist.md` is the manual validation reference for this fork.
+6. `conflict-rules.md` remains the shared upgrade guide used later when this fork is upgraded.

@@ -17,7 +17,7 @@ Use `eyeseetea-docs/README.md` to understand the model first. Use this file as t
 ## Documents to keep open during the upgrade
 
 - `eyeseetea-docs/customizations/eyeseetea/customizations-eyeseetea.md`
-- `eyeseetea-docs/customizations/<client>/customization-specs.md`
+- `openspec/specs/` (all capability specs — functional source of truth for client customizations)
 - `eyeseetea-docs/customizations/<client>/customization-files.md`
 - `eyeseetea-docs/upgrade/<client>/upgrade-validation-checklist.md`
 - `eyeseetea-docs/upgrade/conflict-rules.md`
@@ -76,7 +76,7 @@ For each shared conflicted file:
 
 1. Confirm the minimum client-specific behavior that must survive.
 2. Confirm whether the customization still exists or has been absorbed.
-3. Confirm the exact title from `customization-specs.md`.
+3. Confirm the exact title from the matching `openspec/specs/<capability>/spec.md` top-level `#` heading.
 4. Decide whether the final diff is acceptable.
 
 Done when:
@@ -129,8 +129,8 @@ When resolving shared conflicted files, the agent should:
 - if the customization can be isolated cleanly, move the custom helper, function, or constants block toward the end of the file
 - if the customization must remain inline, keep it at the execution point
 - add or preserve a nearby code comment for each surviving customization using this format:
-  `// EyeSeeTea customization - [title]`
-- use the exact functional title from `customization-specs.md`
+  `// EyeSeeTea customization - [Title]`
+- use the exact functional title from the top-level `#` heading of the matching `openspec/specs/<capability>/spec.md`
 - document the surviving customization in `customization-files.md` only if it still exists after merge
 - if the file still differs but the business meaning is unclear, keep it in `upgrade-<version>-notes.md` and classify it as `needs_validation`
 

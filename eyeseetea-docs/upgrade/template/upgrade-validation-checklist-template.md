@@ -49,5 +49,5 @@ Expected result:
 
 When a customization survives an upgrade:
 - keep its validation flow here
-- keep its functional description in `customization-specs.md`
+- keep its functional description in `openspec/specs/<capability>/spec.md` (SHALL/MUST + WHEN/THEN scenarios)
 - keep its technical inventory in `customization-files.md`
