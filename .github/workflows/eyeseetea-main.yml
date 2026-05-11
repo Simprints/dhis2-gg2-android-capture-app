@@ -40,7 +40,7 @@ jobs:
 
       - name: Diagnose junit-bom resolution on failure
         if: failure()
-        run: ./gradlew :compose-table:dependencyInsight --dependency org.junit:junit-bom --configuration debugCompileClasspath
+        run: ./gradlew --dependency-verification lenient :compose-table:dependencyInsight --dependency org.junit:junit-bom --configuration debugCompileClasspath
 
       - name: Upload dependency verification report
         if: failure()
