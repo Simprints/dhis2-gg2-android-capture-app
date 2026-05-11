@@ -58,6 +58,18 @@ jobs:
           DEBUG_KEY_PASS: ${{ secrets.DEBUG_KEY_PASS }}
           DEBUG_KEYSTORE_PASSWORD: ${{ secrets.DEBUG_KEYSTORE_PASSWORD }}
           DEBUG_KEYSTORE_PATH: ${{ steps.decode_keystore.outputs.filePath }}
+
+      - name: Diagnose junit-bom resolution on failure
+        if: failure()
+        run: ./gradlew :compose-table:dependencyInsight --dependency org.junit:junit-bom --configuration debugCompileClasspath
+
+      - name: Upload dependency verification report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-verification-report
+          path: build/reports/dependency-verification/
+          if-no-files-found: warn
       
       - name: Locate built APK
         id: apk-path
