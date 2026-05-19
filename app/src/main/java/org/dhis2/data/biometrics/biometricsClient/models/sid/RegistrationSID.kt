@@ -1,5 +1,7 @@
 package org.dhis2.data.biometrics.biometricsClient.models.sid
 
+import com.google.gson.annotations.SerializedName
+
 data class RegistrationSID(
-    val guid: String,
+    @field:SerializedName("guid") val guid: String,
 )
