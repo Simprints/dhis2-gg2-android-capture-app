@@ -281,6 +281,23 @@ It is usually not worth adding `Base behavior:` in:
 - additive support code that does not change the base flow
 - trivial wiring where the customization is already self-evident
 
+## Comment convention for Oslo bug fixes
+
+When patching an Oslo regression that affects all forks, use:
+
+```kotlin
+// EyeSeeTea fix - [short description] (Oslo [ticket], introduced [version])
+// Remove when Oslo ships the upstream fix.
+```
+
+Rules:
+
+- use `// EyeSeeTea fix` only for regressions or bugs in Oslo code that affect all forks equally
+- `// EyeSeeTea fix` commits MUST land in `develop-eyeseetea` (or `develop-eyeseetea-X.X.X` for version-specific fixes), never in a client fork branch
+- if a fix is already in a fork branch, move it to the baseline first and let it flow via merge — do not keep it as a fork customization
+- remove the comment and the fix when Oslo ships the upstream correction
+- never use `// EyeSeeTea fix` for behavior that is client-specific — those use `// EyeSeeTea customization`
+
 ## XML comment convention
 
 For XML resources, use XML comments instead of code-style comments.

@@ -448,14 +448,17 @@ class SearchTEIViewModel(
         uid: String,
         values: List<String>?,
     ) {
-        if (values.isNullOrEmpty()) {
+        // EyeSeeTea fix - TEI search blank value filter (Oslo ANDROAPP-6844, introduced 3.3.0)
+        // Remove when Oslo fixes the empty-value guard in updateQuery() upstream.
+        val nonBlankValues = values?.filter { it.isNotBlank() }
+        if (nonBlankValues.isNullOrEmpty()) {
             queryDataList.removeIf { it.attributeId == uid }
         } else {
             if (queryDataList.none { it.attributeId == uid }) {
                 queryDataList.add(
                     QueryData(
                         attributeId = uid,
-                        values = values,
+                        values = nonBlankValues,
                         searchOperator = searchParametersUiState.items.firstOrNull { it.uid == uid }?.searchOperator,
                     ),
                 )
@@ -464,7 +467,7 @@ class SearchTEIViewModel(
                     .indexOfFirst { it.attributeId == uid }
                     .takeIf { it != -1 }
                     ?.let { index ->
-                        queryDataList[index] = queryDataList[index].copy(values = values)
+                        queryDataList[index] = queryDataList[index].copy(values = nonBlankValues)
                     }
             }
         }
