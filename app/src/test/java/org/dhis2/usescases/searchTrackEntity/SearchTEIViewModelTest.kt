@@ -43,6 +43,7 @@ import org.hisp.dhis.android.core.trackedentity.TrackedEntityType
 import org.hisp.dhis.mobile.ui.designsystem.component.Orientation
 import org.hisp.dhis.mobile.ui.designsystem.component.navigationBar.NavigationBarItem
 import org.junit.After
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -271,37 +272,19 @@ class SearchTEIViewModelTest {
     // Remove these tests when Oslo ships the upstream fix.
     @Test
     fun `Should remove query data entry when value is blank`() {
-        viewModel.onParameterIntent(
-            FormIntent.OnSave(
-                uid = "testingUid",
-                value = "someValue",
-                valueType = ValueType.TEXT,
-            ),
-        )
-        assertTrue(viewModel.queryDataAsMap().containsKey("testingUid"))
+        viewModel.onValueChange(fieldUid = "testingUid", value = "someValue")
+        assertTrue(viewModel.queryDataList.any { it.attributeId == "testingUid" })
 
-        viewModel.onParameterIntent(
-            FormIntent.OnSave(
-                uid = "testingUid",
-                value = "",
-                valueType = ValueType.TEXT,
-            ),
-        )
+        viewModel.onValueChange(fieldUid = "testingUid", value = "")
 
-        assertFalse(viewModel.queryDataAsMap().containsKey("testingUid"))
+        assertFalse(viewModel.queryDataList.any { it.attributeId == "testingUid" })
     }
 
     @Test
     fun `Should remove query data entry when value is whitespace only`() {
-        viewModel.onParameterIntent(
-            FormIntent.OnSave(
-                uid = "testingUid",
-                value = "   ",
-                valueType = ValueType.TEXT,
-            ),
-        )
+        viewModel.onValueChange(fieldUid = "testingUid", value = "   ")
 
-        assertFalse(viewModel.queryDataAsMap().containsKey("testingUid"))
+        assertFalse(viewModel.queryDataList.any { it.attributeId == "testingUid" })
     }
 
     @ExperimentalCoroutinesApi
