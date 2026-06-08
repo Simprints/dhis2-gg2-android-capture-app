@@ -381,9 +381,7 @@ class SearchTEList : FragmentGlobalAbstract() {
                 viewModel.searchPagingData.collect { data ->
                     // EyeSeeTea fix - Stale search results on new search (no Oslo ticket)
                     // Remove when Oslo clears liveAdapter when searchPagingData emits new data.
-                    if (liveAdapter.itemCount > 0) {
-                        hideStaleProgramResults()
-                    }
+                    hideStaleProgramResults()
                     liveAdapter.addOnPagesUpdatedListener {
                         onInitDataLoaded()
                         CoroutineTracker.decrement()
