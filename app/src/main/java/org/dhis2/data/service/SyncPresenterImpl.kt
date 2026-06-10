@@ -60,7 +60,10 @@ class SyncPresenterImpl(
         return syncRepository
             .downLoadEvent(eventUid)
             .map { it as D2Progress }
-            .mergeWith(syncRepository.downloadEventFiles(eventUid))
+            // EyeSeeTea fix - granular sync race: image download can run before the event data
+            // is persisted and skip missing FileResources (Oslo ANDROAPP-7661, introduced 3.1.0).
+            // Remove when Oslo serializes data and file downloads in granular sync.
+            .concatWith(syncRepository.downloadEventFiles(eventUid))
     }
 
     override fun blockSyncGranularProgram(programUid: String): ListenableWorker.Result {
@@ -180,7 +183,10 @@ class SyncPresenterImpl(
                 syncRepository.downloadEventProgram(uid)
             }
         }?.map { it as D2Progress }
-            ?.mergeWith(syncRepository.downloadProgramFiles(uid))
+            // EyeSeeTea fix - granular sync race: image download can run before the program data
+            // is persisted and skip missing FileResources (Oslo ANDROAPP-7661, introduced 3.1.0).
+            // Remove when Oslo serializes data and file downloads in granular sync.
+            ?.concatWith(syncRepository.downloadProgramFiles(uid))
             ?: Observable.empty()
 
     override fun syncGranularTEI(uid: String): Observable<D2Progress> {
@@ -194,9 +200,10 @@ class SyncPresenterImpl(
         return syncRepository
             .downloadTei(teiUid, programUid)
             .map { it as D2Progress }
-            .mergeWith(
-                syncRepository.downloadTeiFiles(teiUid, programUid),
-            )
+            // EyeSeeTea fix - granular sync race: image download can run before the TEI data
+            // is persisted and skip missing FileResources (Oslo ANDROAPP-7661, introduced 3.1.0).
+            // Remove when Oslo serializes data and file downloads in granular sync.
+            .concatWith(syncRepository.downloadTeiFiles(teiUid, programUid))
     }
 
     override fun syncGranularDataSet(uid: String): Observable<D2Progress> =
