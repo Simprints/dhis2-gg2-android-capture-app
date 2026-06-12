@@ -864,10 +864,14 @@ class FormViewModel(
 
             EventStatus.COMPLETED -> {
                 val resultAction = provideShowResultDialog(result)
+                // EyeSeeTea fix - "mark as complete?" dialog always shown for completed events
+                // (Oslo ANDROAPP-7666, introduced 3.3.1)
+                // Remove when Oslo returns FormActions.OnFinish for completed events with no issues.
                 if (resultAction?.fieldsWithIssues?.isEmpty() == true) {
                     FormActions.OnFinish
+                } else {
+                    resultAction
                 }
-                resultAction
             }
 
             EventStatus.SKIPPED -> {
