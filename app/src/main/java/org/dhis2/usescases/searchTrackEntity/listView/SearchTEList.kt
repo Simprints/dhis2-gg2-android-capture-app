@@ -373,6 +373,8 @@ class SearchTEList : FragmentGlobalAbstract() {
         displayResult(null)
     }
 
+    private var lastSearchPagingData: Any? = null
+
     private fun initData() {
         displayLoadingData()
 
@@ -381,7 +383,12 @@ class SearchTEList : FragmentGlobalAbstract() {
                 viewModel.searchPagingData.collect { data ->
                     // EyeSeeTea fix - Stale search results on new search (no Oslo ticket)
                     // Remove when Oslo clears liveAdapter when searchPagingData emits new data.
-                    hideStaleProgramResults()
+                    // Guard: only hide stale results when a genuinely new PagingData arrives,
+                    // not when repeatOnLifecycle re-subscribes on return from the TEI screen.
+                    if (data !== lastSearchPagingData) {
+                        lastSearchPagingData = data
+                        hideStaleProgramResults()
+                    }
                     liveAdapter.addOnPagesUpdatedListener {
                         onInitDataLoaded()
                         CoroutineTracker.decrement()
