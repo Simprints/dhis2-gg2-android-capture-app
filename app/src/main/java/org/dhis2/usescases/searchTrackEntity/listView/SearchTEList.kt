@@ -7,21 +7,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.ViewCompositionStrategy
-import androidx.compose.ui.res.stringResource
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.updateLayoutParams
 import androidx.fragment.app.activityViewModels
@@ -34,7 +26,6 @@ import androidx.paging.LoadState
 import androidx.recyclerview.widget.ConcatAdapter
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.dhis2.bindings.dp
@@ -56,7 +47,6 @@ import org.dhis2.usescases.searchTrackEntity.SearchTeiViewModelFactory
 import org.dhis2.usescases.searchTrackEntity.adapters.SearchTeiLiveAdapter
 import org.dhis2.usescases.searchTrackEntity.ui.CreateNewButton
 import org.dhis2.usescases.searchTrackEntity.ui.FullSearchButtonAndWorkingList
-import org.dhis2.usescases.searchTrackEntity.ui.LoadingContent
 import org.dhis2.usescases.searchTrackEntity.ui.mapper.TEICardMapper
 import org.dhis2.utils.isLandscape
 import timber.log.Timber
@@ -177,8 +167,6 @@ class SearchTEList : FragmentGlobalAbstract() {
                 //EyeSeeTea customization
                 configureCreateButton(createButton)
                 configureSequentialSearchNextAction(nextActions)
-                configureBiometricsLoader(biometricsLoader)
-                configureRecyclerVisibility()
             }.also {
                 observeNewData()
             }.root
@@ -404,30 +392,12 @@ class SearchTEList : FragmentGlobalAbstract() {
         }
 
         liveAdapter.addLoadStateListener { state ->
-            /* EyeSeTea customization - Show loader when loading new results
-                if (state.append == LoadState.Loading) {
+            if (state.append == LoadState.Loading) {
                 displayResult(
                     listOf(SearchResult(SearchResult.SearchResultType.LOADING)),
                 )
             } else {
                 displayResult(null)
-             */
-            when {
-                state.refresh == LoadState.Loading -> {
-                    displayResult(
-                        listOf(SearchResult(SearchResult.SearchResultType.LOADING)),
-                    )
-                }
-
-                state.append == LoadState.Loading -> {
-                    displayResult(
-                        listOf(SearchResult(SearchResult.SearchResultType.LOADING)),
-                    )
-                }
-
-                else -> {
-                    displayResult(null)
-                }
             }
         }
 
@@ -601,83 +571,5 @@ class SearchTEList : FragmentGlobalAbstract() {
         currentLastClickedTeiUid = item.tei.uid()
 
         viewModel.onSearchTeiModelClick(item)
-    }
-
-    private fun configureBiometricsLoader(composeView: ComposeView) {
-        composeView.apply {
-            setViewCompositionStrategy(
-                ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
-            )
-            setContent {
-                val sequentialSearch by viewModel.sequentialSearch.observeAsState()
-                val biometricAppLaunching by viewModel.biometricAppLaunching.observeAsState(false)
-                val isBiometricSearch = sequentialSearch is SequentialSearch.BiometricsSearch
-                var isLoading by remember { mutableStateOf(false) }
-
-                LaunchedEffect(isBiometricSearch) {
-                    if (isBiometricSearch) {
-                        liveAdapter.loadStateFlow.collect { loadState ->
-                            isLoading = loadState.refresh is LoadState.Loading
-                        }
-                    } else {
-                        isLoading = false
-                    }
-                }
-
-                if (biometricAppLaunching || (isBiometricSearch && isLoading)) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .fillMaxHeight(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        LoadingContent(
-                            loadingDescription = stringResource(org.dhis2.R.string.search_loading_more)
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    private fun configureRecyclerVisibility() {
-        viewModel.biometricAppLaunching.observe(viewLifecycleOwner) { isLaunching ->
-            if (isLaunching) {
-                recycler.visibility = View.GONE
-            }
-        }
-
-        viewModel.sequentialSearch.observe(viewLifecycleOwner) { sequentialSearch ->
-            val isBiometricSearch = sequentialSearch is SequentialSearch.BiometricsSearch
-
-            if (isBiometricSearch) {
-                recycler.visibility = View.GONE
-            } else {
-                lifecycleScope.launch {
-                    delay(200)
-                    recycler.visibility = View.VISIBLE
-                }
-            }
-        }
-
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                liveAdapter.loadStateFlow.collect { loadState ->
-                    val isBiometricSearch =
-                        viewModel.sequentialSearch.value is SequentialSearch.BiometricsSearch
-                    val biometricAppLaunching = viewModel.biometricAppLaunching.value == true
-
-                    val isLoading = loadState.refresh is LoadState.Loading
-
-                    if (isBiometricSearch) {
-                        if (biometricAppLaunching || isLoading) {
-                            recycler.visibility = View.GONE
-                        } else {
-                            recycler.visibility = View.VISIBLE
-                        }
-                    }
-                }
-            }
-        }
     }
 }
