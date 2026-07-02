@@ -351,6 +351,12 @@ class SearchTEList : FragmentGlobalAbstract() {
             restoreAdapters()
         }
 
+        viewModel.biometricAppLaunching.observe(viewLifecycleOwner) { launching ->
+            if (launching) {
+                hideStaleProgramResults()
+            }
+        }
+
         viewModel.dataResult.observe(viewLifecycleOwner) {
             initLoading(emptyList())
             it.firstOrNull()?.let { searchResult ->

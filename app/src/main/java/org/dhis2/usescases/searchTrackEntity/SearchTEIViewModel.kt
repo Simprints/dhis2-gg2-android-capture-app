@@ -150,6 +150,9 @@ class SearchTEIViewModel(
     private val _sequentialSearch = MutableLiveData<SequentialSearch?>(null)
     val sequentialSearch: LiveData<SequentialSearch?> = _sequentialSearch
 
+    private val _biometricAppLaunching = MutableLiveData<Boolean>(false)
+    val biometricAppLaunching: LiveData<Boolean> = _biometricAppLaunching
+
     var uiState by mutableStateOf(SearchParametersUiState())
 
     var mapManager: MapManager? = null
@@ -1285,6 +1288,10 @@ class SearchTEIViewModel(
                 presenter.sendAutomaticBiometricsConfirmIdentity(dhisSearchItem)
             }
         }
+    }
+
+    fun notifyBiometricAppLaunching() {
+        _biometricAppLaunching.postValue(true)
     }
 }
 
