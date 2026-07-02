@@ -836,6 +836,7 @@ class SearchTEActivity :
         }
 
     override fun launchBiometricsIdentify(moduleId: String?, userOrgUnits: List<String>) {
+        viewModel.notifyBiometricAppLaunching()
         BiometricsClientFactory.get(this).identify(this, moduleId, userOrgUnits)
     }
 
