@@ -112,6 +112,8 @@ class SearchTEList : FragmentGlobalAbstract() {
         arguments?.getBoolean(ARG_FROM_RELATIONSHIP) ?: false
     }
 
+    private var pagesUpdatedListener: (() -> Unit)? = null
+
     companion object {
         fun get(fromRelationships: Boolean): SearchTEList =
             SearchTEList().apply {
@@ -150,6 +152,12 @@ class SearchTEList : FragmentGlobalAbstract() {
             }.also {
                 observeNewData()
             }.root
+
+    override fun onDestroyView() {
+        pagesUpdatedListener?.let { liveAdapter.removeOnPagesUpdatedListener(it) }
+        pagesUpdatedListener = null
+        super.onDestroyView()
+    }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -316,7 +324,7 @@ class SearchTEList : FragmentGlobalAbstract() {
         viewModel.dataResult.observe(viewLifecycleOwner) {
             initLoading(emptyList())
             it.firstOrNull()?.let { searchResult ->
-                if (searchResult.shouldClearProgramData()) {
+                if (searchResult.shouldClearProgramData() && liveAdapter.itemCount > 0) {
                     liveAdapter.refresh()
                 }
                 if (searchResult.shouldClearGlobalData()) {
@@ -331,8 +339,6 @@ class SearchTEList : FragmentGlobalAbstract() {
         }
 
         liveAdapter.addLoadStateListener { state ->
-            // EyeSeeTea fix - Stale search results on new search (no Oslo ticket)
-            // Remove when Oslo clears liveAdapter when searchPagingData emits new data.
             val adapterDetached = !listAdapter.adapters.contains(liveAdapter)
             if (adapterDetached && state.refresh is LoadState.NotLoading) {
                 restoreProgramAdapterAfterRefresh()
@@ -378,20 +384,19 @@ class SearchTEList : FragmentGlobalAbstract() {
     private fun initData() {
         displayLoadingData()
 
+        val listener: () -> Unit = {
+            onInitDataLoaded()
+            CoroutineTracker.decrement()
+        }
+        pagesUpdatedListener = listener
+        liveAdapter.addOnPagesUpdatedListener(listener)
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.searchPagingData.collect { data ->
-                    // EyeSeeTea fix - Stale search results on new search (no Oslo ticket)
-                    // Remove when Oslo clears liveAdapter when searchPagingData emits new data.
-                    // Guard: only hide stale results when a genuinely new PagingData arrives,
-                    // not when repeatOnLifecycle re-subscribes on return from the TEI screen.
+                viewModel.searchPagingData.collectLatest { data ->
                     if (data !== lastSearchPagingData) {
                         lastSearchPagingData = data
                         hideStaleProgramResults()
-                    }
-                    liveAdapter.addOnPagesUpdatedListener {
-                        onInitDataLoaded()
-                        CoroutineTracker.decrement()
                     }
                     liveAdapter.submitData(lifecycle, data)
                 }
@@ -460,8 +465,6 @@ class SearchTEList : FragmentGlobalAbstract() {
         }
     }
 
-    // EyeSeeTea fix - Stale search results on new search (no Oslo ticket)
-    // Remove when Oslo clears liveAdapter when searchPagingData emits new data.
     private fun hideStaleProgramResults() {
         listAdapter.removeAdapter(liveAdapter)
         initLoading(listOf(SearchResult(SearchResult.SearchResultType.LOADING)))

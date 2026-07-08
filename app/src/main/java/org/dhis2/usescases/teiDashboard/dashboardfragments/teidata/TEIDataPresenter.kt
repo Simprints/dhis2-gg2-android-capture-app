@@ -12,6 +12,7 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.processors.BehaviorProcessor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.dhis2.commons.Constants
 import org.dhis2.commons.bindings.canCreateEventInEnrollment
 import org.dhis2.commons.bindings.enrollment
@@ -64,6 +65,7 @@ class TEIDataPresenter(
     private var programUid: String?,
     private val teiUid: String,
     private val enrollmentUid: String,
+    private val fragmentIsFromEventCaptureActivity: Boolean,
     private val schedulerProvider: SchedulerProvider,
     private val analyticsHelper: AnalyticsHelper,
     private val valueStore: FormValueStore,
@@ -109,8 +111,8 @@ class TEIDataPresenter(
                         sectionFlowable,
                         groupingFlowable,
                         ::Pair,
-                    ).doOnNext { increment() }
-                    .switchMap { stageAndGrouping ->
+                    ).switchMap { stageAndGrouping ->
+                        increment()
                         Flowable
                             .zip(
                                 teiDataRepository
@@ -129,6 +131,7 @@ class TEIDataPresenter(
                                     calcResult,
                                 )
                             }.subscribeOn(schedulerProvider.io())
+                            .doOnCancel { decrement() }
                     }.subscribeOn(schedulerProvider.io())
                     .observeOn(schedulerProvider.ui())
                     .subscribe(
@@ -136,7 +139,10 @@ class TEIDataPresenter(
                             _events.postValue(events)
                             decrement()
                         },
-                        Timber.Forest::d,
+                        { t ->
+                            Timber.e(t)
+                            decrement()
+                        },
                     ),
             )
 
@@ -235,6 +241,8 @@ class TEIDataPresenter(
             preferences.removeValue(PREF_COMPLETED_EVENT)
         }
     }
+
+    fun fragmentIsFromEventCaptureActivity(): Boolean = fragmentIsFromEventCaptureActivity
 
     fun completeEnrollment() {
         val hasWriteAccessInProgram =
@@ -413,9 +421,15 @@ class TEIDataPresenter(
             when (eventCreationType) {
                 EventCreationType.ADDNEW ->
                     programUid?.let { program ->
-                        val orgUnitUid = d2.enrollment(enrollmentUid)?.organisationUnit()
-                        orgUnitUid?.let { onNewEventSelected(orgUnitUid, stage.uid()) }
-                            ?: checkOrgUnitCount(program, stage.uid())
+                        CoroutineScope(dispatcher.io()).launch {
+                            val enrollmentOrgUnitUid = d2.enrollment(enrollmentUid)?.organisationUnit()
+                            val ownerOrgUnit = teiDataRepository.ownerOrgUnit(teiUid)
+                            val eventOrgUnit = ownerOrgUnit ?: enrollmentOrgUnitUid
+                            withContext(dispatcher.ui()) {
+                                eventOrgUnit?.let { onNewEventSelected(eventOrgUnit, stage.uid()) }
+                                    ?: checkOrgUnitCount(program, stage.uid())
+                            }
+                        }
                     }
 
                 EventCreationType.SCHEDULE -> {
@@ -484,7 +498,9 @@ class TEIDataPresenter(
             if (orgUnits.count() == 1) {
                 onNewEventSelected(orgUnits.first().uid(), programStageUid)
             } else {
-                view.displayOrgUnitSelectorForNewEvent(programUid, programStageUid)
+                withContext(dispatcher.ui()) {
+                    view.displayOrgUnitSelectorForNewEvent(programUid, programStageUid)
+                }
             }
         }
     }
@@ -502,14 +518,18 @@ class TEIDataPresenter(
                     enrollmentUid = enrollmentUid,
                 ).fold(
                     onSuccess = { eventUid ->
-                        view.goToEventDetails(
-                            eventUid = eventUid,
-                            eventMode = EventMode.NEW,
-                            programUid = it,
-                        )
+                        withContext(dispatcher.ui()) {
+                            view.goToEventDetails(
+                                eventUid = eventUid,
+                                eventMode = EventMode.NEW,
+                                programUid = it,
+                            )
+                        }
                     },
                     onFailure = { d2Error ->
-                        view.displayMessage(d2ErrorUtils.getErrorMessage(d2Error))
+                        withContext(dispatcher.ui()) {
+                            view.displayMessage(d2ErrorUtils.getErrorMessage(d2Error))
+                        }
                     },
                 )
             }

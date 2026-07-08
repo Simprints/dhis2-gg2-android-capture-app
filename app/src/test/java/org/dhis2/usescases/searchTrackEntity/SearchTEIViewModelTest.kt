@@ -364,6 +364,7 @@ class SearchTEIViewModelTest {
     fun `Should use callback to perform min attributes warning`() =
         runTest {
             setCurrentProgram(testingProgram(displayFrontPageList = false))
+            setAllowCreateBeforeSearch(false)
             viewModel.onSearch()
             viewModel.searchParametersUiState.shouldShowMinAttributeWarning.test {
                 assertTrue(awaitItem())

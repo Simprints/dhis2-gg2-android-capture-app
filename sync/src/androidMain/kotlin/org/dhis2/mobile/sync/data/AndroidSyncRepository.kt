@@ -23,9 +23,11 @@ import org.dhis2.mobile.commons.providers.TEI_MAX
 import org.dhis2.mobile.commons.providers.TEI_MAX_DEFAULT
 import org.dhis2.mobile.commons.reporting.AnalyticActions
 import org.dhis2.mobile.sync.model.DataSyncProgressStatus
+import org.dhis2.mobile.sync.model.SMSConfigResult
 import org.dhis2.mobile.sync.model.SyncResult
 import org.dhis2.mobile.sync.model.toSyncPeriod
 import org.hisp.dhis.android.core.D2
+import org.hisp.dhis.android.core.D2Manager
 import org.hisp.dhis.android.core.arch.call.D2ProgressStatus
 import org.hisp.dhis.android.core.arch.call.D2ProgressSyncStatus
 import org.hisp.dhis.android.core.common.State
@@ -193,6 +195,43 @@ class AndroidSyncRepository(
             .blockingSet(stackTrace)
     }
 
+    override suspend fun isLoggedIn() = D2Manager.isD2Instantiated() && d2.userModule().blockingIsLogged()
+
+    override suspend fun isServerAvailable(syncJobName: String): Boolean {
+        val isServerAvailable =
+            try {
+                d2.systemInfoModule().ping().blockingGet()
+                true
+            } catch (e: Exception) {
+                false
+            }
+
+        return isServerAvailable
+    }
+
+    override suspend fun setUnnavailableFlag(syncJobName: String) {
+        d2
+            .dataStoreModule()
+            .localDataStore()
+            .value(syncJobName)
+            .blockingSet("unavailable")
+    }
+
+    override suspend fun removeUnnavailableFlag(syncJobName: String) {
+        d2
+            .dataStoreModule()
+            .localDataStore()
+            .value(syncJobName)
+            .blockingDeleteIfExist()
+    }
+
+    override suspend fun isPeriodicJobFlagged(syncJobName: String): Boolean =
+        d2
+            .dataStoreModule()
+            .localDataStore()
+            .value(syncJobName)
+            .blockingExists()
+
     private suspend fun syncResult(): SyncResult {
         val eventsOk =
             d2
@@ -280,36 +319,74 @@ class AndroidSyncRepository(
             Result.success(Unit)
         }
 
-    override suspend fun setUpSMS(): Result<Unit> =
+    override suspend fun setUpSMS(): Result<SMSConfigResult> =
         execute {
-            d2.settingModule().generalSetting().blockingGet()?.let { globalSettings ->
-                globalSettings
-                    .smsGateway()
-                    ?.let {
-                        d2
-                            .smsModule()
-                            .configCase()
-                            .setGatewayNumber(it)
-                            .blockingAwait()
-                    }
-                globalSettings.smsResultSender()?.let {
-                    d2
-                        .smsModule()
-                        .configCase()
-                        .setConfirmationSenderNumber(it)
-                        .blockingAwait()
-                }
+            val smsConfig =
                 d2
                     .smsModule()
                     .configCase()
-                    .setModuleEnabled(true)
+                    .getSmsModuleConfig()
+                    .blockingGet()
+            val isEnabled = smsConfig.isModuleEnabled
+
+            var result: SMSConfigResult = SMSConfigResult.DoNothing
+            d2.settingModule().generalSetting().blockingGet()?.let { globalSettings ->
+                val gateway = globalSettings.smsGateway()
+
+                if (gateway.isNullOrEmpty().not()) {
+                    d2
+                        .smsModule()
+                        .configCase()
+                        .setGatewayNumber(gateway)
+                        .blockingAwait()
+                    if (!isEnabled) {
+                        result = SMSConfigResult.EnableModule
+                    }
+                } else {
+                    d2
+                        .smsModule()
+                        .configCase()
+                        .deleteGatewayNumber()
+                        .blockingAwait()
+                    if (isEnabled) {
+                        result = SMSConfigResult.DisableModule
+                    }
+                }
+
+                d2
+                    .smsModule()
+                    .configCase()
+                    .setConfirmationSenderNumber(globalSettings.smsResultSender())
                     .blockingAwait()
+            }
+            Result.success(result)
+        }
+
+    override suspend fun toggleSMS(enable: Boolean): Result<Unit> =
+        execute {
+            val currentStatus =
+                d2
+                    .smsModule()
+                    .configCase()
+                    .getSmsModuleConfig()
+                    .blockingGet()
+                    .isModuleEnabled
+            if (currentStatus != enable) {
+                d2
+                    .smsModule()
+                    .configCase()
+                    .setModuleEnabled(enable)
+                    .blockingAwait()
+            }
+
+            if (currentStatus.not() && enable) {
                 d2
                     .smsModule()
                     .configCase()
                     .refreshMetadataIds()
                     .blockingAwait()
             }
+
             Result.success(Unit)
         }
 

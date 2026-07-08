@@ -1,9 +1,13 @@
 package org.dhis2.mobile.sync.domain
 
 import org.dhis2.mobile.commons.domain.UseCase
+import org.dhis2.mobile.commons.error.DomainError
 import org.dhis2.mobile.sync.data.SyncBackgroundJobAction
 import org.dhis2.mobile.sync.data.SyncRepository
+import org.dhis2.mobile.sync.model.SMSConfigResult
 import org.dhis2.mobile.sync.model.SyncPeriod
+
+private const val SYNC_METADATA_NAME = "SYNC_METADATA"
 
 class SyncMetadata(
     private val repository: SyncRepository,
@@ -11,6 +15,14 @@ class SyncMetadata(
 ) : UseCase<(progress: Int) -> Unit, Unit> {
     override suspend fun invoke(input: (progress: Int) -> Unit): Result<Unit> =
         try {
+            when (repository.isServerAvailable(SYNC_METADATA_NAME)) {
+                true -> repository.removeUnnavailableFlag(SYNC_METADATA_NAME)
+                false -> {
+                    repository.setUnnavailableFlag(SYNC_METADATA_NAME)
+                    return Result.failure(DomainError.NetworkError("Server not available"))
+                }
+            }
+
             val initialMetadataSyncPeriod = repository.currentMetadataSyncPeriod()
             val initialDataSyncPeriod = repository.currentDataSyncPeriod()
 
@@ -22,7 +34,14 @@ class SyncMetadata(
             if (syncMetadataResult.isSuccess) {
                 repository.updateProjectAnalytics()
                 input(40)
-                repository.setUpSMS()
+                val smsConfigResult = repository.setUpSMS().getOrDefault(SMSConfigResult.DoNothing)
+                when (smsConfigResult) {
+                    SMSConfigResult.DisableModule -> repository.toggleSMS(false)
+                    SMSConfigResult.EnableModule -> repository.toggleSMS(true)
+                    SMSConfigResult.DoNothing -> {
+                        // no-op
+                    }
+                }
                 input(50)
                 repository.downloadMapMetadata()
                 input(60)
