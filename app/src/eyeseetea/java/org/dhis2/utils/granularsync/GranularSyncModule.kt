@@ -38,40 +38,50 @@ import org.dhis2.commons.sync.SyncContext
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.dhislogic.DhisProgramUtils
 import org.dhis2.data.service.workManager.WorkManagerController
-import org.dhis2.form.di.Injector.provideDispatchers
+import org.dhis2.utils.granularsync.data.GranularSyncRepository
+import org.dhis2.utils.granularsync.ui.SyncUiStateMapper
 import org.hisp.dhis.android.core.D2
 
 @Module
 class GranularSyncModule(
     private val context: Context,
     private val view: GranularSyncContracts.View,
-    private val syncContext: SyncContext
+    private val syncContext: SyncContext,
 ) {
+    @Provides
+    fun provideSyncUiStateMapper(resourceManager: ResourceManager): SyncUiStateMapper =
+        SyncUiStateMapper(syncContext, resourceManager)
+
     @Provides
     fun providesViewModelFactory(
         d2: D2,
         schedulerProvider: SchedulerProvider,
         workManagerController: WorkManagerController,
         smsSyncProvider: SMSSyncProvider,
-        repository: GranularSyncRepository
-    ): GranularSyncViewModelFactory {
-        return GranularSyncViewModelFactory(
+        repository: GranularSyncRepository,
+        mapper: SyncUiStateMapper,
+    ): GranularSyncViewModelFactory =
+        GranularSyncViewModelFactory(
             d2,
             view,
             repository,
             schedulerProvider,
-            object : DispatcherProvider {
-                override fun io() = Dispatchers.IO
-
-                override fun computation() = Dispatchers.Default
-
-                override fun ui() = Dispatchers.Main
-            },
+            provideDispatchers(),
             syncContext,
             workManagerController,
-            smsSyncProvider
+            smsSyncProvider,
+            mapper,
         )
-    }
+
+    @Provides
+    fun provideDispatchers() =
+        object : DispatcherProvider {
+            override fun io() = Dispatchers.IO
+
+            override fun computation() = Dispatchers.Default
+
+            override fun ui() = Dispatchers.Main
+        }
 
     @Provides
     fun granularSyncRepository(
@@ -79,23 +89,26 @@ class GranularSyncModule(
         dhisProgramUtils: DhisProgramUtils,
         periodUtils: DhisPeriodUtils,
         preferenceProvider: PreferenceProvider,
-        resourceManager: ResourceManager
-    ): GranularSyncRepository = GranularSyncRepository(
-        d2,
-        syncContext,
-        preferenceProvider,
-        dhisProgramUtils,
-        periodUtils,
-        resourceManager,
-        provideDispatchers(),
-    )
-
-    @Provides
-    fun smsSyncProvider(d2: D2, colorUtils: ColorUtils): SMSSyncProvider {
-        return SMSSyncProviderImpl(
+        resourceManager: ResourceManager,
+    ): GranularSyncRepository =
+        GranularSyncRepository(
             d2,
             syncContext,
-            ResourceManager(context, colorUtils)
+            preferenceProvider,
+            dhisProgramUtils,
+            periodUtils,
+            resourceManager,
+            provideDispatchers(),
         )
-    }
+
+    @Provides
+    fun smsSyncProvider(
+        d2: D2,
+        colorUtils: ColorUtils,
+    ): SMSSyncProvider =
+        SMSSyncProviderImpl(
+            d2,
+            syncContext,
+            ResourceManager(context, colorUtils),
+        )
 }
