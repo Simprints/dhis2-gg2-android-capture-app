@@ -258,6 +258,9 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
                 )
                 val eventCount by presenter.events.map { it.count() }.observeAsState(0)
 
+                // EyeSeeTea customization - avoid calls to database in recompositions
+                val teiCanBeTransferred by dashboardViewModel.teiCanBeTransferredState.collectAsState(initial = false)
+
                 val syncInfoBar = dashboardModel.takeIf { it is DashboardEnrollmentModel }?.let {
                     infoBarMapper.map(
                         infoBarType = InfoBarType.SYNC,
@@ -320,7 +323,6 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
                     presenter.fetchEvents()
                 }
 
-
                 val isUnderAgeThreshold = dashboardModel?.let {
                     if (it is DashboardEnrollmentModel) {
                         isUnderAgeThreshold(
@@ -348,7 +350,9 @@ class TEIDataFragment : FragmentGlobalAbstract(), TEIDataContracts.View {
                     quickActions = (dashboardModel as? DashboardEnrollmentModel)?.let {
                         quickActionsMapper.map(
                             it,
-                            dashboardViewModel.checkIfTeiCanBeTransferred(),
+                            // EyeSeeTea customization - avoid calls to database in recompositions
+                            // dashboardViewModel.checkIfTeiCanBeTransferred(),
+                            teiCanBeTransferred,
                         ) { quickActionType ->
                             onQuickAction(quickActionType)
                         }
