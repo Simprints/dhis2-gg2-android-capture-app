@@ -18,13 +18,16 @@ This file is not for:
 ## Header
 
 - Client: `simprints`
-- Target version: `3.4`
+- Target version: `3.4.1`
 - Base branch: `develop-eyeseetea`
 - Base commit at onboarding time: `73a7eb8f0fcc127d37d8887144673e480c4d5b93`
+- Base commit updated to: `938b819597` (`develop-eyeseetea` after upgrade 3.4.1, PR #323)
 - Current merge-base with upgrade branch: `d87193d003a0acccc53914f88026719df6fe8fc3`
-- Upgrade branch: `feature-simprints/upgrade_3.4`
+- Upgrade branch: `feature-simprints/upgrade_3.4.1` (renamed from `feature-simprints/upgrade_3.4`)
 - Started on: `2026-05-12`
 - Status: `in_progress`
+
+Note: a first merge attempt against `develop-eyeseetea@73a7eb8f0f` (3.4) was aborted before commit, with no changes to `eyeseetea-docs/` — restarting the merge against `develop-eyeseetea@938b819597` (3.4.1) instead.
 
 ## Progress
 

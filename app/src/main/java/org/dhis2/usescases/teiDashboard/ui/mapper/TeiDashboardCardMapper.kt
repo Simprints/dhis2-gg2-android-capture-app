@@ -86,7 +86,7 @@ class TeiDashboardCardMapper(
     }
 
     private fun getTitle(item: DashboardModel): String {
-        // EyeSeeTea customization
+        // EyeSeeTea customization - Simprints biometrics in enrollment, TEI dashboard, and TEI form
         /* when {
             item.teiHeader != null -> item.teiHeader!!
             item is DashboardEnrollmentModel ->
@@ -172,7 +172,8 @@ class TeiDashboardCardMapper(
                 }
             }.toMutableList()
 
-        // // EyeSeeTea customization - not remove first item
+        // EyeSeeTea customization - Simprints biometrics in enrollment, TEI dashboard, and TEI form
+        // Simprints behavior: not remove first item
         /*        if (item.teiHeader == null) {
                     attributesList.removeFirstOrNull()
                 }*/
@@ -305,7 +306,7 @@ class TeiDashboardCardMapper(
             .filter { it.first.valueType() != ValueType.COORDINATE }
             .filter { it.first.valueType() != ValueType.FILE_RESOURCE }
             //.filter { it.second.value()?.isNotEmpty() == true }
-            //EyeSeeTea customization
+            // EyeSeeTea customization - Simprints biometrics in enrollment, TEI dashboard, and TEI form
             .filter {
                 it.second.value()?.isNotEmpty() == true || it.first.displayFormName()
                     ?.isBiometricText() == true || it.first.displayFormName()

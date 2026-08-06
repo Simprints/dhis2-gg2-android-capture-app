@@ -38,7 +38,7 @@ sealed class LegacyInteraction(
         val online: Boolean,
     ) : LegacyInteraction(LegacyInteractionID.ON_TEI_CLICK)
 
-    // EyeSeeTea customization
+    // EyeSeeTea customization - Simprints biometric search and duplicate resolution flow
     // Alternative interaction to the official to pass the SearchTeiModel
     data class OnSearchTeiModelClick(val item: SearchTeiModel) :
         LegacyInteraction(LegacyInteractionID.ON_SEARCH_TEI_MODEL_CLICK)

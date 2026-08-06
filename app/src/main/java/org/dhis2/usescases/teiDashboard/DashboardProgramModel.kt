@@ -60,7 +60,7 @@ data class DashboardEnrollmentModel(
             .filter { it.first.uid() != currentEnrollment.program() }
             .map { it.first }
 
-    // EyeSeeTea customizations
+    // EyeSeeTea customization - Simprints biometrics platform integration
     fun getBiometricValue(): String? {
         val biometricUid = getBiometricsAttributeUid()
 

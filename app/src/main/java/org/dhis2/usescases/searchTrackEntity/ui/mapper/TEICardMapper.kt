@@ -111,7 +111,8 @@ class TEICardMapper(
     }
 
     private fun getTitleFirstLetter(item: SearchTeiModel): String {
-        // EyeSeeTea customization - shoe first letter of first name and last name
+        // EyeSeeTea customization - Simprints biometrics in enrollment, TEI dashboard, and TEI form
+        // Simprints behavior: show first letter of first name and last name
         /*val firstLetter =
             item.header?.firstOrNull()
                 ?: item.attributeValues.values
@@ -159,7 +160,8 @@ class TEICardMapper(
             attributeList.removeFirstOrNull()
         }
 
-        // EyeSeeTea customization - only remove non biometric empty attributes
+        // EyeSeeTea customization - Simprints biometrics in enrollment, TEI dashboard, and TEI form
+        // Simprints behavior: only remove non biometric empty attributes
         //attributeList.removeIf { it.value.isEmpty() || it.value == "-" }
         attributeList.removeIf { it.key!!.isNotBiometricText() && it.key!!.isNotNhisNumberText() && (it.value.isEmpty() || it.value == "-") }
 
@@ -168,7 +170,7 @@ class TEICardMapper(
             searchTEIModel.allAttributeValues.values.toList()
         )
 
-        // EyeSeeTea customization
+        // EyeSeeTea customization - Simprints biometrics in enrollment, TEI dashboard, and TEI form
         val listWithBiometricsIcons =
             addAttrBiometricsEmojiIfRequired(attributeList, isUnderAgeThreshold).toMutableList()
 
@@ -502,7 +504,7 @@ class TEICardMapper(
         )
     }
 
-    // EyeSeeTea customization
+    // EyeSeeTea customization - Simprints biometrics in enrollment, TEI dashboard, and TEI form
     val firstNameAttrUid = "y1w2R6leVmh"
     val middleNameAttrUid = "Rslz2y06aBf"
     val lastNameAttrUid = "eo3A0YXVBqr"
