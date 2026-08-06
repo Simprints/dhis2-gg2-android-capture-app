@@ -7,6 +7,7 @@ import io.reactivex.Completable
 import io.reactivex.Observable
 import kotlinx.coroutines.runBlocking
 import org.dhis2.commons.bindings.enrollment
+import org.dhis2.commons.bindings.event
 import org.dhis2.commons.bindings.program
 import org.dhis2.commons.date.DateUtils
 import org.dhis2.commons.prefs.Preference.Companion.EVENT_MAX
@@ -57,13 +58,13 @@ class SyncPresenterImpl(
 
     override fun syncGranularEvent(eventUid: String): Observable<D2Progress> {
         Completable.fromObservable(syncRepository.uploadEvent(eventUid)).blockingAwait()
-        return syncRepository
-            .downLoadEvent(eventUid)
-            .map { it as D2Progress }
-            // EyeSeeTea fix - granular sync race: image download can run before the event data
-            // is persisted and skip missing FileResources (Oslo ANDROAPP-7661, introduced 3.1.0).
-            // Remove when Oslo serializes data and file downloads in granular sync.
-            .concatWith(syncRepository.downloadEventFiles(eventUid))
+        val programUid = d2.event(eventUid)?.program()
+        return programUid?.let {
+            syncRepository
+                .downLoadEvent(eventUid, programUid)
+                .map { it as D2Progress }
+                .concatWith(syncRepository.downloadEventFiles(eventUid))
+        } ?: Observable.empty()
     }
 
     override fun blockSyncGranularProgram(programUid: String): ListenableWorker.Result {
@@ -183,9 +184,6 @@ class SyncPresenterImpl(
                 syncRepository.downloadEventProgram(uid)
             }
         }?.map { it as D2Progress }
-            // EyeSeeTea fix - granular sync race: image download can run before the program data
-            // is persisted and skip missing FileResources (Oslo ANDROAPP-7661, introduced 3.1.0).
-            // Remove when Oslo serializes data and file downloads in granular sync.
             ?.concatWith(syncRepository.downloadProgramFiles(uid))
             ?: Observable.empty()
 
@@ -200,10 +198,9 @@ class SyncPresenterImpl(
         return syncRepository
             .downloadTei(teiUid, programUid)
             .map { it as D2Progress }
-            // EyeSeeTea fix - granular sync race: image download can run before the TEI data
-            // is persisted and skip missing FileResources (Oslo ANDROAPP-7661, introduced 3.1.0).
-            // Remove when Oslo serializes data and file downloads in granular sync.
-            .concatWith(syncRepository.downloadTeiFiles(teiUid, programUid))
+            .concatWith(
+                syncRepository.downloadTeiFiles(teiUid, programUid),
+            )
     }
 
     override fun syncGranularDataSet(uid: String): Observable<D2Progress> =
