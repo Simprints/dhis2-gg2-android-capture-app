@@ -72,6 +72,4 @@ Patches for Oslo regressions that affect all forks. Each entry documents the tic
 | Fix | Ticket | Introduced | File | Retire when |
 |-----|--------|------------|------|-------------|
 | TEI search blank value filter | ANDROAPP-6844 | 3.3.0 | `SearchTEIViewModel.kt` — `updateQuery()` | Oslo fixes the empty-value guard in `updateQuery()` |
-| Stale search results on new search | no Oslo ticket | pre-3.3.1 | `SearchTEList.kt` — `initData()`, `addLoadStateListener` | Oslo clears liveAdapter when searchPagingData emits new data |
-| Granular sync image download race | ANDROAPP-7661 | 3.1.0 | `SyncPresenterImpl.kt` — `syncGranularEvent()`, `syncGranularProgram()`, `syncGranularTEI()` | Oslo serializes data and file downloads in granular sync (no longer `mergeWith`) |
 | "Mark as complete?" dialog always shown for completed events | ANDROAPP-7666 | 3.3.1 | `FormViewModel.kt` — `showDataEntryResultDialogDeprecated()`, `EventStatus.COMPLETED` branch | Oslo returns `FormActions.OnFinish` for completed events with no issues |
