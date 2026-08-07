@@ -29,6 +29,8 @@ This file is not for:
 
 Note: a first merge attempt against `develop-eyeseetea@73a7eb8f0f` (3.4) was aborted before commit, with no changes to `eyeseetea-docs/` — restarting the merge against `develop-eyeseetea@938b819597` (3.4.1) instead.
 
+Note: onboarding Phases 4-5 completed 2026-08-07 (OpenSpec specs for the 13 active customizations, `openspec/config.yaml`, root `CLAUDE.md`, `.claude/` scaffolding). The upgrade proposal `openspec/changes/upgrade-to-3-4-1/` was created the same day (`proposal.md`, `design.md`, `tasks.md`) and is the authoritative plan for this merge — this file continues to track temporary, session-level progress and conflict decisions per its own Purpose. Merge itself is starting now.
+
 ## Progress
 
 - baseline prepared: `yes`
@@ -119,6 +121,36 @@ Note: a first merge attempt against `develop-eyeseetea@73a7eb8f0f` (3.4) was abo
 - `d87193d003a0acccc53914f88026719df6fe8fc3` is the current `merge-base` with `feature-simprints/upgrade_3.4`.
 - Use the branch head when describing the intended 3.4 baseline reference.
 - Use the merge-base when reviewing unexplained shared drift or reconstructing what diverged on the Simprints branch.
+
+## WIDP leftovers inherited by this branch
+
+Verified 2026-08-07, before starting the 3.4.1 merge.
+
+This branch carries WIDP customizations it never used, inherited through the
+historical merge `f81f1dc3f3` (`origin/feature-widp/bring_last_changes_3_3_0_1`
+into `feature-simprints/bring_last_changes_3_3_0_1`). Files that exist here but
+not in `develop-eyeseetea` include:
+
+- `login/src/commonMain/kotlin/org/dhis2/mobile/login/main/domain/model/TwoFactorRequiredException.kt`
+- `login/src/commonMain/kotlin/org/dhis2/mobile/login/main/domain/model/TwoFactorState.kt`
+- `login/src/androidInstrumentedTest/kotlin/screen/TwoFAToEnableScreenTest.kt`
+- `commonskmm/.../auth/OpenIdController.kt`, `OpenIdControllerImpl.kt`
+- plus 2FA-related blocks inside shared files (`CredentialsViewModel.kt`,
+  `CredentialsScreen.kt`, `LoginRepositoryImpl.kt`, `LoginResult.kt`)
+
+Context: `develop-eyeseetea` was created from `develop-widp` (the cleanest fork
+at the time) and had the WIDP customizations deliberately removed. The removal
+is recorded in baseline history as `87c5da0109 "Remove 2factor customization"`.
+
+Decision: **do not delete these manually before the merge.** `87c5da0109` is an
+ancestor of `develop-eyeseetea@938b819597` but not of this branch, so the 3.4.1
+merge itself will bring the deletion through a normal three-way merge — the same
+way baseline was cleaned. This is the correct mechanism, not an accident.
+
+Caveat to verify after merging (tasks 3.3 and 7.1): the deletion may surface as a
+real conflict rather than a silent auto-delete, because Simprints pulled upstream
+and WIDP bring-forward merges that touched the same files after that point.
+Confirm the files are actually gone post-merge; do not assume.
 
 ## Open Questions
 
