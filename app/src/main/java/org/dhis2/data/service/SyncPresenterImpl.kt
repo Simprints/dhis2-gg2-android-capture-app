@@ -827,7 +827,7 @@ class SyncPresenterImpl(
         } ?: analyticsHelper.clearMatomoSecondaryTracker()
     }
 
-    // EyeSeeTea customization - Simprints biometrics configuration sync and selection
+    // EyeSeeTea customization - Biometrics Configuration Selection Per Program Or Org Unit Group
     private val job = Job()
     private val presenterScope = CoroutineScope(Dispatchers.Main + job)
 

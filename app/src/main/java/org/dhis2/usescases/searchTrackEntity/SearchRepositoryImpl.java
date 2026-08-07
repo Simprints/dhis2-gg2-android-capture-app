@@ -1050,7 +1050,7 @@ public class SearchRepositoryImpl implements SearchRepository {
                 .blockingCount() > 1;
     }
 
-    // EyeSeeTea customization - Simprints biometric verification and result handling
+    // EyeSeeTea customization - Biometric Verification Persistence
     @Override
     public void updateAttributeValue(String teiUid, String biometricUid, String guid) {
         updateBiometricsAttributeValue(d2, preferenceProvider, teiUid, guid);

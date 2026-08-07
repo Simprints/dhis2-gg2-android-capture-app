@@ -174,7 +174,7 @@ class SearchTEList : FragmentGlobalAbstract() {
                     savedInstanceState?.getString(KEY_LAST_CLICKED_TEI_UID)
                 )
                 configureOpenSearchButton(openSearchButton)
-                // EyeSeeTea customization - Simprints biometric search and duplicate resolution flow
+                // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
                 configureCreateButton(createButton)
                 configureSequentialSearchNextAction(nextActions)
                 configureBiometricsLoader(biometricsLoader)

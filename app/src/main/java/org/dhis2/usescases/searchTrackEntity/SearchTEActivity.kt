@@ -836,7 +836,7 @@ class SearchTEActivity :
         }
 
     override fun launchBiometricsIdentify(moduleId: String?, userOrgUnits: List<String>) {
-        // EyeSeeTea customization - Simprints biometric search and duplicate resolution flow
+        // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
         // Simprints behavior: hide RecyclerView before launching biometric app
         viewModel.notifyBiometricAppLaunching()
         BiometricsClientFactory.get(this).identify(this, moduleId, userOrgUnits)

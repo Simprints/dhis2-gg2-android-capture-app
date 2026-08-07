@@ -36,6 +36,6 @@ interface TeiDataRepository {
 
     fun programOrgListInCaptureScope(programUid: String): List<OrganisationUnit>
 
-    // EyeSeeTea customization - Simprints biometric verification and result handling
+    // EyeSeeTea customization - Biometric Verification Persistence
     fun updateBiometricsAttributeValueInTei(value: String, parentTeiUid:String? = null)
 }

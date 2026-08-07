@@ -293,7 +293,7 @@ class TeiDashboardMobileActivity :
     }
 
     private fun setFormViewForLandScape() {
-        // EyeSeeTea customization - Simprints biometrics in enrollment, TEI dashboard, and TEI form
+        // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
         // form contain a lot of biometrics customizations in enrollment presenter
         // To avoid duplicate logic, here hide form in landscape mode. It will be shown only in EnrollmentActivity
         if (isLandscape() && enrollmentUid != null) {

@@ -50,7 +50,7 @@ Commit note:
 
 ## 2. Shared-code customization implementation points
 
-### 2.1 Simprints biometrics platform integration
+### 2.1 Biometric Search Integration
 
 Status: `active`
 
@@ -72,7 +72,7 @@ Supporting files in the same workflow:
 Technical note:
 - Large Simprints-specific biometrics surface including client, config API, SID models, TEI attribute helpers, duplicates dialog, sequential search helpers, and dashboard mappers. This is the clearest active customization area in the fork.
 
-### 2.2 Simprints biometrics configuration sync and selection
+### 2.2 Biometrics Configuration Selection Per Program Or Org Unit Group
 
 Status: `active`
 
@@ -92,7 +92,7 @@ Supporting files in the same workflow:
 Technical note:
 - The fork downloads a list of biometrics configurations, stores them locally, and chooses one active configuration when the user enters a program. Selection precedence is `program` first, then matching `orgUnitGroup`, then `default`. A `default` config is required and absence is treated as an error. The chosen configuration is flattened into preferences and drives `projectId`, `biometricsMode`, thresholds, module-id logic, verification duration, and TE type identification behavior.
 
-### 2.3 Simprints biometrics mode behavior per program
+### 2.3 Biometrics Mode Controls Per Program
 
 Status: `active`
 
@@ -111,7 +111,7 @@ Supporting files in the same workflow:
 Technical note:
 - `ProgramViewModel` applies the selected config before navigating into a program. The active `biometricsMode` then affects downstream behavior: `full` enables biometric search and registration paths, `limited` removes biometric registration UI while preserving some biometric handling, and `zero` suppresses biometric UI/actions such as dashboard biometrics cards.
 
-### 2.4 Simprints age-threshold behavior for biometrics
+### 2.4 Age Threshold Controls For Biometrics
 
 Status: `active`
 
@@ -130,7 +130,7 @@ Supporting files in the same workflow:
 Technical note:
 - The fork computes age in months from the configured date-of-birth attribute and compares it to `ageThresholdMonths`. Below the threshold, search skips the biometric next-action path, dashboard biometrics actions are suppressed, enrollment biometric UI is flagged as under-threshold, and card rendering shows `Not Applicable` for missing biometrics instead of a negative marker.
 
-### 2.5 Configurable date-of-birth attribute for biometrics
+### 2.5 Configurable Date Of Birth Attribute For Biometrics
 
 Status: `active`
 
@@ -148,7 +148,7 @@ Supporting files in the same workflow:
 Technical note:
 - `dateOfBirthAttribute` is stored as part of the selected biometrics config and acts as the attribute UID to read birth date from query data, TEI attributes, and enrollment form fields. It is the anchor used by all age-threshold decisions.
 
-### 2.6 Confidence score filtering for Simprints matches
+### 2.6 Confidence Score Filtering For Simprints Matches
 
 Status: `active`
 
@@ -167,7 +167,7 @@ Supporting files in the same workflow:
 Technical note:
 - `confidenceScoreFilter` is stored in the selected config and passed into `BiometricsClient`. Identification results are filtered by numeric confidence except for credential-linked matches, and verification results are only accepted as matches when their confidence meets the threshold. The filtering lives in `BiometricsClient.handleIdentifyResponse()` and `BiometricsClient.handleVerifyResponse()`, so downstream search and dashboard code consume already-normalized result models.
 
-### 2.7 Org-unit-derived module id for Simprints
+### 2.7 Org Unit Derived Module Id For Simprints
 
 Status: `active`
 
@@ -187,7 +187,7 @@ Supporting files in the same workflow:
 Technical note:
 - `orgUnitLevelAsModuleId` is stored in the selected config and used to transform organisation unit context into the `moduleId` sent to Simprints. For single-org-unit flows it walks the org unit path with a relative offset and clamps to level 4; for multi-org-unit search identify it tries to compute a unique shared level-4 parent and falls back to `BiometricsClient.DefaultModuleId` if no single parent exists.
 
-### 2.8 Relationship-search identification toggle by TE type
+### 2.8 Relationship Search Identification Toggle By TE Type
 
 Status: `active`
 
@@ -205,7 +205,7 @@ Supporting files in the same workflow:
 Technical note:
 - `enableIdentificationForTET` is persisted in the selected config and is used only in relationship-driven search. In that context, biometric search is enabled only when the current tracked entity type UID matches the configured `enableIdentificationForTET` value.
 
-### 2.9 Simprints biometric search and duplicate resolution flow
+### 2.9 Biometric Duplicate Review And Confirm Identity
 
 Status: `active`
 
@@ -228,7 +228,7 @@ Supporting files in the same workflow:
 Technical note:
 - Search behavior is tightly coupled to the Simprints biometric app and duplicate handling. `BiometricsClient.handleIdentifyResponse()` keeps credential-linked matches even when below the confidence threshold, and the duplicate flow can branch into confirm identity, open existing TEI dashboard, or `registerLast` for new enrollment completion. `BiometricsDuplicatesDialogPresenter` resolves duplicate candidates by issuing a normal DHIS2 search on the biometrics attribute UID with the Simprints GUID list. Several files already carry `EyeSeeTea customization` comments that point to active fork behavior.
 
-### 2.10 Simprints biometrics in enrollment, TEI dashboard, and TEI form
+### 2.10 Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
 
 Status: `active`
 
@@ -251,7 +251,7 @@ Supporting files in the same workflow:
 Technical note:
 - Simprints extends enrollment, TEI form, dashboard, and search-card workflows with biometric status, actions, attribute handling, and registration/verification mapping. In enrollment/TEI form the active behavior is registration, duplicate handling, and `registerLast`; verification is not driven from the form flow. In TEI dashboard there are both registration and verification flows. `TEICardMapper` preserves biometrics and NHIS rows even when other empty attributes are hidden, decorates those rows with custom markers, and derives avatar initials from first-name/last-name attributes. This looks like core product behavior, not upgrade drift.
 
-### 2.11 Simprints biometric verification and result handling
+### 2.11 Biometric Verification Persistence
 
 Status: `active`
 
@@ -271,7 +271,7 @@ Supporting files in the same workflow:
 Technical note:
 - This area covers the fork-specific path that sends data to Simprints, receives verification/identification results, and maps those results back into DHIS2 attributes and TEI state.
 
-### 2.12 Simprints client metadata and response contract
+### 2.12 Simprints Data Exchange And Mapping
 
 Status: `active`
 
@@ -294,7 +294,7 @@ Supporting files in the same workflow:
 Technical note:
 - `BiometricsClientFactory` creates the client from the currently selected biometrics preferences, using the selected `projectId`, the current DHIS2 username, the selected `confidenceScoreFilter`, and `BuildConfig.VERSION_NAME` as `forkVersion`. If preferences are missing, it falls back to hardcoded defaults (`projectId = Ma9wi0IBdo215PKRXOf5`, username `admin`, threshold `0`). `BiometricsClient` then acts as the integration boundary with the external Simprints app: it builds metadata containing `forkVersion`, `trackedEntityInstanceId`, `enrollingOrgUnitId`, `enrollingOrgUnitName`, `userOrgUnits`, and `subjectAge`; injects the backported `versionCode=20250102` extra to force JSON responses; and converts Simprints registration, identify, verify, confirm-identity, and `registerLast` responses into DHIS2-side result models, including scanned credential propagation when present.
 
-### 2.13 Time-based verification and declined-enrol windows
+### 2.13 Time-Based Verification And Registration Failure Windows
 
 Status: `active`
 
@@ -312,7 +312,12 @@ Supporting files in the same workflow:
 Technical note:
 - `lastVerificationDuration` defines how long a saved verification remains valid before the app drops it from active verification state. `lastDeclinedEnrolDuration` defines how long failed/declined registration state remains before the UI clears it automatically in enrollment and dashboard flows.
 
-### 2.14 Areas that should be removed during merge
+## 3. Areas explicitly out of scope for preservation
+
+This section documents differences that are intentionally **not** modeled as
+active customizations and have no matching `openspec/specs/` entry — they are
+recorded here so the merge removes them deliberately instead of by accident.
+See `openspec/config.yaml` ("Out of scope for OpenSpec") for the same list.
 
 Status: `removed`
 
@@ -333,8 +338,7 @@ Main implementation points:
 Technical note:
 - These differences are explicitly not part of the Simprints customization scope to preserve. During the merge with `develop-eyeseetea`, login/OpenID/2FA, notifications, change server URL, and granular sync flavor wiring should be removed rather than ported.
 
-
-## 3. Shared drift still differing
+## 4. Shared drift still differing
 
 Use this section only for temporary or still-unclassified differences.
 
@@ -349,7 +353,7 @@ Current candidates:
 - `settings.gradle.kts` - differs heavily in this fork and will need classification against the EyeSeeTea local-SDK/composite-build baseline
 - `gradle/libs.versions.toml` - likely mixes flavor release identity with technical dependency drift
 
-## 4. Notes
+## 5. Notes
 
 - This inventory reflects the current branch state only.
 - The source of truth for functional titles is `openspec/specs/<capability>/spec.md`. Each spec starts with a `# <Title>` line; that `<Title>` is the exact string to use here as a section heading and in `// EyeSeeTea customization - [Title]` code comments.

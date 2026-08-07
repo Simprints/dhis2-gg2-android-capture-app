@@ -56,7 +56,7 @@
             app:layout_anchor="@id/scrollView"
             app:layout_anchorGravity="bottom|center_horizontal" />
 
-        <!-- EyeSeeTea customization - Simprints biometric search and duplicate resolution flow -->
+        <!-- EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity -->
         <!-- Simprints behavior: centered loader shown when RecyclerView is hidden during biometric search -->
         <androidx.compose.ui.platform.ComposeView
             android:id="@+id/biometricsLoader"

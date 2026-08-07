@@ -508,7 +508,7 @@ class SearchTEIViewModelTest {
         viewModel.dataResult.value?.apply {
             assertTrue(isNotEmpty())
             //assertTrue(size == 1)
-            // EyeSeeTea customization - Simprints biometric search and duplicate resolution flow
+            // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
             // Simprints behavior: size includes sequential search message
             assertTrue(size == 2)
             assertTrue(first().type == SearchResultType.TOO_MANY_RESULTS)
@@ -529,7 +529,7 @@ class SearchTEIViewModelTest {
         viewModel.dataResult.value?.apply {
             assertTrue(isNotEmpty())
 
-            // EyeSeeTea customization - Simprints biometric search and duplicate resolution flow
+            // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
             // Simprints behavior: avoid show search outside
             //assertTrue(size == 1)
             assertTrue(size == 2)
@@ -549,7 +549,7 @@ class SearchTEIViewModelTest {
         viewModel.dataResult.value?.apply {
             assertTrue(isNotEmpty())
             //assertTrue(size == 1)
-            // EyeSeeTea customization - Simprints biometric search and duplicate resolution flow
+            // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
             // Simprints behavior: size includes sequential search message
             assertTrue(size == 2)
             assertTrue(first().type == SearchResultType.UNABLE_SEARCH_OUTSIDE)
@@ -565,7 +565,7 @@ class SearchTEIViewModelTest {
         viewModel.dataResult.value?.apply {
             assertTrue(isNotEmpty())
             //assertTrue(size == 1)
-            // EyeSeeTea customization - Simprints biometric search and duplicate resolution flow
+            // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
             // Simprints behavior: size includes sequential search message
             assertTrue(size == 2)
             assertTrue(first().type == SearchResultType.NO_MORE_RESULTS)
@@ -581,7 +581,7 @@ class SearchTEIViewModelTest {
         viewModel.dataResult.value?.apply {
             assertTrue(isNotEmpty())
             assertTrue(size == 1)
-            // EyeSeeTea customization - Simprints biometric search and duplicate resolution flow
+            // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
             // Simprints behavior: include sequential search message
             // assertTrue(first().type == SearchResultType.NO_RESULTS)
             assertTrue(first().type == SearchResultType.SEQUENTIAL_SEARCH)
@@ -610,7 +610,7 @@ class SearchTEIViewModelTest {
         viewModel.dataResult.value?.apply {
             assertTrue(isNotEmpty())
             //assertTrue(size == 1)
-            // EyeSeeTea customization - Simprints biometric search and duplicate resolution flow
+            // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
             // Simprints behavior: size includes sequential search message
             assertTrue(size == 2)
             assertTrue(first().type == SearchResultType.NO_MORE_RESULTS)

@@ -188,7 +188,7 @@ class SearchTEIViewModel(
     private val _isDataLoaded = MutableLiveData<Boolean?>(false)
     val isDataLoaded: MutableLiveData<Boolean?> = _isDataLoaded
 
-    // EyeSeeTea customization - Simprints biometric search and duplicate resolution flow
+    // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
     // Simprints behavior: notify when biometric app is about to be launched to hide RecyclerView
     private val _biometricAppLaunching = MutableLiveData<Boolean>(false)
     val biometricAppLaunching: LiveData<Boolean> = _biometricAppLaunching
@@ -1300,7 +1300,7 @@ class SearchTEIViewModel(
     }
 
 
-    // EyeSeeTea customization - Simprints biometrics mode behavior per program
+    // EyeSeeTea customization - Biometrics Mode Controls Per Program
     fun getBiometricsSearchStatus(): Boolean {
         return presenter.biometricsSearchStatus
     }
@@ -1401,13 +1401,13 @@ class SearchTEIViewModel(
         }
     }
 
-    // EyeSeeTea customization - Simprints biometric search and duplicate resolution flow
+    // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
     // Simprints behavior: notify that biometric app is about to be launched
     fun notifyBiometricAppLaunching() {
         _biometricAppLaunching.postValue(true)
     }
 
-    // EyeSeeTea customization - Simprints biometric search and duplicate resolution flow
+    // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
     // Simprints behavior: reset biometric app launching flag when search completes
     fun resetBiometricAppLaunching() {
         _biometricAppLaunching.postValue(false)

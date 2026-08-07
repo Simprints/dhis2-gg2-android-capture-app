@@ -365,7 +365,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
 
     @Override
     public void onTEIClick(String TEIuid, String enrollmentUid, boolean isOnline) {
-        // EyeSeeTea customization - Simprints biometric search and duplicate resolution flow
+        // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
         // Simprints behavior: we use onSearchTEIModelClick instead
     /*    if(biometricsSearchStatus){
             showBiometricsSearchConfirmation(TEIuid, enrollmentUid, isOnline);
