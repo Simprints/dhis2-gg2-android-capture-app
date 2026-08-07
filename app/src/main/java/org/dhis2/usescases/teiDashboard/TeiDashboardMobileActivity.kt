@@ -3,7 +3,6 @@ package org.dhis2.usescases.teiDashboard
 import android.app.ActivityOptions
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -11,8 +10,10 @@ import android.util.TypedValue
 import android.view.View
 import android.view.WindowManager
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MoveDown
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -23,12 +24,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import org.dhis2.App
 import org.dhis2.R
 import org.dhis2.commons.Constants
@@ -126,7 +131,7 @@ class TeiDashboardMobileActivity :
     var enrollmentUid: String? = null
     var lastBiometricsSearchSessionId: String? = null
     lateinit var binding: ActivityDashboardMobileBinding
-    private lateinit var dashboardViewModel: DashboardViewModel
+    private val dashboardViewModel: DashboardViewModel by viewModels { viewModelFactory }
 
     private var relationshipMap: MutableLiveData<Boolean> = MutableLiveData(false)
 
@@ -195,8 +200,6 @@ class TeiDashboardMobileActivity :
             ).inject(this)
         setTheme(themeManager.getProgramTheme())
         super.onCreate(savedInstanceState)
-        dashboardViewModel =
-            ViewModelProvider(this, viewModelFactory)[DashboardViewModel::class.java]
         binding = DataBindingUtil.setContentView(this, R.layout.activity_dashboard_mobile)
         showLoadingProgress(true)
         binding.presenter = presenter
@@ -236,13 +239,17 @@ class TeiDashboardMobileActivity :
     }
 
     private fun observeDashboardModel() {
-        dashboardViewModel.dashboardModel.observe(this) {
-            if (sessionManagerServiceImpl.isUserLoggedIn()) {
-                when (it) {
-                    is DashboardEnrollmentModel -> setData(it)
-                    is DashboardTEIModel -> setDataWithOutProgram(it)
-                    else -> // Do nothing
-                        Unit
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                dashboardViewModel.dashboardModel.collectLatest {
+                    if (sessionManagerServiceImpl.isUserLoggedIn()) {
+                        when (it) {
+                            is DashboardEnrollmentModel -> setData(it)
+                            is DashboardTEIModel -> setDataWithOutProgram(it)
+                            else -> // Do nothing
+                                Unit
+                        }
+                    }
                 }
             }
         }
@@ -361,8 +368,10 @@ class TeiDashboardMobileActivity :
                     dashboardViewModel.onNavigationItemSelected(itemId)
                 }
 
-                uiState.selectedItem?.let {
-                    navigateToFragment(it)
+                LaunchedEffect(uiState.selectedItem) {
+                    uiState.selectedItem?.let {
+                        navigateToFragment(it)
+                    }
                 }
             }
         }
@@ -376,7 +385,8 @@ class TeiDashboardMobileActivity :
                         programUid,
                         teiUid,
                         enrollmentUid,
-                        lastBiometricsSearchSessionId,
+                        // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
+                        sessionId = lastBiometricsSearchSessionId,
                     )
 
                 TEIDashboardItems.ANALYTICS -> {
@@ -524,7 +534,11 @@ class TeiDashboardMobileActivity :
         if (this.isLandscape()) {
             supportFragmentManager
                 .beginTransaction()
-                .replace(R.id.tei_main_view, newInstance(programUid, teiUid, enrollmentUid, lastBiometricsSearchSessionId))
+                // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
+                .replace(
+                    R.id.tei_main_view,
+                    newInstance(programUid, teiUid, enrollmentUid, sessionId = lastBiometricsSearchSessionId),
+                )
                 .commitAllowingStateLoss()
         }
         val enrollmentStatus =
@@ -587,7 +601,11 @@ class TeiDashboardMobileActivity :
         if (this.isLandscape()) {
             supportFragmentManager
                 .beginTransaction()
-                .replace(R.id.tei_main_view, newInstance(programUid, teiUid, enrollmentUid, lastBiometricsSearchSessionId))
+                // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
+                .replace(
+                    R.id.tei_main_view,
+                    newInstance(programUid, teiUid, enrollmentUid, sessionId = lastBiometricsSearchSessionId),
+                )
                 .commitAllowingStateLoss()
         } else {
             navigateToFragment(TEIDashboardItems.DETAILS)
@@ -640,15 +658,13 @@ class TeiDashboardMobileActivity :
         }
         binding.executePendingBindings()
         setTheme(themeManager.getProgramTheme())
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.LOLLIPOP) {
-            val window = window
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-            val typedValue = TypedValue()
-            val a = obtainStyledAttributes(typedValue.data, intArrayOf(R.attr.colorPrimaryDark))
-            val colorToReturn = a.getColor(0, 0)
-            a.recycle()
-            window.statusBarColor = colorToReturn
-        }
+        val window = window
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+        val typedValue = TypedValue()
+        val a = obtainStyledAttributes(typedValue.data, intArrayOf(R.attr.colorPrimaryDark))
+        val colorToReturn = a.getColor(0, 0)
+        a.recycle()
+        window.statusBarColor = colorToReturn
     }
 
     override fun updateNoteBadge(numberOfNotes: Int) {
@@ -858,6 +874,7 @@ class TeiDashboardMobileActivity :
                         analyticsHelper.setEvent(SHOW_HELP, CLICK, SHOW_HELP)
                         showTutorial(true)
                     }
+
                     EnrollmentMenuItem.ENROLLMENTS -> presenter.onEnrollmentSelectorClick()
                     EnrollmentMenuItem.SHARE -> startQRActivity()
                     EnrollmentMenuItem.ACTIVATE ->
@@ -897,5 +914,5 @@ enum class EnrollmentMenuItem {
     DEACTIVATE,
     COMPLETE,
     DELETE,
-    REMOVE
+    REMOVE,
 }

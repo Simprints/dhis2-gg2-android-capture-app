@@ -64,3 +64,12 @@ The EyeSeeTea flavor uses the APK-file download update flow instead of the URL-b
 ## 5. Only in this repository (not in Oslo)
 
 - **CI/CD:** `.github/workflows/eyeseetea-main.yml`
+
+## 5. Oslo bug fixes active in this baseline
+
+Patches for Oslo regressions that affect all forks. Each entry documents the ticket, affected version, fix location, and retirement condition.
+
+| Fix | Ticket | Introduced | File | Retire when |
+|-----|--------|------------|------|-------------|
+| TEI search blank value filter | ANDROAPP-6844 | 3.3.0 | `SearchTEIViewModel.kt` — `updateQuery()` | Oslo fixes the empty-value guard in `updateQuery()` |
+| "Mark as complete?" dialog always shown for completed events | ANDROAPP-7666 | 3.3.1 | `FormViewModel.kt` — `showDataEntryResultDialogDeprecated()`, `EventStatus.COMPLETED` branch | Oslo returns `FormActions.OnFinish` for completed events with no issues |

@@ -7,13 +7,13 @@
 
 ## 2. Merge and preclassification
 
-- [ ] 2.1 Merge `develop-eyeseetea` into `feature-simprints/upgrade_3.4.1`.
-- [ ] 2.2 Classify direct flavor files (`app/src/simprints/**`, `app/src/simprintsDebug/**`) as `accept_ours`.
-- [ ] 2.3 Classify every file listed in `customization-files.md` section 2 (13 active customizations) — expect `manual_reapply_on_theirs` for most.
-- [ ] 2.4 Classify files listed in `customization-files.md` section 3 (out-of-scope areas: login/2FA, notifications, change server URL, granular sync wiring) as `accept_theirs`.
-- [ ] 2.5 Classify files listed in `customization-files.md` section 4 (shared drift: `app/build.gradle.kts`, `settings.gradle.kts`, `gradle/libs.versions.toml`) as `defer_after_build_verification`.
-- [ ] 2.6 Classify any remaining conflicted file not covered above per `conflict-rules.md` default rules by path; if a real customization surfaces, flag the inventory gap before continuing.
-- [ ] 2.7 Record the preclassification table in `upgrade-3.4-notes.md` per the `conflict-rules.md` temporary format.
+- [x] 2.1 Merge `develop-eyeseetea` into `feature-simprints/upgrade_3.4.1`.
+- [x] 2.2 Classify direct flavor files (`app/src/simprints/**`, `app/src/simprintsDebug/**`) as `accept_ours`.
+- [x] 2.3 Classify every file listed in `customization-files.md` section 2 (13 active customizations) — expect `manual_reapply_on_theirs` for most.
+- [x] 2.4 Classify files listed in `customization-files.md` section 3 (out-of-scope areas: login/2FA, notifications, change server URL, granular sync wiring) as `accept_theirs`.
+- [x] 2.5 Classify files listed in `customization-files.md` section 4 (shared drift: `app/build.gradle.kts`, `settings.gradle.kts`, `gradle/libs.versions.toml`) as `defer_after_build_verification`.
+- [x] 2.6 Classify any remaining conflicted file not covered above per `conflict-rules.md` default rules by path; if a real customization surfaces, flag the inventory gap before continuing.
+- [x] 2.7 Record the preclassification table in `upgrade-3.4-notes.md` per the `conflict-rules.md` temporary format.
 - [ ] 2.8 Pause and confirm with the user before starting the `manual_reapply_on_theirs` batch.
 
 ## 3. Resolve easy conflicts

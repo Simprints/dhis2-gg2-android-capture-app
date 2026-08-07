@@ -23,18 +23,11 @@
     <string name="conf_error_value_option_set">Giá trị của trường %s không thuộc tùy chọn trong %s</string>
     <string name="field_is_mandatory">Trường dữ liệu này bắt buộc</string>
     <string name="missing_warning_fields_completed_events">Bạn có một số tin nhắn cảnh báo.</string>
-    <string name="missing_warning_fields_events">Bạn có một số tin nhắn cảnh báo..\nBạn có muốn đánh dấu biểu nhập này là hoàn tất không?</string>
+    <string name="missing_warning_fields_events">Bạn có một số tin nhắn cảnh báo..\nBạn có muốn đánh dấu biểu nhập này là hoàn tất không\?</string>
     <string name="required">Bắt buộc</string>
-    <string name="date">Ngày</string>
-    <string name="hint_year">Năm</string>
-    <string name="hint_month">Tháng</string>
-    <string name="hint_day">Ngày</string>
-    <string name="wrong_date_format">%s không thể chuyển đổi dữ liệu Ngày</string>
     <string name="polygon">Đa giác</string>
     <string name="latitude">Vĩ độ</string>
     <string name="longitude">Kinh độ</string>
-    <string name="coordinates_error">Giá trị tọa độ không hợp lệ</string>
-    <string name="polygon_captured">Đã thêm bản đồ ranh giới</string>
     <string name="enter_value">Nhập giá trị</string>
     <string name="enter_url">Nhập đường dẫn liên kết</string>
     <string name="enter_email">Nhập email</string>
@@ -49,33 +42,23 @@
     <string name="enter_long_text">Nhập văn bản dài</string>
     <string name="enter_text">Nhập văn bản</string>
     <string name="due_date">Ngày đến hạn</string>
-    <string name="mandatory_field">Trường bắt buộc</string>
-    <string name="form_latitude_prefix">Vĩ độ: </string>
-    <string name="form_longitude_prefix">Kinh độ: </string>
     <string name="not_saved">Chưa lưu</string>
     <string name="review">Xem lại</string>
     <string name="complete">Hoàn tất</string>
     <string name="discard_changes">Hủy bỏ các thay đổi</string>
     <string name="saved">Đã lưu!</string>
-    <string name="event_error_on_complete">Bạn có một số tin nhắn lỗi.\nBạn có muốn xem không?</string>
-    <string name="missing_error_fields_events">Một số trường dữ liệu có lỗi và chưa được lưu. \nBạn có muốn xem lại biểu nhập không?</string>
-    <string name="review_message">Một số trường dữ liệu cần bạn chú ý.\nBạn có muốn xem xét biểu nhập không?</string>
+    <string name="event_error_on_complete">Bạn có một số tin nhắn lỗi.\nBạn có muốn xem không\?</string>
+    <string name="missing_error_fields_events">Một số trường dữ liệu có lỗi và chưa được lưu. \nBạn có muốn xem lại biểu nhập không\?</string>
+    <string name="review_message">Một số trường dữ liệu cần bạn chú ý.\nBạn có muốn xem xét biểu nhập không\?</string>
     <string name="not_now">Không phải bây giờ</string>
-    <string name="save_anyway">Tiếp tục Lưu</string>
     <string name="keep_editing">Tiếp tục chỉnh sửa</string>
     <string name="event_can_be_completed">Bạn có muốn đánh dấu biểu nhập này là hoàn tất không?</string>
     <string name="discard_go_back">Nếu bạn tắt bây giờ, tất cả thông tin trong biểu nhập sẽ bị hủy bỏ.</string>
     <string name="field_errors_not_saved_discard">Một số trường dữ liệu có lỗi và chưa được lưu.. \nNếu bạn tắt bây giờ, tất cả thay đổi sẽ bị hủy bỏ.</string>
-    <string name="field_errors_not_saved">Một số trường dữ liệu bị lỗi và chưa được lưu</string>
-    <string name="fields_mandatory_missing">Thiếu một số trường dữ liệu bắt buộc và Không thể lưu biểu nhập.</string>
-    <string name="fields_mandatory_missing_discard">hiếu một số trường dữ liệu bắt buộc và không thể lưu biểu nhập.  \nNếu bạn tắt bây giờ, tất cả thay đổi sẽ bị hủy bỏ..</string>
     <string name="share">Chia sẻ</string>
     <string name="camera_permission_denied">Quyền mở máy ảnh bị từ chối..\nBạn cần bật tính năng máy ảnh để sử dụng chức năng này.</string>
     <string name="action_close">Đóng</string>
-    <string name="program_rules_loop_warning_title">Cảnh báo quy tắc chương trình</string>
-    <string name="program_rules_loop_warning_message">Có một vấn đề cấu hình gây ra một vòng lặp trong các quy tắc chương trình. Hãy liên lạc với quản lý của bạn.</string>
     <string name="copied_text">Đã sao chép</string>
-    <string name="empty_description">Không có thông tin cho trường dữ liệu này</string>
     <string name="take_photo">Chụp ảnh</string>
     <string name="from_gallery_v2">Từ thư viện ảnh</string>
     <string name="warning_error_on_complete_title">Kiểm tra cái này!</string>
@@ -100,13 +83,10 @@
     <string name="tei_coordinates">Tọa độ của </string>
     <string name="no_reserved_values">Không có giá trị dành riêng nào nữa. Liên hệ với quản lý của bạn</string>
     <string name="incident_date">Ngày xảy ra</string>
-    <string name="location_permission_denied">Cần quyền định vị để thu thập vị trí. Xin vui lòng mở chúng trong cài đặt ứng dụng</string>
     <string name="open_with">Mở với</string>
     <string name="no_option_found">Không tìm thấy tùy chọn</string>
     <string name="download">Tải về</string>
     <string name="scan">Quét</string>
-    <string name="qr_code">Mã QR</string>
-    <string name="bar_code">Mã vạch</string>
     <string name="add_location">Thêm vị trí</string>
     <string name="form_without_fields">Biểu này không có trường dữ liệu được cấu hình</string>
     <string name="event_details_section_title">Chi tiết %s</string>
@@ -137,12 +117,11 @@
     <string name="search_to_find_more">Tìm kiếm để tìm thêm</string>
     <string name="action_done">Hoàn thành</string>
     <string name="input_not_supported">Không được hỗ trợ</string>
-    <!--*******************->
+    <!--*******************
         D2 Error Messages
     **********************-->
     <string name="login_error_null_pass">Thiếu mật khẩu. Xin vui lòng nhập mật khẩu</string>
     <string name="login_error_null_username">Thiếu tên đăng nhập. Xin vui lòng nhập tên đăng nhập.</string>
-    <string name="login_error_dhis_version">Máy chủ này đang chạy phiên bản dhis khác với phiên bản 2.29. Hãy cập nhật phiên bản máy chủ của bạn hoặc sử dụng môi trường thực nghiệm để tiếp tục.</string>
     <string name="login_error_dhis_version_v2">Máy chủ này đang chạy phiên bản DHIS2 khác với %s. Vui lòng cập nhật phiên bản máy chủ của bạn hoặc liên hệ quản lý.</string>
     <string name="login_error_unsuccessful_response">Có gì đó không đúng. Vui lòng kiểm tra đường dẫn liên kết đến máy chủ, tên đăng nhập, mật khẩu và thử lại.</string>
     <string name="login_error_error_response">Rất tiếc! Có lỗi gì đó ở phía máy chủ</string>
@@ -163,7 +142,6 @@
     <string name="error_create_existing_error">Không thể tạo. Đối tượng đang tồn tại.</string>
     <string name="error_delete_non_existing_object">Xóa bị từ chối. Đối tượng không tồn tại</string>
     <string name="error_instance_keystore">Không thể tạo kho khóa</string>
-    <string name="error_reserve_value_on_server">Chúng ta không thể đặt trước giá trị cho các dữ liệu này. Vui lòng liên hệ quản lý của bạn. </string>
     <string name="error_export_login">Vui lòng đăng nhập để xuất cơ sở dữ liệu.</string>
     <string name="error_export_encrypted">Xuất dữ liệu mã hóa không hỗ trợ</string>
     <string name="error_import_exist">Bạn đang nhập cơ sở dữ liệu đang tồn tại</string>
@@ -190,7 +168,6 @@
     <string name="error_socket_timeout">Máy chủ mất quá nhiều thời gian để trả lời. Chúng tôi đã hủy yêu cầu.</string>
     <string name="error_relationship_updated">Mối quan hệ không thể cập nhật.</string>
     <string name="error_too_many_periods">Có quá nhiều thời điểm</string>
-    <string name="error_url_not_found">Chúng tôi không thể tìm thấy đường dẫn liên kết. Vui lòng kiểm tra lại.</string>
     <string name="error_account_disabled">Tài khoảng của bạn đã bị vô hiệu hóa. Nếu đây là lỗi, vui lòng liên hệ quản lý của bạn.</string>
     <string name="error_account_locked">Tài khoảng của bạn đã bị khóa. Nếu đây là lỗi, vui lòng liên hệ quản lý của bạn.</string>
     <string name="error_set_value">Giá trị không thể được thiết lập</string>
@@ -205,8 +182,11 @@
     <string name="database_import_failed">Nhập cơ sở dữ liệu không thành công</string>
     <string name="invalid_file">Tệp không hợp lệ</string>
     <string name="not_in_totp_2fa_enrollment_mode">Không ở chế độ đăng ký TOTP 2FA</string>
-    <!--*******************->
+    <!--*******************
        END OF D2 Error Messages
     **********************-->
+    <string name="age_or">HOẶC</string>
+    <string name="cancel">Hủy</string>
+    <string name="ok">OK</string>
 
 </resources>

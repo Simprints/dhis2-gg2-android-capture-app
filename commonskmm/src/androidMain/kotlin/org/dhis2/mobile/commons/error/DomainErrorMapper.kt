@@ -4,13 +4,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import org.dhis2.mobile.commons.network.NetworkStatusProvider
 import org.dhis2.mobile.commons.resources.D2ErrorMessageProvider
 import org.dhis2.mobile.commons.resources.Res
-import org.dhis2.mobile.commons.resources.email_two_factor_code_sent
 import org.dhis2.mobile.commons.resources.error_unexpected
-import org.dhis2.mobile.commons.resources.incorrect_two_factor_code
-import org.dhis2.mobile.commons.resources.incorrect_two_factor_code_email
-import org.dhis2.mobile.commons.resources.incorrect_two_factor_code_sms
-import org.dhis2.mobile.commons.resources.sms_two_factor_code_sent
-import org.dhis2.mobile.commons.resources.two_factor_code_many_send_attemps
 import org.hisp.dhis.android.core.maintenance.D2Error
 import org.hisp.dhis.android.core.maintenance.D2ErrorCode
 import org.jetbrains.compose.resources.getString
@@ -44,15 +38,18 @@ class DomainErrorMapper(
             D2ErrorCode.NO_AUTHENTICATED_USER_OFFLINE,
             D2ErrorCode.DIFFERENT_AUTHENTICATED_USER_OFFLINE,
             D2ErrorCode.ALREADY_AUTHENTICATED,
-            D2ErrorCode.USER_ACCOUNT_DISABLED,
-            D2ErrorCode.USER_ACCOUNT_LOCKED,
             D2ErrorCode.INCORRECT_TWO_FACTOR_CODE,
             D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_TOTP,
             D2ErrorCode.EMAIL_TWO_FACTOR_CODE_SENT,
             D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_EMAIL,
             D2ErrorCode.TWO_FACTOR_MANY_SEND_ATTEMPTS,
             D2ErrorCode.SMS_TWO_FACTOR_CODE_SENT,
-            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_SMS,
+            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_SMS
+            -> DomainError.AuthenticationError(errorMessage)
+
+            // User account issues (disabled, locked)
+            D2ErrorCode.USER_ACCOUNT_DISABLED,
+            D2ErrorCode.USER_ACCOUNT_LOCKED,
             -> DomainError.PermissionDeniedError(errorMessage)
 
             // User lacks authorization for program/operation access
@@ -90,6 +87,7 @@ class DomainErrorMapper(
             D2ErrorCode.NO_DHIS2_SERVER,
             D2ErrorCode.SERVER_URL_NULL,
             D2ErrorCode.SERVER_URL_MALFORMED,
+            D2ErrorCode.INVALID_CONFIGURATION,
             D2ErrorCode.INVALID_DHIS_VERSION,
             -> DomainError.ConfigurationError(errorMessage)
 

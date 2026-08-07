@@ -4,17 +4,9 @@ import static org.dhis2.utils.analytics.AnalyticsConstants.CLICK;
 import static org.dhis2.utils.analytics.AnalyticsConstants.SHOW_HELP;
 
 import android.content.Context;
-import android.content.pm.ActivityInfo;
-import android.os.Bundle;
-import android.util.AttributeSet;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
-
-import androidx.annotation.Nullable;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -25,26 +17,18 @@ import org.dhis2.commons.Constants;
 import org.dhis2.commons.dialogs.CustomDialog;
 import org.dhis2.commons.popupmenu.AppMenuHelper;
 import org.dhis2.mobile.commons.reporting.CrashReportController;
-import org.dhis2.data.server.ServerComponent;
-import org.dhis2.usescases.notifications.domain.Notification;
-import org.dhis2.usescases.notifications.presentation.NotificationsPresenter;
-import org.dhis2.usescases.notifications.presentation.NotificationsView;
 import org.dhis2.utils.HelpManager;
 import org.dhis2.utils.OnDialogClickListener;
 import org.dhis2.utils.analytics.AnalyticsHelper;
 import org.dhis2.utils.granularsync.SyncStatusDialog;
 
-import java.util.List;
-import java.util.Locale;
-
 import javax.inject.Inject;
 
-import io.noties.markwon.Markwon;
 import kotlin.Unit;
 
 
 public abstract class ActivityGlobalAbstract extends SessionManagerActivity
-        implements AbstractActivityContracts.View, ActivityResultObservable, NotificationsView {
+        implements AbstractActivityContracts.View, ActivityResultObservable {
 
     private static final String FRAGMENT_TAG = "SYNC";
 
@@ -52,9 +36,6 @@ public abstract class ActivityGlobalAbstract extends SessionManagerActivity
 
     @Inject
     public CrashReportController crashReportController;
-
-    @Inject
-    public NotificationsPresenter notificationsPresenter;
 
     private CustomDialog descriptionDialog;
 
@@ -70,16 +51,6 @@ public abstract class ActivityGlobalAbstract extends SessionManagerActivity
         );
     }
 
-    @Override
-    protected void onCreate(@Nullable Bundle savedInstanceState) {
-        ServerComponent serverComponent = ((App) getApplicationContext()).getServerComponent();
-
-        if (notificationsPresenter != null){
-            notificationsPresenter.refresh(this);
-        }
-
-        super.onCreate(savedInstanceState);
-    }
 
     @Override
     public void setTutorial() {
@@ -103,7 +74,7 @@ public abstract class ActivityGlobalAbstract extends SessionManagerActivity
                     return Unit.INSTANCE;
                 })
                 .onMenuItemClicked(item -> {
-                    analyticsHelper.setEvent(SHOW_HELP, CLICK, SHOW_HELP);
+                    getAnalyticsHelper().setEvent(SHOW_HELP, CLICK, SHOW_HELP);
                     showTutorial(false);
                     return false;
                 })
@@ -220,40 +191,6 @@ public abstract class ActivityGlobalAbstract extends SessionManagerActivity
 
     @Override
     public AnalyticsHelper analyticsHelper() {
-        return analyticsHelper;
-    }
-
-    @Override
-    public void renderNotifications(List<Notification> notifications) {
-        for (Notification notification : notifications) {
-            showNotification(notification);
-        }
-    }
-
-    private void showNotification(Notification notification) {
-
-
-        String content = getNotificationContent(notification);
-
-        new MaterialAlertDialogBuilder(this, R.style.DhisMaterialDialog)
-                .setTitle("Notification")
-                .setMessage(content)
-                .setPositiveButton(getContext().getString(R.string.wipe_data_ok), (dialog, which) -> {
-                    notificationsPresenter.markNotificationAsRead(notification);
-                })
-                .setCancelable(true)
-                .show();
-    }
-
-    private String getNotificationContent(Notification notification) {
-        Markwon markwon = Markwon.create(getContext());
-
-        String language = Locale.getDefault().getLanguage();
-
-        if (notification.getTranslations() != null && notification.getTranslations().containsKey(language)) {
-            return String.valueOf(markwon.toMarkdown(notification.getTranslations().get(language)));
-        } else  {
-            return String.valueOf(markwon.toMarkdown(String.valueOf(markwon.toMarkdown(notification.getContent()))));
-        }
+        return getAnalyticsHelper();
     }
 }

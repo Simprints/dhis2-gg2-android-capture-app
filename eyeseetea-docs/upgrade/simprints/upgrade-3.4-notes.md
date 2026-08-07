@@ -34,10 +34,32 @@ Note: onboarding Phases 4-5 completed 2026-08-07 (OpenSpec specs for the 13 acti
 ## Progress
 
 - baseline prepared: `yes`
-- merge started: `no`
-- easy conflicts resolved: `no`
-- manual conflicts pending: `no`
+- merge started: `yes` (2026-08-07)
+- easy conflicts resolved: `yes`
+- manual conflicts pending: `no` — **all 65 conflicts resolved**
+- build verified: `yes` — `./gradlew assembleSimprintsDebug` succeeds; APK
+  `dhis2-v3.4.1-simprints-fork-1-feature-simprints-upgrade_3.4.1.apk` produced
+- tests run: `no` — next step
 - validation started: `no`
+
+Getting to a green build took ~86 compile errors across 15 files **after** the
+last conflict was resolved. None of them had conflict markers: they were
+Simprints code calling APIs baseline had migrated (SDK types → domain types,
+`queryData` → `queryDataList`, moved packages, changed constructors). The
+conflict list was the smaller half of the work.
+
+Note on tooling: a `Storage for [...lookups.tab] is already registered` KSP
+failure and a batch of phantom Java errors both disappeared after
+`./gradlew --stop` plus deleting `app/build/kspCaches` — stale daemon state, not
+real problems. Worth trying that before chasing errors that make no sense.
+
+Merge is still open (not committed). Final checks run after the last conflict:
+no leftover conflict markers anywhere in the staged tree, and no dropped imports
+(the scan flags many symbols, but all inspected ones are false positives —
+baseline moved them to new packages, e.g. `SyncStatusController` →
+`org.dhis2.mobile.sync.domain`, `SearchParametersUiState` →
+`org.dhis2.tracker.search.ui.state`; the `Enrollment` hits in `SearchTeiModel`
+are `DomainEnrollment` plus the word inside customization comments).
 
 ## What has been done so far
 
@@ -151,6 +173,996 @@ Caveat to verify after merging (tasks 3.3 and 7.1): the deletion may surface as 
 real conflict rather than a silent auto-delete, because Simprints pulled upstream
 and WIDP bring-forward merges that touched the same files after that point.
 Confirm the files are actually gone post-merge; do not assume.
+
+## 3.4.1 merge preclassification (2026-08-07)
+
+Merge of `origin/develop-eyeseetea@938b819597` run with `--no-commit --no-ff`.
+Result: **65 conflicted files** — 45 `UU` (both modified), 12 `AA` (add/add),
+8 `UD` (modified here, deleted in baseline).
+
+### A. `AA` — tooling and docs added on both sides
+
+Caused by this branch adding `.claude/` scaffolding via `git checkout` from
+baseline (no merge history) plus `openspec update` to CLI 1.8.0, while the
+merge now brings baseline's own copies of the same paths.
+
+| File | Classification | Expected delta | Status |
+|------|----------------|----------------|--------|
+| `.claude/commands/opsx/*.md` (4) | accept_ours | keep the CLI 1.8.0 regenerated versions (baseline is still 1.2.0) | pending |
+| `.claude/skills/openspec-*/SKILL.md` (4) | accept_ours | same — ours is the newer generation | pending |
+| `CLAUDE.md` | manual_reapply_on_theirs | accept the upstream (Oslo) file as-is and add one `@AGENTS-simprints.md` import line; move all Simprints content into the new `AGENTS-simprints.md`. See B1 below. | pending |
+| `.github/workflows/eyeseetea-main.yml` | accept_theirs | CI is baseline-owned | pending |
+| `eyeseetea-docs/customizations/eyeseetea/customizations-eyeseetea.md` | accept_theirs | baseline inventory, must not be edited from a client fork (conflict-rules.md) | pending |
+| `eyeseetea-docs/upgrade/conflict-rules.md` | accept_theirs | shared merge rules are baseline-owned | pending |
+
+### B. `UD` — modified here, deleted in baseline
+
+These are the WIDP/notifications/granular-sync leftovers this branch never
+used. Baseline deleted them deliberately; the deletion should stand.
+
+| File | Classification | Expected delta | Status |
+|------|----------------|----------------|--------|
+| `app/src/main/java/org/dhis2/data/service/SyncDataWorker.java` | accept_theirs (accept deletion) | granular sync wiring, out of scope | pending |
+| `app/src/main/java/org/dhis2/data/service/SyncDataWorkerModule.kt` | accept_theirs (accept deletion) | granular sync wiring, out of scope | pending |
+| `app/src/main/java/org/dhis2/data/service/SyncInitWorkerModule.kt` | accept_theirs (accept deletion) | granular sync wiring, out of scope | pending |
+| `app/src/main/java/org/dhis2/data/service/SyncMetadataWorkerModule.kt` | accept_theirs (accept deletion) | granular sync wiring, out of scope | pending |
+| `app/src/main/java/org/dhis2/usescases/eventsWithoutRegistration/eventCapture/EventCaptureRepositoryImpl.java` | defer_after_build_verification | confirm no biometrics dependency before accepting deletion | pending |
+| `app/src/main/java/org/dhis2/usescases/main/HomeRepositoryImpl.kt` | defer_after_build_verification | confirm no biometrics dependency before accepting deletion | pending |
+| `app/src/test/java/org/dhis2/data/notifications/NotificationD2RepositoryTest.kt` | accept_theirs (accept deletion) | notifications, out of scope | pending |
+| `commons/src/main/java/org/dhis2/commons/prefs/BasicPreferenceProviderImpl.kt` | manual_reapply_on_theirs | **restore** — see "BasicPreferenceProvider decision" below | resolved_manual_merge |
+
+### C. `UU` — active customization areas (manual reapply)
+
+Files in the biometrics/search/dashboard/program surface documented in
+`customization-files.md` section 2. All `manual_reapply_on_theirs`.
+
+| File | Linked capability | Status |
+|------|-------------------|--------|
+| `data/service/SyncPresenter.java`, `SyncPresenterImpl.kt` | Biometrics Configuration Selection | pending |
+| `usescases/main/program/ProgramViewModel.kt`, `ProgramModule.kt`, `ProgramViewModelFactory.kt` | Biometrics Configuration Selection | pending |
+| `usescases/searchTrackEntity/SearchTEIViewModel.kt`, `SearchTEActivity.kt`, `SearchTEPresenter.java`, `SearchRepository.java`, `SearchRepositoryImpl.java`, `SearchTEModule.java`, `SearchTeiModel.java`, `SearchTeiViewModelFactory.kt`, `listView/SearchTEList.kt` | Biometric Search Integration / Duplicate Review | pending |
+| `usescases/searchTrackEntity/ui/mapper/TEICardMapper.kt` | Biometrics In TEI Cards | pending |
+| `usescases/teiDashboard/dashboardfragments/teidata/TEIDataPresenter.kt`, `TEIDataFragment.kt`, `TEIDataModule.kt` | Biometrics In TEI Dashboard | pending |
+| 7 matching `app/src/test/**` files | tests for the above | pending |
+
+### D. `UU` — shared/base areas (not Simprints customizations)
+
+| File | Classification | Status |
+|------|----------------|--------|
+| `login/**` (`CredentialsScreen.kt`, `CredentialsViewModel.kt`, `build.gradle.kts`) | accept_theirs | pending |
+| `commonskmm/.../DomainErrorMapper.kt` | accept_theirs | pending |
+| `form/.../FormView.kt`, `FieldProvider.kt` | manual_reapply_on_theirs (biometrics form fields) | pending |
+| `app/src/main/res/values*/strings.xml`, `styles.xml`, `layout-land/activity_dashboard_mobile.xml` | manual_reapply_on_theirs | pending |
+| `stock-usecase/src/main/res/values-ru/strings.xml` | accept_theirs | pending |
+| `app/src/main/java/org/dhis2/AppComponent.java`, `MainActivity.kt`, `SyncGranularRxModule.kt`, `EventCaptureActivity.kt` | defer_after_build_verification | pending |
+| `app/build.gradle.kts`, `settings.gradle.kts`, `gradle/libs.versions.toml` | defer_after_build_verification | pending |
+| `.gitignore`, `app/src/androidTest/assets/databases/dhis_test.db` | accept_theirs | pending |
+
+### `UD` batch analysis (2026-08-07)
+
+Method used for each "deleted in baseline, modified here" file — three checks,
+because the first two alone gave a wrong answer once (see `HomeRepositoryImpl`):
+
+1. Does Simprints have non-merge commits of its own on the file?
+2. Is the file referenced from biometrics/simprints code?
+3. **Does the file itself contain biometrics/Simprints code?** (added after
+   check 1-2 nearly caused `HomeRepositoryImpl` to be deleted — customization
+   living *inside* a baseline file is invisible to the first two checks)
+
+Analysing `develop-widp` was considered and rejected: it has evolved
+independently since the fork, and it cannot answer the question that actually
+matters, which is whether *Simprints* needs the code today.
+
+| File | Verdict | Evidence |
+|------|---------|----------|
+| `SyncDataWorker.java` | accept deletion | Worker removed in baseline. Its only non-Oslo line was `presenter.destroy()` (`af75d31095c`), which came from the **PSI** fork, not Simprints — discard. |
+| `SyncDataWorkerModule.kt`, `SyncInitWorkerModule.kt`, `SyncMetadataWorkerModule.kt` | accept deletion | Contain `BiometricsConfigRepository` wiring, but only as Dagger plumbing for the workers baseline deleted. The real behavior lives in `SyncPresenterImpl.downloadBiometricsConfig()`, preserved separately. |
+| `NotificationD2RepositoryTest.kt` | accept deletion | Notifications, out of scope. No biometrics content. |
+| `EventCaptureRepositoryImpl.java` | accept deletion | Migrated to `.kt` in baseline. Its only delta was `programStageName()` returning `displayName()` without a fallback; baseline's version adds `?: programStage.uid()` and is better. Nothing to carry over. |
+| `HomeRepositoryImpl.kt` | **manual_reapply_on_theirs** | **Do not delete.** Moved to `main/data/` *and* heavily rewritten in baseline (suspend/Result, new constructor). Contains live Simprints customization: an `init` block cleaning corrupted biometrics GUIDs (`BIOMETRICS_SEARCH_PATTERN` / `BIOMETRICS_FAILURE_PATTERN`), the `deleteBiometricsAttributeValue()` helper, and `BIOMETRICS_PERMISSION`. Must be reapplied on top of the new version — and reconsidered for better placement, since an `init` block doing DB deletions inside an Oslo file is placement level 4 (worst). |
+
+Related follow-up for `SyncPresenterImpl.kt` when it is resolved:
+- discard `destroy()` / `job.cancel()` — PSI customization, absent from
+  baseline's interface, and its only caller (`SyncDataWorker`) is gone.
+- discard `syncMetadata(SyncMetadataWorker.OnProgressUpdate)` — baseline has no
+  `syncMetadata` at all, and the parameter type belongs to a worker deleted in
+  this batch. It currently survives only because the file is still unresolved
+  (it is on the "ours" side of the conflict); accepting baseline's structure
+  removes it and clears the dangling reference.
+- confirm `downloadBiometricsConfig()` still has a caller in baseline's sync
+  flow now that the old workers are deleted.
+
+### Other-fork conflicts resolved as `accept_theirs` (2026-08-07)
+
+Isolated by extracting the "ours" side of every conflict block and scoring it
+for biometrics/Simprints symbols vs other-fork symbols (2FA, notifications,
+OpenID, change-server-URL). Files with other-fork content and **zero**
+biometrics content, verified across the whole file, not just the hunk:
+
+| File | Discarded content | Simprints non-merge commits |
+|------|-------------------|------------------------------|
+| `login/.../ui/screen/CredentialsScreen.kt` | `TwoFactorContainer` composable (WIDP 2FA) | 0 |
+| `login/.../ui/viewmodel/CredentialsViewModel.kt` | `LoginResult.TwoFactorError` handling (WIDP 2FA) | 0 |
+| `app/src/main/java/org/dhis2/AppComponent.java` | `NotificationsModule` import (WIDP notifications) | 2, none in the conflicted hunk |
+| `app/src/main/java/org/dhis2/usescases/main/MainActivity.kt` | `R.id.change_url` branch, **already commented out** (WIDP change-server-URL) | 6, none in the conflicted hunk |
+
+Confirmed after resolving: `TwoFactorState.kt`,
+`TwoFactorRequiredException.kt` and `TwoFAToEnableScreenTest.kt` are gone from
+the tree with no dangling references — the merge applied baseline's
+`87c5da0109` deletion automatically, exactly as predicted in task 1.4. No
+manual WIDP cleanup was needed.
+
+### Easy conflicts resolved (2026-08-07)
+
+| File | Resolution | Rationale |
+|------|------------|-----------|
+| `.github/workflows/eyeseetea-main.yml` | **accept_ours** | Identical to baseline except the Gradle task: ours runs `:app:testSimprintsDebugUnitTest`, baseline runs `:app:testEyeseeteaDebugUnitTest`. A fork's CI must run its own flavor's tests. |
+| `commonskmm/.../error/DomainErrorMapper.kt` | accept_theirs | Ours only added WIDP 2FA error mappings (`INCORRECT_TWO_FACTOR_CODE_*`, `USER_ACCOUNT_DISABLED/LOCKED`). 0 Simprints commits, 0 biometrics content. |
+| `stock-usecase/src/main/res/values-ru/strings.xml` | accept_theirs | Russian translations, no biometrics content. |
+| `eyeseetea-docs/customizations/eyeseetea/customizations-eyeseetea.md` | accept_theirs | Baseline adds a new "Oslo bug fixes active in this baseline" section; we add nothing. `conflict-rules.md` explicitly forbids editing this file from a client fork. |
+| `eyeseetea-docs/upgrade/conflict-rules.md` | accept_theirs | Baseline adds the `// EyeSeeTea fix` comment convention for Oslo regressions; shared merge rules are baseline-owned. |
+| `app/src/androidTest/assets/databases/dhis_test.db` | accept_theirs | Binary, so inspected with sqlite3: baseline's schema is newer (`user_version` 180 vs 170, 143 tables vs 136) and **neither** version contains the Simprints biometrics attribute `KdZcTAZfIk4`. Our copy came from `9f137d2218` ("Fix compilation bug to execute androidTests"), a regenerated test DB with no Simprints data. Keeping ours would break androidTests on the 3.4.1 schema. |
+
+Note: `eyeseetea-main.yml` was initially classified `accept_theirs` in the
+preclassification table above — that was wrong and would have stopped CI from
+running the Simprints flavor's tests. Corrected before resolving.
+
+### Build and resource conflicts resolved manually by the developer (2026-08-07)
+
+Resolved directly by the developer, not by the agent: `.gitignore`,
+`app/build.gradle.kts`, `settings.gradle.kts`, `gradle/libs.versions.toml`,
+`login/build.gradle.kts`, `app/src/main/res/values/strings.xml`,
+`values-es/strings.xml`, `values/styles.xml`.
+
+Post-merge fork identity check passed on the result:
+- `vName = 3.4.1-simprints-fork-1`, `vCode = 156` (version bumped to the target)
+- `create("simprints")` flavor and `applicationId = org.simprints.dhis2` intact
+- `libs.eyeseetea.libsimprints` dependency still present
+- `app/src/simprints/` and `app/src/simprintsDebug/` source sets present
+- 27 biometrics strings preserved in `values/strings.xml`
+
+This closes the `defer_after_build_verification` group from the
+preclassification table, ahead of the build check in task 6.2.
+
+### `CLAUDE.md` resolved as an Oslo-file customization (2026-08-07)
+
+`CLAUDE.md` became an **upstream Oslo file** in 3.4 (`2deafc54c5`, PR #4778),
+alongside `AGENTS.md`. The Phase 5 fork-specific `CLAUDE.md` written from
+`CLAUDE.md.template` therefore overwrote an Oslo file — placement level 4, the
+worst option, guaranteeing a whole-file conflict on every future upgrade.
+
+Resolution applied (placement level 2 — new file instead of editing Oslo code):
+- All fork content moved to a new root file `AGENTS-simprints.md`.
+- `CLAUDE.md` takes Oslo's version verbatim plus one import line
+  (`@AGENTS-simprints.md`) with a customization comment.
+- `AGENTS.md` left byte-identical to baseline.
+
+Verified against the Claude Code docs: `CLAUDE.md` supports multiple `@file`
+imports, arbitrary filenames, relative paths and up to four hops of nesting
+(https://code.claude.com/docs/en/memory.md#import-additional-files).
+
+Content was also refreshed while moving: version `3.4.1-simprints-fork-1`,
+12 modules (`ui-components` is gone after the merge), the
+`// EyeSeeTea fix` convention baseline just added, and a new rule capturing the
+`HomeRepositoryImpl` lesson (customization can live *inside* a baseline file, so
+grep the file's own contents before accepting a deletion).
+
+Future upgrades should now conflict on at most those 4 added lines. See B1 in
+"Improvements to promote to `develop-eyeseetea`" for the template fix.
+
+### Layer 1 — models and contracts (resolved 2026-08-07)
+
+Conflicts are being resolved **by dependency layer**, not by capability:
+contracts → implementations → DI wiring → UI → tests. Resolving a constructor
+or interface before the code that consumes it means deciding a signature blind
+and reworking it later.
+
+| File | Resolution | Kept | Discarded |
+|------|------------|------|-----------|
+| `data/service/SyncPresenter.java` | accept_theirs | nothing | `logTimeToFinish`, `updateProyectAnalytics`, `initSyncControllerMap`, `finishSync`, `setNetworkUnavailable`, `destroy` — all with **0 callers** in the tree. The one live `.destroy()` call (`SplashActivity:91`) targets a different presenter. |
+| `searchTrackEntity/SearchRepository.java` | manual_reapply_on_theirs | `updateAttributeValue()` (2 live callers: `BiometricsDuplicatesDialogPresenter:115`, `SearchTEPresenter:439/451`) and `getUserOrgUnits()` (`SearchTEPresenter:470`) | `getFetchedTeiUIDs`, `getSavedSearchParameters`, `getSavedFilters` — 0 callers |
+
+`SearchRepository.java` delta against baseline is exactly the two methods
+appended at the end of the interface with their canonical-title customization
+comments — placement level 3, no inline edits to Oslo declarations.
+
+`SearchTeiModel.java` was deliberately **deferred**: its consumers
+(`TEICardMapper`, `SearchTEPresenter`) are still conflicted, so which getters
+survive cannot be decided yet. `allAttributeValues` has 6 live uses in
+`TEICardMapper` and is customization that must be preserved.
+
+Known temporary breakage: `SyncPresenterImpl.kt` still declares `override fun`
+for methods just removed from `SyncPresenter`. Expected — those overrides live
+on the unresolved "ours" side of that file and disappear when it is resolved.
+
+### Automerge casualty: `addToAllAttributes` (found 2026-08-07, pending fix)
+
+**This is the Automerge verification rule firing for real.** Neither
+`SearchRepositoryImplKt.kt` nor `TEICardMapper.kt` was ever reported as
+conflicted — both merged clean (`M`) — yet a customization was silently lost.
+
+The customization: Simprints stores **all** TEI attributes, including those
+with `displayInList = false`, because biometrics and NHIS attributes must stay
+visible on search cards even when other empty attributes are hidden. Baseline
+only stores the `displayInList` ones.
+
+Broken chain, three points:
+
+| Point | File | Merge status | Problem |
+|-------|------|--------------|---------|
+| Definition | `SearchTeiModel.java` | conflicted | Baseline deleted the `allAttributeValues` field, its getter, and `addToAllAttributes()` |
+| Population | `SearchRepositoryImplKt.kt` | **resolved (M)** | Baseline rewrote the mapper as `mapTrackedEntitySearchItemResultToSearchTeiModel()`; it calls `addAttributeValue`/`addTextAttribute` but **not** `addToAllAttributes` |
+| Consumption | `TEICardMapper.kt` | **resolved (M)** | Still has 6 uses of `allAttributeValues` — **would not compile** |
+
+Complication: baseline also changed the attribute type in the *search* flow
+only, from the SDK's `TrackedEntityAttributeValue` to its own
+`TrackedEntitySearchItemAttributeDomain`:
+
+| Old (SDK) | New (domain) |
+|-----------|--------------|
+| `.trackedEntityAttribute()` | `.attribute` |
+| `.value()` | `.value` |
+| `.displayName()` | `.displayName` |
+| `.valueType()` → `ValueType` | `.valueType` → `TrackerInputType` |
+
+The TEI/dashboard and enrollment flows still use the SDK type — verified:
+`DashboardProgramModel.trackedEntityAttributeValues` is
+`List<TrackedEntityAttributeValue>` in **both** this branch and baseline, and
+is not conflicted. So the two types coexist by design, not transiently.
+
+That means `isUnderAgeThreshold()` / `getAgeInMonthsByAttributes()` in
+`AgeInMonths.kt` are called from both worlds:
+
+| Caller | Data source | Type |
+|--------|-------------|------|
+| `EnrollmentPresenterImpl.kt:577` | `getTeiByUid(...).trackedEntityAttributeValues()` | SDK |
+| `TEIDataPresenter.kt:773` | `dashboardModel.trackedEntityAttributeValues` | SDK |
+| `TEIDataFragment.kt:346` | `DashboardEnrollmentModel.trackedEntityAttributeValues` | SDK |
+| `TEICardMapper.kt:169, 600` | `searchTEIModel.allAttributeValues` | **domain** |
+
+Decision: **overload, do not replace** the signature. Changing it to the domain
+type would break the three SDK callers; converting domain→SDK inside
+`TEICardMapper` would add a fake conversion. The function only needs
+`(attribute uid, value)`, so an overload is honest about the two call sites.
+`AgeInMonths.kt` is a Simprints-only file (absent from baseline), so adding an
+overload creates no future conflict surface. Note Kotlin needs `@JvmName` on
+one of the two `List<T>` overloads because of type erasure.
+
+Fix plan:
+1. ✅ `SearchTeiModel.java` — restored `allAttributeValues` + getter +
+   `addToAllAttributes()` using the **domain** type.
+2. ✅ `SearchRepositoryImplKt.kt` — `addToAllAttributes` called inside the
+   attribute `forEach`, **outside** the `if (displayInList && ...)` guard.
+3. ✅ `AgeInMonths.kt` — added `isUnderAgeThreshold` overload (with
+   `@JvmName("isUnderAgeThresholdForSearchItems")`, required because both
+   overloads erase to `List` on the JVM) plus
+   `getAgeInMonthsBySearchItemAttributes`. Logic is equivalent to the SDK
+   version: same lookup by configured date-of-birth uid, same null/empty
+   handling, same `0` fallback — only the accessors differ
+   (`.attribute`/`.value` instead of `.trackedEntityAttribute()`/`.value()`).
+4. ✅ `TEICardMapper.kt` — adapted to the domain accessors
+   (`.trackedEntityAttribute()` → `.attribute`, `.value()` → `.value`).
+   Scope was larger than the 6 `allAttributeValues` uses first counted: the
+   avatar-initials code at lines 130-134 reads `attributeValues` (baseline's
+   map), which is the domain type too, and line 596 had a `.value()` inside the
+   confirmation-dialog block. A commented-out block around line 576 still shows
+   the old accessors; left untouched since it does not compile.
+
+Chain verified end to end after the fix: model defines and exposes
+`allAttributeValues` (domain type) → `SearchRepositoryImplKt` populates it for
+every attribute → `TEICardMapper` reads it with domain accessors →
+`AgeInMonths.kt` accepts the domain type through the overload. No conflict
+markers left in any of the four files.
+
+##### Judgement calls made while reapplying — check these first if search cards misbehave
+
+Both taken in `SearchRepositoryImplKt.mapTrackedEntitySearchItemResultToSearchTeiModel()`:
+
+- **`transformedValue` was hoisted out of the `if`.** Baseline computed it only
+  for `displayInList` attributes; it now runs for every attribute, because the
+  "all attributes" map needs the transformed value too. Behaviourally this
+  matches the pre-merge code (the old `addToAllAttributes` did its own
+  transform), but it means `getTransformedValue()` /`getUnknownLabel()` are now
+  called once per attribute instead of once per listed attribute. If attribute
+  values render wrong, or a perf regression shows on TEIs with many attributes,
+  this is the change to look at.
+- **Key is `attr.displayFormName`, not `attr.displayName`.** Chosen to match the
+  pre-merge implementation, which keyed the map with
+  `attribute.getDisplayFormName()` (`SearchRepositoryImpl.java:457` on the
+  "ours" side). This matters because `TEICardMapper` looks entries up **by key**
+  — e.g. `it.key.startsWith("Traceable address")`. If cards show odd labels or
+  fail to find biometrics/NHIS attributes, check this key choice first.
+
+One deliberate difference from the pre-merge code: the old version rebuilt a
+`TrackedEntityAttributeValue` via a builder (carrying `created`, `lastUpdated`,
+`trackedEntityInstance`); the new one uses `attr.copy(value = transformedValue)`
+on the domain type, which has no such fields. No current consumer reads them —
+`TEICardMapper` only uses the attribute uid and value — but that is why the
+stored object is not a like-for-like replacement.
+
+#### Open problem (no solution decided): duplication in `AgeInMonths.kt`
+
+Recorded as a problem to solve later, **not** as an agreed design.
+
+`AgeInMonths.kt` contains three near-identical routines that all do "find the
+date-of-birth attribute, compute age in months", differing only in how they
+read the `(uid, value)` pair from whatever type the calling flow uses:
+
+- `getAgeInMonthsByAttributes` — SDK `TrackedEntityAttributeValue`, reads
+  `.trackedEntityAttribute()` / `.value()`
+- `getAgeInMonthsByFieldUiModel` — `FieldUiModel`, reads `.uid` / `.value`
+- `containsAgeFilterAndIsUnderAgeThreshold` — search query map, reads the key
+  and the first value
+
+Baseline's move to `TrackedEntitySearchItemAttributeDomain` in the search flow
+means the fix for this upgrade adds a **fourth** variant (the overload above),
+making the duplication worse. Biometrics logic also stays coupled to whichever
+attribute types Oslo happens to use, so a future type change hits every one of
+these helpers again.
+
+Scope of the problem, for whoever picks it up: 3 (soon 4) helpers in
+`AgeInMonths.kt`, plus 5 call sites — `EnrollmentPresenterImpl.kt:577`,
+`TEIDataPresenter.kt:773`, `TEIDataFragment.kt:346`, `TEICardMapper.kt:169` and
+`:600` — spanning two attribute types that coexist by design in 3.4.1.
+
+Why not solved now: the overload keeps the upgrade to 1 Simprints-only file and
+0 call-site changes. The deciding argument is attribution, not size — if a
+biometrics flow misbehaves during validation, mixing the baseline move with a
+redesign makes it impossible to tell which caused it. `conflict-rules.md` says
+the same: reapply the minimum delta, do not widen scope mid-merge. Same
+reasoning already applied to `BasicPreferenceProvider`.
+
+To decide after the upgrade closes, together with the deferred
+`BasicPreferenceProvider` → `PreferenceProvider` question, since both touch the
+same area.
+
+Marked in code with a `TODO:` comment above the new overload in
+`app/src/main/java/org/dhis2/usescases/biometrics/AgeInMonths.kt`, pointing back
+to this section. Whoever picks it up should find it from either end.
+
+### Layer 2 — `SearchRepositoryImpl.java` (resolved 2026-08-07)
+
+Base taken from baseline, then five additive blocks reapplied — no Oslo line
+modified:
+
+| Block | Content |
+|-------|---------|
+| static import | `updateBiometricsAttributeValue` |
+| import | `BasicPreferenceProvider` |
+| field | `private final BasicPreferenceProvider preferenceProvider` |
+| constructor | `preferenceProvider` added as parameter **14**, after `dispatcherProvider` |
+| methods | `updateAttributeValue()` and `getUserOrgUnits()` appended at end of class |
+
+Judgement call: `preferenceProvider` was placed **last** in the constructor
+rather than at its pre-merge position. This keeps baseline's 13-parameter order
+untouched and makes the fork's parameter visibly additive, but it does change
+the signature relative to the pre-merge code — any caller must pass it 14th.
+
+Discarded from the "ours" side (baseline moved this work into
+`SearchRepositoryImplKt.mapTrackedEntitySearchItemResultToSearchTeiModel()`):
+`transformTrackedEntity`, `setEnrollmentInfo`, `getProgramInfo`,
+`setAttributesInfo`, `setAttributeValue`, `isAcceptedValueType`, the private
+`addToAllAttributes` helper, and `displayOrgUnit()`. Verified 0 occurrences of
+each remain in the file.
+
+Note on the private `addToAllAttributes` helper: it is **not** recreated in the
+Kotlin mapper. It existed mainly to build a `TrackedEntityAttributeValue` by
+hand; baseline now supplies the transformed value and the domain object, so only
+the final `searchTeiModel.addToAllAttributes(displayFormName, ...)` call was
+needed. The public method of the same name on `SearchTeiModel` was restored
+separately (step 1 of the casualty fix).
+
+Cross-checked after resolving: `SearchTEModule.java` constructs
+`SearchRepositoryImpl` with 14 arguments, `basicPreferenceProvider` last, and
+injects `BasicPreferenceProvider` at three provider methods;
+`SearchTEPresenter.java` calls `updateAttributeValue` (lines 431, 443) and
+`getUserOrgUnits` (line 462).
+
+### Conflicts resolved manually by the developer, second batch (2026-08-07)
+
+15 files resolved directly by the developer while the agent worked on
+`SearchRepositoryImpl.java`: `ProgramViewModel.kt`, `ProgramModule.kt`,
+`ProgramViewModelFactory.kt`, `SearchTEModule.java`, `SearchTEPresenter.java`,
+`SearchTEList.kt`, `TEIDataPresenter.kt`, `TEIDataFragment.kt`,
+`TEIDataModule.kt`, `SyncGranularRxModule.kt`, `EventCaptureActivity.kt`,
+`activity_dashboard_mobile.xml`, `FieldProvider.kt`, `ProgramViewModelTest.kt`,
+`TeiDataPresenterTest.kt`.
+
+Agent verification on those: no leftover conflict markers in any resolved file,
+and the `SearchRepositoryImpl` constructor contract holds end to end (see
+cross-check above).
+
+### ⚠️ ACCEPTED REGRESSION: biometrics config no longer syncs with metadata
+
+**Most urgent item to restore after this merge compiles.** Deliberately not
+fixed during conflict resolution, to keep the merge free of new design work.
+
+#### What was lost
+
+`SyncPresenterImpl.syncMetadata()` used to call `downloadBiometricsConfig()`
+inside the metadata download's `doOnComplete`, alongside
+`updateProyectAnalytics()`, `setUpSMS()` and WIDP's `syncNotifications()`:
+
+```kotlin
+.doOnComplete {
+    updateProyectAnalytics()
+    setUpSMS()
+    if (BIOMETRICS_ENABLED) { downloadBiometricsConfig() }   // ← Simprints
+    syncNotifications()                                       // ← WIDP
+}
+```
+
+Baseline deleted that whole method. Metadata sync is now the KMP use case
+`SyncMetadata` in the `:sync` module. Its Oslo siblings survived there
+(`updateProjectAnalytics`, `setUpSMS`); the fork hooks did not.
+
+**User impact.** Verified what still works after the merge:
+
+| Scenario | Biometrics config synced? |
+|----------|---------------------------|
+| Logout → login into Home | **Yes** — `SyncBiometricsConfig` → `LoginModule:49` → `LoginActivity:111` (`onNavigateToHome` branch), chain intact |
+| User syncs metadata from settings | **No — regression** |
+| Periodic background metadata sync | **No — regression** |
+| First login → initial sync (`SyncActivity`, `onNavigateToSync` branch) | Not verified — that branch does not call `syncBiometricsConfig` |
+
+So config still refreshes on login, but stops refreshing on metadata sync. If
+the server changes the biometrics configuration, a user who stays logged in will
+not receive it until they log out and back in.
+
+The login-time sync is a **different use case** and does not replace this one:
+it covers logout/login needing fresh config without a metadata sync. Both are
+required — confirmed by the developer.
+
+#### Why it cannot be patched locally
+
+| Option | Verdict |
+|--------|---------|
+| Call it from `AndroidSyncRepository.syncMetadata()` | **Impossible.** `BiometricsConfigRepository` lives in `app/`; `:sync` only depends on `:commonskmm`. Adding `:app` would be a circular dependency (`app` already depends on `sync`). |
+| Decorate the `SyncMetadata` use case from `app/` DI | **Impossible.** The consumer is `SyncMetadataWorker`, **inside** `:sync`, and it injects the concrete `SyncMetadata` class, which is `final`. A decorator registered in `app/` cannot intercept it. |
+| Hook in baseline | Viable — but it is baseline design, see below. |
+
+Every workable fix touches baseline's `:sync` module. There is no way to hook
+in from outside it.
+
+#### This is a baseline problem, not a Simprints one
+
+WIDP needs the same thing for notifications, and the pattern will recur.
+Baseline removed the extension point forks relied on; it needs to provide a new
+one deliberately, knowing several forks will use it.
+
+#### Draft design (NOT agreed — starting point only)
+
+Contract in `:commonskmm` (visible to both modules, adds no dependency to `:sync`):
+
+```kotlin
+fun interface PostMetadataSyncAction {
+    suspend operator fun invoke(): Result<Unit>
+}
+```
+
+`:sync` — `SyncMetadata` takes the list with an empty default, and runs it where
+the old hook was (after `setUpSMS`, before `downloadMapMetadata`, around
+`input(50)`). Baseline DI injects it; each fork registers **one list** with
+everything it needs:
+
+```kotlin
+// fork
+factory<List<PostMetadataSyncAction>> {
+    listOf(PostMetadataSyncAction { /* biometrics config */ })
+}
+```
+
+An earlier variant used Koin's `getAll<PostMetadataSyncAction>()` to collect
+individual registrations. Dropped: two `factory<PostMetadataSyncAction>`
+definitions would overwrite each other without qualifiers, and `getAll` is used
+nowhere in this project (Koin 4.1.1), so its behaviour here is unverified.
+
+Files touched: 1 new file in `:commonskmm`, ~4 lines in `:sync/SyncMetadata.kt`,
+1 line in `SyncModule.android.kt`, plus fork-only files.
+
+#### Open questions before implementing
+
+1. Does Koin resolve an injected `List<T>` reliably (generic type erasure)? Verify first.
+2. Failure isolation — proposed: log and continue, so a failing fork action does not fail metadata sync. Not agreed.
+3. Progress reporting — actions run inside the 50→60 jump; a slow action freezes the bar there.
+4. Ordering — with one list per fork the fork controls it, but nothing enforces it across forks.
+5. Naming/scope — if the same need appears after *data* sync, a generic `PostSyncAction` with a phase enum may fit better than a metadata-specific name.
+
+#### Plan
+
+Fix immediately **after** the merge commit compiles, as its own commit, and
+propose it to `develop-eyeseetea` — see the promotion list above. Do not fold it
+into the merge.
+
+### `SyncPresenterImpl.kt` + `SyncGranularRxModule.kt` (resolved 2026-08-07)
+
+Both resolved as **clean `accept_theirs`** — byte-identical to baseline, nothing
+reapplied.
+
+`SyncPresenterImpl.kt`: baseline cut it from 853 to 443 lines, keeping only the
+granular sync methods and moving all orchestration
+(`syncAndDownloadEvents/Teis/DataValues`, `syncMetadata`, `downloadResources`,
+`syncReservedValues`, `checkSyncStatus`, `startPeriodic*Work`) into the `:sync`
+module. Its constructor went from 8 parameters to 4, dropping
+`biometricsConfigRepository` and `notificationRepository`.
+
+Discarded from "ours":
+- `destroy()` / `job.cancel()` — PSI customization, no caller (the live
+  `.destroy()` in `SplashActivity:91` targets a different presenter)
+- `syncMetadata()` — absent from baseline; its parameter type belonged to a
+  worker deleted earlier in this merge
+- `syncNotifications()` — WIDP, out of scope
+- `downloadBiometricsConfig()` — **regression, see B4 above**
+- all the orchestration methods baseline moved to `:sync`
+
+`SyncGranularRxModule.kt` had been resolved by the developer keeping
+`biometricsConfigRepository` as a 5th constructor argument. That had to be
+reverted: baseline's constructor only takes 4, so it would not compile. Checked
+first whether keeping the injection would help the upcoming B4 work — it would
+not: the hook lives in `:sync` and the fork's action is registered in the fork's
+own Koin module, never through `SyncPresenterImpl`, which no longer takes part
+in the metadata flow at all. The module's `@Provides` for
+`BiometricsConfigRepository` was removed too: `SyncGranularRxComponent` only
+injects `SyncGranularWorker` (granular sync, no biometrics), so it had no
+consumers.
+
+Verified after: `BiometricsConfigRepository` is still provided where it is
+actually used — `ProgramModule.kt` (config selection per program) and
+`LoginModule.kt` (login-time sync).
+
+### `SyncPresenterTest.kt` (resolved 2026-08-07)
+
+Clean `accept_theirs`, closing the `SyncPresenterImpl` constructor thread: the
+test now builds it with the same 4 arguments the class declares.
+
+Discarded: the `biometricsConfigRepository` / `notificationRepository` mocks and
+their imports, the `whenever(biometricsConfigRepository.sync())` stub (outside
+the conflict hunks, but inside the region baseline rewrote), and 4 tests that
+were only in "ours" — all four covered Matomo secondary-tracker behaviour
+(`updateProyectAnalytics()`), which baseline moved into the `:sync` module along
+with the rest of the orchestration. They test code this class no longer owns.
+
+### `SearchTEIViewModel.kt` — resolved by the developer, agent-reviewed (2026-08-07)
+
+Largest conflict of the merge (11 hunks, 1414 vs 1422 lines, result 1664).
+Baseline did an architectural refactor here — KMP use cases
+(`searchTrackedEntities`, `fetchSearchParameters`, `fetchOptionSetOptions`),
+`queryDataList` state handling, and `ValueType` → `TrackerInputType` — so it was
+resolved with a merge tool rather than hunk by hunk.
+
+Agent review found **no problems**. Checked:
+- no conflict markers left
+- constructor correctly combines baseline's 3 new use cases with the fork's
+  `basicPreferenceProvider` and `fromRelationships`
+- `isNotBiometricText()` filter correctly placed **before** `.map` inside the
+  `fold(onSuccess = ...)` of the new `fetchSearchParameters` flow
+- sequential biometric search intact in `onSearch()`
+  (`containsAgeFilterAndIsUnderAgeThreshold`, `isSearchByBiometricsEnabled()`,
+  `SequentialSearchAction`)
+- `getBiometricsSearchStatus()` present
+- `ValueType` import is still needed (line 571,
+  `trackerValueTypeToSDKValueType`)
+
+Two things checked and dismissed:
+
+1. The biometrics block in `onSearch()` runs before baseline's new
+   `hasMinNumberOfAttributesToSearch()` guard, so in theory it could publish a
+   sequential-search state while the search itself is refused. Not reachable in
+   practice: the guard is `(program.minAttributesRequiredToSearch() ?: 0) <=
+   queryDataList.size`, Simprints has no minimum configured, and the block only
+   runs when a non-biometric attribute is present.
+2. The `when` in `getFriendlyQueryData()` migrated from `ValueType` to
+   `TrackerInputType`. No type is missing — `MULTI_TEXT`→`MULTI_SELECTION`,
+   `DATETIME`→`DATE_TIME`, and the old `BOOLEAN`/`TRUE_ONLY` branches map onto
+   six input-type cases. Two cosmetic behaviour changes come **from baseline**,
+   not from the merge resolution: `TRUE_ONLY` now renders `"label: true"`
+   instead of just `"label"`, and `BOOLEAN` only renders when the value is
+   exactly `"true"`/`"false"`. Affects only the search-summary text, not
+   results. Accepted as baseline behaviour.
+
+### Second automerge casualty: `SearchTEKoinModule.kt` (resolved 2026-08-07)
+
+Same class of problem as `addToAllAttributes`: a baseline file that merged
+**without any conflict** and would not have compiled.
+
+`SearchTEKoinModule.kt` is new in 3.4.1, part of baseline's in-progress
+Dagger → Koin migration. It did not exist in this branch, so git merged it
+clean. Its two definitions build `SearchTeiViewModelFactory` and
+`SearchTEIViewModel` with baseline's parameter list, which omits three
+parameters this fork's ViewModel requires:
+
+| Parameter | Origin | Resolvable from Koin? |
+|-----------|--------|----------------------|
+| `presenter` | fork — kept from pre-migration code, future refactor | No — Dagger only |
+| `basicPreferenceProvider` | biometrics customization | No — Dagger only |
+| `fromRelationships` | biometrics customization | No — depends on how the screen was opened |
+
+Resolution: **both definitions removed, module left empty with an explanatory
+comment**, rather than inventing wiring.
+
+Rationale: nothing consumes them today — `SearchTEActivity` injects the factory
+through Dagger (`@Inject lateinit var viewModelFactory`) and no caller resolves
+the ViewModel or factory through Koin. Since none of the three parameters can be
+resolved from Koin, any wiring written now would be fictional: it would compile
+and look functional without ever running or being testable. Deleting the whole
+file was rejected too — it would reappear on the next upgrade, by then with the
+migration further along and without the Dagger fallback.
+
+The module is still registered in `KoinInitialization.kt:60`; an empty Koin
+module is valid, so no change was needed there.
+
+**Restore both definitions when baseline finishes the migration and removes the
+Dagger `SearchTEModule`** — the file comment says the same, so it can be found
+from either end.
+
+### `FormView.kt` — field hooks moved into the ViewModel (resolved 2026-08-07)
+
+Another case of baseline relocating logic and taking a fork extension point with
+it — but unlike B4, fixable inside the merge because the hook infrastructure
+already existed and only the application point moved.
+
+**What the hook does.** `EnrollmentPresenterImpl.onFieldsLoading()` (ours) takes
+the list of `FieldUiModel` and: drops the biometrics attribute when the program
+is not in `full` mode; and, for `BiometricsAttributeUiModelImpl`, sets value,
+editability (all mandatory fields filled) and the age-threshold flag so the field
+renders as the Simprints custom component instead of a normal input. Wired from
+`EnrollmentActivity:144` → `FormInjector:63` → `FormView` builder.
+
+**What changed.** Before, `FormView` received raw `FieldUiModel` from
+`viewModel.items`, ran the hooks, then mapped to sections with
+`formSectionMapper`. Baseline moved that mapping into `FormViewModel` — `_items`
+(private) emits `FieldUiModel`, and the public `items` already emits sections. So
+`FormView` no longer sees unmapped fields, and the hooks had nowhere to run.
+
+**Resolution (option A of two considered).** `FormViewModel` gained two nullable
+listener fields, applied inside its `.map { }` immediately before
+`mapFromFieldUiModelList`; `FormView` assigns them in `onCreateView` (next to
+`formSectionMapper` init, before `setContent`, so it does not re-run on each
+recomposition) and otherwise takes baseline's `collectAsState(emptyList())` line.
+
+The rejected alternative was exposing the unmapped flow from the ViewModel and
+keeping the mapping in `FormView`: same two baseline files touched, but it
+duplicates the flow (two `shareIn` over the same source) and partially reverts
+baseline's refactor, which tends to cost more in later upgrades.
+
+Mutable state on the ViewModel was chosen over constructor injection because
+`FormViewModel` already exposes `var dateFormatConfig`, `var previousActionItem`
+and `var filePath`, so it introduces no new pattern — and the ViewModel is built
+through `Injector.provideFormViewModelFactory(...)` with a fixed parameter list,
+so constructor injection would mean touching that factory and its whole chain.
+
+Note: `formSectionMapper` is now declared and initialised in `FormView` without
+being used there — that is true of **baseline itself**, not a leftover of this
+resolution, so it was left untouched.
+
+**Third automerge casualty, caught here:** `import org.dhis2.form.model.FieldUiModel`
+was present in `FormView.kt` before the merge and silently disappeared. Baseline
+dropped it because its own version no longer references `FieldUiModel` in this
+file — but the fork's listener signatures use it in 8 places, so the file would
+not compile. Spotted by the developer, not by the conflict markers (there were
+none for it). Restored.
+
+After finding it, the same check was run across every file resolved so far
+(imports present in `HEAD` but missing now, and still referenced): no other real
+losses. Two apparent hits were false positives — `SearchParametersUiState` is now
+imported from baseline's new package `org.dhis2.tracker.search.ui.state`, and the
+`Enrollment` hits in `SearchTeiModel.java` are `DomainEnrollment` plus the word
+"Enrollment" inside customization comments.
+
+Worth repeating that scan after the remaining conflicts are resolved: dropped
+imports produce no conflict markers and only surface at compile time.
+
+### `HomeRepositoryImpl` — moved by baseline, customization reapplied (resolved 2026-08-07)
+
+Git reported `UD` (modified here, deleted in baseline). It was not a deletion but
+a **move plus rewrite**: baseline deleted `usescases/main/HomeRepositoryImpl.kt`
+and created `usescases/main/data/HomeRepositoryImpl.kt` with a different
+constructor, `suspend`/`Result` signatures and new methods. Rename detection did
+not connect them, and since the new path did not exist here, it merged with no
+conflict — so both files coexisted, with `MainModule` already importing the new
+one. The old file was dead code; its deletion was accepted.
+
+**Reapplied** onto baseline's file, at the same place it ran before (the
+repository `init`, i.e. when Home is opened): the corrupted-GUID cleanup. It
+deletes biometrics attribute values left in an invalid state — search or failure
+placeholders never replaced by a real Simprints GUID, plus empty values — which
+otherwise make a TEI look like it has biometrics registered when it does not.
+Brought `deleteBiometricsAttributeValue()` with it, plus 4 imports.
+
+Alternative entry points (a dedicated use case, post-login, `MainActivity`) were
+considered and rejected by the developer: choosing a new trigger is a refactor,
+and mixing it into the upgrade breaks attribution if something misbehaves later.
+Same reasoning as `BasicPreferenceProvider` and `AgeInMonths`.
+
+**Correction made mid-analysis:** `checkDeleteBiometricsPermission()` and the
+`BIOMETRICS_PERMISSION` constant were initially treated as Simprints
+customization and staged for reapplication. They are **not ours** — they are
+Oslo's, for *device* biometrics (fingerprint/face app unlock), introduced by
+`ANDROAPP-7509` / `ANDROAPP-7255`. Baseline handles that flow in
+`login/.../LoginRepositoryImpl.kt` (including `cryptographyManager.deleteInvalidKey()`
+at line 342), and its `HomeRepository` interface no longer declares the method.
+Nothing to reapply; the constant added by mistake was removed. Simprints
+biometrics is external fingerprint capture through the Simprints app
+(`biometricAttributeId`), unrelated to device unlock.
+
+### Fourth automerge casualty: `BASIC_SHARE_PREFS` (found at compile time)
+
+Surfaced by the first compilation attempt, not by any conflict marker:
+
+```
+BasicPreferenceProviderImpl.kt:7:43 Unresolved reference 'BASIC_SHARE_PREFS'
+```
+
+`const val BASIC_SHARE_PREFS` lived in
+`commonskmm/.../providers/PreferenceConstants.kt`. Upstream Oslo rewrote that
+file in `1f67d3d6b1` (ANDROAPP-7497, moving data sync into the `:sync` module),
+adding sync constants and dropping this one. We had never touched the file, so
+it merged clean — taking the constant with it.
+
+Restored with a customization comment. It is required because we deliberately
+kept `BasicPreferenceProviderImpl`, which stores the flattened biometrics
+configuration in its own SharedPreferences file.
+
+Worth noting the pattern: this is the fourth casualty of this merge and, like
+the other three, it produced **no conflict marker**. Two were caught by review
+(`addToAllAttributes`, `SearchTEKoinModule`), one by the developer
+(`FieldUiModel` import), and this one only by the compiler — which is exactly
+why the build step is not optional.
+
+### Post-merge compile errors: biometrics code against baseline's new domain types
+
+Once all 65 conflicts were resolved, the build surfaced ~86 errors across 15
+files. None of them had a conflict marker: they are Simprints biometrics code
+calling APIs that baseline migrated from SDK types to its own domain types.
+
+Root causes, grouped:
+
+| Pattern | Cause |
+|---------|-------|
+| `.uid()`, `.lastUpdated()`, `.program()` called as functions | domain types expose them as properties |
+| `queryData` unresolved | baseline replaced it with `queryDataList` |
+| `isOnline`, `enrolledOrgUnit`, `programInfo`, `state`, `isHasOverdue`, `overdueDate`, `enrollments` | properties moved off `SearchTeiModel` onto `SearchTeiModel.tei` |
+| `blockingSetCheck`, `hasFollowUp`, `setAttributeList`, `setStatusText` | extensions moved to `searchTrackEntity.adapters.SearchTeiModelExtensions` |
+| constructor mismatches | `SearchRepositoryImpl`, `SearchRepositoryImplKt` signatures changed |
+
+#### `BiometricsDuplicatesDialogHolder` — copy of `BaseTeiViewHolder` gone stale
+
+The developer's hypothesis was right: the duplicates dialog was written by
+copying `BaseTeiViewHolder`, and the copy never tracked the original. Confirmed
+by diffing them — 118 vs 116 lines, identical except for structure (`class` vs
+`abstract class`, no abstract methods, no `init` block). **Zero
+Simprints-specific behaviour.**
+
+Baseline had already migrated `BaseTeiViewHolder`, so its diff was used as the
+translation table:
+
+| Before | After |
+|--------|-------|
+| `teiModel.isHasOverdue` | `teiModel.tei.overDueDate?.toJavaDate() != null` |
+| `teiModel.isOnline` | `teiModel.tei.isOnline` |
+| `teiModel.enrolledOrgUnit` | `teiModel.tei.enrollmentOrgUnit` |
+| `teiModel.tei.state()` | `teiModel.tei.aggregatedSyncState?.toSDKState()` |
+| `teiModel.tei.lastUpdated()` | `teiModel.tei.lastUpdated?.toJavaDate()` |
+| `enrollments.hasFollowUp()` | `tei.enrollments?.hasFollowUp()` |
+| `programInfo.getEnrollmentIconsData(...)` | `tei.enrolledPrograms?.getEnrollmentIconsData(...)` |
+| `selectedEnrollment.program()` | `selectedEnrollment.program` |
+
+One difference from baseline's own file: `BaseTeiViewHolder` lives in
+`searchTrackEntity.adapters`, so it gets those extensions implicitly. The dialog
+holder is in another package and needs them imported explicitly
+(`getEnrollmentIconsData`, `hasFollowUp`, `setAttributeList`, `setStatusText`).
+
+#### Casualties found while fixing compile errors
+
+Two customizations were lost silently during conflict resolution and only
+surfaced at compile time:
+
+**`SearchRepositoryImpl` constructor visibility.** It was `public` before the
+merge and baseline has it package-private. Taking baseline's version dropped
+the modifier, which broke `BiometricsDuplicatesDialogModule` — it lives in
+another package and builds its own instance to resolve duplicate candidates.
+Restored as `public` with a customization comment.
+
+**`AppComponent.plus(LoginModule)`.** `AppComponent` was resolved as
+`accept_theirs` because its only conflict hunk was WIDP's `NotificationsModule`
+import — but that also silently dropped the Dagger login subcomponent
+declaration, which **is** ours. Baseline migrated login to KMP + Koin (the
+`login/` module) and removed the Dagger `LoginComponent`; Simprints still uses
+the Dagger login, and that is where `SyncBiometricsConfig` is injected to
+refresh biometrics configuration after sign-in. Restored the declaration and its
+import.
+
+Related: the developer noticed `login/build.gradle.kts` no longer declares
+product flavors. Baseline removed them and that is correct — the old block
+listed `widp`, `psi` and `simprints` side by side, all only setting an unused
+`LOGIN_TEST` BuildConfig field (verified: zero references in the codebase).
+Leftover scaffolding from the pre-baseline era, rightly cleaned up.
+
+**Missing flavor file.** Baseline added `DownloadNewVersion` as a per-flavor
+class (`dhis2`, `dhis2Training`, `eyeseetea`, `dhis2PlayServices`) but no
+`simprints` variant existed, so `MainModule`/`MainViewModel` could not resolve
+it. Copied the `eyeseetea` variant (direct file download; `dhis2PlayServices`
+uses the Play Store mechanism instead). After this, the `simprints` flavor has
+the same two files as `eyeseetea` plus its own `UserComponentFlavor`.
+
+**Package move.** `ValueExtensions.kt` moved from `org.dhis2.commons.bindings`
+to `org.dhis2.bindings`. Our `Verification.kt` and
+`updateNHISNumberAttributeValue.kt` kept the old import for `blockingSetCheck`.
+Checked the rest of the tree: `org.dhis2.commons.bindings` still exists and is
+widely used, so only that one file moved.
+
+#### Open problem (no solution decided): Simprints still uses the Dagger login
+
+Baseline migrated login to KMP + Koin and dropped the Dagger `LoginComponent`,
+`LoginModule` and the `AppComponent.plus(LoginModule)` declaration. Simprints
+keeps all three, restored above, because `LoginActivity` injects
+`SyncBiometricsConfig` through them to refresh the biometrics configuration
+after sign-in.
+
+Scope: `LoginComponent.kt`, `LoginModule.kt`, `LoginActivity` and the
+`AppComponent` declaration, none of which exist in baseline. Any solution has to
+find a new home for the post-login biometrics sync — and note this is a
+*different* use case from the metadata-sync one in B4, so both need a place.
+
+Not addressed during the merge: migrating to the KMP login is a refactor of a
+whole subsystem. To be decided with the other deferred items.
+
+#### Open problem (no solution decided): the dialog holder duplicates `BaseTeiViewHolder`
+
+`BiometricsDuplicatesDialogHolder` is a ~98% copy of `BaseTeiViewHolder` with no
+behavioural difference. That duplication is exactly why it broke: baseline
+evolved the original and the copy silently rotted until the compiler caught it.
+
+The same is likely true of the other `BiometricsDuplicatesDialog*` files, which
+account for most of the remaining compile errors — worth checking whether they
+also mirror a search-list counterpart.
+
+Scope for whoever picks it up: `BiometricsDuplicatesDialogHolder` (116 lines)
+against `BaseTeiViewHolder` (118). Any solution has to account for the original
+being `abstract` with two abstract members (`itemViewClick`,
+`itemConfiguration`) that the dialog does not need, and for the `init` block
+that sets the Compose composition strategy.
+
+Not addressed during the merge: it is a refactor, and mixing it in would break
+attribution if the dialog misbehaves in validation. Same reasoning as
+`BasicPreferenceProvider` and `AgeInMonths`. To be decided together with those.
+
+### `BasicPreferenceProvider` decision (resolved 2026-08-07)
+
+`develop-eyeseetea` removed the whole abstraction in `1bb3974ca1 "Remove basic
+preference"` — the `BasicPreferenceProvider` interface, `BasicPreferenceProviderImpl`,
+and its Dagger binding in `PreferenceModule.kt` — leaving only
+`PreferenceProvider` / `PreferenceProviderImpl`.
+
+Simprints still depends on it across the biometrics surface: `AgeInMonths.kt`,
+`OrgUnitAsModuleId.kt`, `BiometricsClientFactory.kt`,
+`BiometricsDuplicatesDialogPresenter.kt`, `BiometricsDuplicatesDialogModule.kt`,
+`EnrollmentPresenterImpl.kt`, `EnrollmentModule.kt`, `TEIDataPresenter.kt`,
+`TEIDataFragment.kt`, `TEICardMapper.kt`. The selected biometrics configuration
+is flattened into preferences and read back through this provider.
+
+Decision: **restore the abstraction for now** — interface, impl, and the DI
+binding (the binding carries an `EyeSeeTea customization` comment explaining
+why). Rationale: `BasicPreferenceProvider` originally existed because
+`PreferenceProvider` was too complex for this use; migrating ~10 biometrics
+files to `PreferenceProvider` is a refactor, not an upgrade concern, and mixing
+the two inside one merge commit makes both harder to review.
+
+Follow-up (after this upgrade closes, as a separate commit): evaluate migrating
+the biometrics surface to baseline's `PreferenceProvider` and dropping the
+restored abstraction.
+
+Note: the surviving `BasicPreferenceProviderImpl` differs from the pre-deletion
+baseline version on one line — `setValue()` with a null value calls
+`remove(key)` here instead of `clear()`. The Simprints version is correct;
+`clear()` would wipe every stored preference instead of the single key.
+
+## Improvements to promote to `develop-eyeseetea`
+
+Findings from this upgrade that belong in the shared baseline, not in the
+Simprints branch. Each is validated by having survived a real upgrade; promote
+them as a single PR against `develop-eyeseetea` when this upgrade closes
+(same criterion agreed for the OpenSpec scaffolding bump below).
+
+Status values: `pending` (found, not yet promoted) / `promoted` (in a baseline PR).
+
+### B1. `CLAUDE.md.template` assumes the fork owns `CLAUDE.md` — it no longer does
+
+- **Baseline file:** `eyeseetea-docs/templates/CLAUDE.md.template`
+- **Status:** `pending`
+- **Evidence:** upstream Oslo introduced a root `CLAUDE.md` in 3.4
+  (`2deafc54c5`, PR #4778, author Andrés Miguel Rubio, present in
+  `origin/upstream/3.4.1`) plus `AGENTS.md` (`5fd7ace101`, `638adaa548`,
+  `b69b859546`). Both are **upstream files**, not EyeSeeTea ones.
+- **Problem:** the template tells each fork to write a full fork-specific
+  `CLAUDE.md` at the repo root. Since 3.4 that path is owned by Oslo, so a
+  fork following the template overwrites the upstream file, drops its
+  `@AGENTS.md` include, and guarantees a whole-file conflict on every future
+  upgrade. Simprints hit exactly this in Phase 5.
+- **Fix to promote:** rewrite the template so a fork creates
+  `AGENTS-<client>.md` and adds a single `@AGENTS-<client>.md` import line to
+  the upstream `CLAUDE.md`. Verified against the Claude Code docs: a
+  `CLAUDE.md` supports multiple `@file` imports, arbitrary filenames, relative
+  paths, and up to four hops of nesting
+  (https://code.claude.com/docs/en/memory.md#import-additional-files).
+  This follows the project's own placement hierarchy — "new file" beats
+  "edit an Oslo file" — and cuts the recurring conflict from a whole file to
+  one line.
+- **Also update:** `onboarding-fork-guide.md` Phase 5, which currently
+  instructs copying the template to `CLAUDE.md`.
+
+### B2. `customization-files-template.md` has no "Feat commits" section
+
+- **Baseline files:** `eyeseetea-docs/customizations/template/customization-files-template.md`,
+  `eyeseetea-docs/onboarding-fork-guide.md` (Phase 3)
+- **Status:** `pending`
+- **Evidence:** `eyeseetea-docs/scripts/check_upgrade_docs.py` has
+  `check_feat_commit_coverage()`, which parses a `## 4.` section for
+  per-customization commit SHAs and cross-checks every code file those commits
+  touched against the inventory. `conflict-rules.md` calls this
+  "load-bearing" for the Automerge verification rule. The template has no such
+  section, so the check silently never fires.
+- **Problem:** Simprints hit this in task 1.3 — no SHAs were ever recorded, and
+  reconstructing them afterwards was unreliable (209 candidate commits, mixed
+  with WIDP and upstream bring-forward merges).
+- **Fix to promote:** add a `## 4. Feat commits` section to the template in the
+  format the script parses, and document it in Phase 3 of the onboarding guide
+  so SHAs get captured while the developer still knows which commits introduced
+  each customization.
+
+### B5. New `customization-techniques.md` should live in the baseline
+
+- **Baseline files:** `eyeseetea-docs/customization-techniques.md` (new),
+  plus links from `eyeseetea-docs/README.md` and `upgrade/conflict-rules.md`
+- **Status:** `pending` — written on this branch, needs promoting
+- **Evidence:** `eyeseetea-docs/` documents *what* each fork customizes
+  (`customization-files.md`) and *how* to resolve conflicts
+  (`conflict-rules.md`), but nothing documented the **mechanisms** available for
+  customizing shared code. Each fork was rediscovering them.
+- **Fix to promote:** move the file and its two links to `develop-eyeseetea`.
+  It currently documents five techniques found during this upgrade: field hooks
+  (T1, Simprints), post-metadata-sync actions (T2, needed by Simprints and WIDP,
+  not built yet — same as B4), widening visibility (T3), extra constructor
+  parameter (T4), and copying an Oslo component as an anti-pattern (T5).
+- **Note:** WIDP should review T1 and T5 — both were written from the Simprints
+  side, and WIDP may have equivalents worth recording, or a better solution.
+
+### B4. No extension point after metadata sync (blocks two forks)
+
+- **Baseline files:** `sync/src/commonMain/.../domain/SyncMetadata.kt`,
+  `sync/src/androidMain/.../di/SyncModule.android.kt`, plus a new contract in
+  `:commonskmm`
+- **Status:** `pending` — **highest priority of this list**
+- **Evidence:** the old `SyncPresenterImpl.syncMetadata()` in `app/` let forks
+  hook work onto the end of a metadata sync; Simprints used it for biometrics
+  config and WIDP for notifications. Baseline replaced it with the KMP
+  `SyncMetadata` use case in `:sync`, which has no extension point — and `:sync`
+  cannot see fork code (`:app` dependency would be circular), nor can a fork
+  decorate the use case (its consumer `SyncMetadataWorker` lives inside `:sync`
+  and injects the `final` concrete class).
+- **Problem:** Simprints has an accepted regression right now (biometrics config
+  stops refreshing on metadata sync). WIDP will hit the identical problem with
+  notifications on its next upgrade.
+- **Fix to promote:** a `PostMetadataSyncAction` contract in `:commonskmm` that
+  `SyncMetadata` runs after a successful sync, with each fork registering its own
+  list in DI. Draft design and open questions are in the regression section
+  below — **not agreed yet**, needs review before implementing.
+
+### B3. OpenSpec Claude scaffolding is generated by an outdated CLI
+
+- **Baseline files:** `.claude/commands/opsx/*.md`, `.claude/skills/openspec-*/SKILL.md`
+- **Status:** `pending`
+- **Evidence:** baseline's copies carry `generatedBy: "1.2.0"`; the current CLI
+  is 1.8.0.
+- **Problem:** forks inheriting the scaffolding get commands/skills several
+  versions behind, and miss the two workflows 1.8.0 ships (`/opsx:sync`,
+  `/opsx:update`).
+- **Fix to promote:** run `openspec update` on `develop-eyeseetea` and review
+  the diff. Already trialed on this branch (commit `f6e3ff3ba0`);
+  `openspec validate --specs --strict` still passed 13/13 afterwards.
+- **Process note for the guide:** update the scaffolding **after** merging the
+  baseline, not before. Doing it before (as happened here) turns all eight
+  scaffolding files into `AA` add/add conflicts during the merge.
 
 ## Open Questions
 

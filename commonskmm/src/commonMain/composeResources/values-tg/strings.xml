@@ -3,9 +3,6 @@
     <string name="invalid_integer">Қимат бояд адади бутун бошад</string>
     <string name="error">Хатогӣ</string>
     <string name="required">Ҳатмӣ</string>
-    <string name="date">Сана</string>
-    <string name="hint_year">Солҳо</string>
-    <string name="hint_month">Моҳҳо</string>
     <string name="polygon">Бисёркунҷа</string>
     <string name="latitude">Тӯл</string>
     <string name="longitude">Арз</string>
@@ -22,8 +19,11 @@
     <string name="input_coordinate_latitude">Тӯл</string>
     <string name="input_coordinate_longitude">Арз</string>
     <string name="action_done">Иҷро шуд</string>
-    <!--*******************->
+    <!--*******************
        END OF D2 Error Messages
     **********************-->
+    <string name="age_or">Ё</string>
+    <string name="cancel">Бекор кардан</string>
+    <string name="ok">OK</string>
 
 </resources>

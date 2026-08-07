@@ -1,10 +1,9 @@
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    kotlin("multiplatform")
+    alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.compose)
-    id("com.android.library")
+    alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.kotlin.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
 }
@@ -13,22 +12,22 @@ kotlin {
 
     compilerOptions {
         freeCompilerArgs.add("-Xcontext-parameters")
-        @OptIn(ExperimentalKotlinGradlePluginApi::class)
         freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 
-    androidTarget {
-        compilations.all {
-            compileTaskProvider.configure {
-                compilerOptions {
-                    jvmTarget.set(JvmTarget.JVM_17)
-                }
-            }
+    androidLibrary {
+        namespace = "org.dhis2.mobile.sync"
+        compileSdk = libs.versions.sdk.get().toInt()
+        minSdk = libs.versions.minSdk.get().toInt()
+        compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
+        androidResources { enable = true }
+        withHostTestBuilder {}.configure {}
+        withDeviceTestBuilder {}.configure {
+            instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         }
     }
+
     jvm("desktop")
-
-
 
     sourceSets {
 
@@ -36,12 +35,13 @@ kotlin {
             resources.srcDirs("src/commonMain/composeResources")
 
             dependencies {
+                implementation(project(":commonskmm"))
 
-                implementation(compose.runtime)
-                implementation(compose.foundation)
-                implementation(compose.ui)
-                implementation(compose.material3)
-                implementation(compose.components.resources)
+                implementation(libs.compose.runtime)
+                implementation(libs.compose.foundation)
+                implementation(libs.compose.ui)
+                implementation(libs.compose.material3)
+                implementation(libs.compose.components.resources)
                 implementation(libs.compose.material3.window)
                 implementation(libs.lifecycle.runtime.compose)
 
@@ -62,23 +62,31 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.dhis2.android.sdk)
             api(libs.analytics.timber)
-
+            implementation(libs.androidx.work)
+            compileOnly(libs.androidx.compose.preview)
+            compileOnly(libs.androidx.compose.uitooling)
+            api(libs.koin.work)
         }
 
-        androidUnitTest.dependencies {
-
+        getByName("androidHostTest") {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.junit.jupiter)
+                implementation(libs.test.turbine)
+                implementation(libs.test.kotlinCoroutines)
+                implementation(libs.test.mockitoKotlin)
+            }
         }
 
-        androidInstrumentedTest.dependencies {
+        getByName("androidDeviceTest") {
             dependencies {
                 implementation(libs.test.junit.ext)
-
             }
         }
 
         val desktopMain by getting {
             dependencies {
-                implementation(compose.desktop.common)
+                implementation(libs.compose.desktop.common)
             }
         }
     }
@@ -90,30 +98,6 @@ compose.resources {
     generateResClass = always
 }
 
-android {
-    namespace = "org.dhis2.mobile.sync"
-    compileSdk = libs.versions.sdk.get().toInt()
-    defaultConfig {
-        minSdk = libs.versions.minSdk.get().toInt()
-        val bitriseSentryDSN = System.getenv("SENTRY_DSN") ?: ""
-        buildConfigField("String", "SENTRY_DSN", "\"${bitriseSentryDSN}\"")
-    }
-    buildFeatures {
-        buildConfig = true
-    }
-    compileOptions {
-        isCoreLibraryDesugaringEnabled = true
-
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    dependencies {
-        coreLibraryDesugaring(libs.desugar)
-    }
-}
-
 dependencies {
-    debugImplementation(libs.androidx.compose.preview)
-    debugImplementation(libs.androidx.compose.uitooling)
+    coreLibraryDesugaring(libs.desugar)
 }

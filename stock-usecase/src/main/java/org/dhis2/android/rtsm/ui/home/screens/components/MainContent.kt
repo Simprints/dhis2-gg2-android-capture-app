@@ -1,5 +1,7 @@
 package org.dhis2.android.rtsm.ui.home.screens.components
 
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
@@ -8,8 +10,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.absolutePadding
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -38,9 +40,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.FirstBaseline
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -49,11 +49,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import kotlinx.coroutines.launch
 import org.dhis2.android.rtsm.R
 import org.dhis2.android.rtsm.data.TransactionType
 import org.dhis2.android.rtsm.ui.home.HomeViewModel
+import org.dhis2.android.rtsm.ui.home.LocalThemeColor
 import org.dhis2.android.rtsm.ui.home.model.DataEntryStep
 import org.dhis2.android.rtsm.ui.home.model.SettingsUiState
 import org.dhis2.android.rtsm.ui.managestock.ManageStockViewModel
@@ -71,11 +73,10 @@ import org.hisp.dhis.mobile.ui.designsystem.theme.Spacing
 fun MainContent(
     backdropState: BackdropScaffoldState,
     isFrontLayerDisabled: Boolean?,
-    themeColor: Color,
     viewModel: HomeViewModel,
     manageStockViewModel: ManageStockViewModel,
-    barcodeLauncher: ActivityResultLauncher<ScanOptions>,
 ) {
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val resource = painterResource(R.drawable.ic_arrow_up)
     val qrcodeResource = painterResource(R.drawable.ic_qr_code_scanner)
@@ -89,22 +90,23 @@ fun MainContent(
     val focusManager = LocalFocusManager.current
     val search by manageStockViewModel.scanText.collectAsState()
     val settingsUiState by viewModel.settingsUiState.collectAsState()
-    var columnHeightDp by remember { mutableStateOf(0.dp) }
-    val localDensity = LocalDensity.current
     val tablePadding = getTablePadding(backdropState.isRevealed)
     var tableResizeActions by remember {
         mutableStateOf<TableResizeActions?>(null)
     }
 
+    val barcodeLauncher = rememberLauncherForActivityResult(
+        contract = ScanContract(),
+    ) { scanIntentResult ->
+        scanIntentResult.contents?.let { data ->
+            manageStockViewModel.onSearchQueryChanged(data)
+        } ?: Toast.makeText(context, "Scan cancelled!", Toast.LENGTH_SHORT).show()
+    }
+
     Column(
         modifier =
             Modifier
-                .fillMaxWidth()
-                .onGloballyPositioned { coordinates ->
-                    columnHeightDp = with(localDensity) { coordinates.size.height.toDp() }
-                }.onSizeChanged { coordinates ->
-                    columnHeightDp = with(localDensity) { coordinates.height.toDp() }
-                },
+                .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Row(
@@ -114,7 +116,8 @@ fun MainContent(
                         left = 16.dp,
                         top = 16.dp,
                         right = 16.dp,
-                    ).fillMaxWidth()
+                    )
+                    .fillMaxWidth()
                     .size(60.dp),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.Top,
@@ -130,7 +133,8 @@ fun MainContent(
                             elevation = 3.dp,
                             shape = RoundedCornerShape(30.dp),
                             clip = false,
-                        ).offset(0.dp, 0.dp)
+                        )
+                        .offset(0.dp, 0.dp)
                         .background(color = Color.White, shape = RoundedCornerShape(30.dp))
                         .weight(1 - (weightValue + weightValueArrow))
                         .alignBy(FirstBaseline)
@@ -147,7 +151,7 @@ fun MainContent(
                     TextFieldDefaults.outlinedTextFieldColors(
                         focusedBorderColor = Color.White,
                         unfocusedBorderColor = Color.White,
-                        cursorColor = themeColor,
+                        cursorColor = LocalThemeColor.current,
                     ),
                 textStyle = LocalTextStyle.current.copy(fontSize = 14.sp),
                 enabled = isFrontLayerDisabled != true,
@@ -155,7 +159,7 @@ fun MainContent(
                     Icon(
                         painter = searchResource,
                         contentDescription = "",
-                        tint = themeColor,
+                        tint = LocalThemeColor.current,
                     )
                 },
                 trailingIcon = {
@@ -208,7 +212,7 @@ fun MainContent(
                     Icon(
                         painter = qrcodeResource,
                         contentDescription = "",
-                        tint = themeColor,
+                        tint = LocalThemeColor.current,
                     )
                 },
             )
@@ -227,7 +231,7 @@ fun MainContent(
                         Icon(
                             painter = resetResize,
                             contentDescription = "",
-                            tint = themeColor,
+                            tint = LocalThemeColor.current,
                         )
                     },
                 )
@@ -249,7 +253,7 @@ fun MainContent(
                         Icon(
                             resource,
                             contentDescription = null,
-                            tint = themeColor,
+                            tint = LocalThemeColor.current,
                         )
                     },
                 )
@@ -265,18 +269,18 @@ fun MainContent(
             modifier =
                 Modifier
                     .padding(bottom = tablePadding)
-                    .height(columnHeightDp),
+                    .fillMaxHeight(),
         ) {
             if ((
-                    manageStockViewModel.dataEntryUiState
-                        .collectAsState()
-                        .value.step
-                        != DataEntryStep.COMPLETED ||
                         manageStockViewModel.dataEntryUiState
                             .collectAsState()
                             .value.step
-                        != DataEntryStep.START
-                ) &&
+                                != DataEntryStep.COMPLETED ||
+                                manageStockViewModel.dataEntryUiState
+                                    .collectAsState()
+                                    .value.step
+                                != DataEntryStep.START
+                        ) &&
                 shouldDisplayTable(settingsUiState)
             ) {
                 manageStockViewModel.setup(viewModel.getData())
@@ -322,6 +326,7 @@ private fun shouldDisplayTable(settingsUiState: SettingsUiState): Boolean =
     when (settingsUiState.selectedTransactionItem.type) {
         TransactionType.DISTRIBUTION ->
             settingsUiState.hasFacilitySelected() && settingsUiState.hasDestinationSelected()
+
         else -> settingsUiState.hasFacilitySelected()
     }
 

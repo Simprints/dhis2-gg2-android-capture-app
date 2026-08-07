@@ -46,8 +46,9 @@ import org.dhis2.commons.schedulers.SingleEventEnforcerImpl;
 import org.dhis2.data.biometrics.biometricsClient.models.ScannedCredential;
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsConfirmIdentityItem;
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem;
-import org.dhis2.data.service.SyncStatusController;
 import org.dhis2.maps.model.StageStyle;
+import org.dhis2.mobile.commons.orgunit.OrgUnitSelectorScope;
+import org.dhis2.mobile.sync.domain.SyncStatusController;
 import org.dhis2.usescases.biometrics.ui.SequentialSearch;
 import org.dhis2.utils.analytics.AnalyticsHelper;
 import org.hisp.dhis.android.core.D2;
@@ -101,7 +102,6 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     private final DisableHomeFiltersFromSettingsApp disableHomeFilters;
     private final MatomoAnalyticsController matomoAnalyticsController;
     private final SyncStatusController syncStatusController;
-
     private final ColorUtils colorUtils;
     private final BasicPreferenceProvider basicPreferenceProvider;
 
@@ -347,7 +347,7 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
         );
     }
 
-    private void enrollInOrgUnit(String orgUnitUid, String programUid, String uid,  HashMap<String, List<String>> queryData) {
+    private void enrollInOrgUnit(String orgUnitUid, String programUid, String uid, HashMap<String, List<String>> queryData) {
         compositeDisposable.add(
                 searchRepository.saveToEnroll(trackedEntity.uid(), orgUnitUid, programUid, uid, queryData, view.fromRelationshipTEI())
                         .subscribeOn(schedulerProvider.computation())
@@ -382,12 +382,12 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
 
     @Override
     public void onSearchTEIModelClick(SearchTeiModel item, SequentialSearch sequentialSearch) {
-        String teiUid = item.getTei().uid();
+        String teiUid = item.getTei().getUid();
         String enrollmentUid = item.getSelectedEnrollment() != null ?
-                item.getSelectedEnrollment().uid() :
+                item.getSelectedEnrollment().getUid() :
                 null;
 
-        boolean isOnline = item.isOnline();
+        boolean isOnline = item.getTei().isOnline();
 
         if (sequentialSearch instanceof SequentialSearch.BiometricsSearch) {
             view.showBiometricsSearchConfirmation(item);
@@ -438,9 +438,9 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
     @Override
     public void sendAutomaticBiometricsConfirmIdentity(SearchTeiModel item) {
         if (sessionId != null) {
-            String guid = getBiometricsAttributeValue(item.uid());
+            String guid = getBiometricsAttributeValue(item.getTei().getUid());
 
-            searchRepository.updateAttributeValue(item.uid(), biometricAttributeId, guid);
+            searchRepository.updateAttributeValue(item.getTei().getUid(), biometricAttributeId, guid);
 
             view.sendAutomaticBiometricsConfirmIdentity(sessionId, guid, item);
         }

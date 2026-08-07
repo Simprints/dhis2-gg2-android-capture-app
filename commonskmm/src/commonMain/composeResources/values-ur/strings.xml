@@ -3,13 +3,10 @@
     <string name="invalid_integer">ویلیو انٹیجر ہونی چاہیے</string>
     <string name="error">غلطی</string>
     <string name="required">لازمی</string>
-    <string name="date">تاریخ</string>
-    <string name="hint_year">سال</string>
-    <string name="hint_month">مہینے</string>
-    <string name="hint_day">دن</string>
     <string name="polygon">کثیر زبان</string>
     <string name="latitude">طول</string>
     <string name="longitude">لمبائی</string>
+    <string name="polygon_captured">کثیر الاضلاع (حدود) محفوظ کر لی گئیں</string>
     <string name="due_date">اخری تاریخ</string>
     <string name="complete">مکمل</string>
     <string name="share">بانٹیں</string>
@@ -26,8 +23,11 @@
     <string name="input_coordinate_longitude">لمبائی</string>
     <string name="no_results_found">کوئی نتیجہ نہیں ملا</string>
     <string name="action_done">ہو گیا</string>
-    <!--*******************->
+    <!--*******************
        END OF D2 Error Messages
     **********************-->
+    <string name="age_or">یا</string>
+    <string name="cancel">منسوخ</string>
+    <string name="ok">ٹھیک</string>
 
 </resources>

@@ -286,7 +286,6 @@ class EventDetailsRepository(
             editable = accessDataWrite && !shouldBlockEdition,
             description = null,
             featureType = featureType,
-            url = null
         )
     }
 

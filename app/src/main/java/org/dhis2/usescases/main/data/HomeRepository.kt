@@ -7,9 +7,9 @@ import java.io.File
 interface HomeRepository {
     suspend fun user(): User?
 
-    suspend fun logOut()
+    suspend fun logOut(): Result<Unit>
 
-    suspend fun clearPin()
+    suspend fun clearPin(): Result<Unit>
 
     suspend fun hasHomeAnalytics(): Boolean
 
@@ -34,4 +34,8 @@ interface HomeRepository {
     suspend fun getInitialSyncDone(): Boolean
 
     suspend fun isImportedDb(): Boolean
+
+    suspend fun stopBackgroundSync()
+
+    suspend fun restoreSyncStatus()
 }

@@ -1,6 +1,5 @@
 package org.dhis2.usescases.main.program
 
-
 import dagger.Module
 import dagger.Provides
 import org.dhis2.commons.di.dagger.PerFragment
@@ -17,7 +16,7 @@ import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.biometrics.BiometricsConfigApi
 import org.dhis2.data.biometrics.BiometricsConfigRepositoryImpl
 import org.dhis2.data.dhislogic.DhisProgramUtils
-import org.dhis2.data.service.SyncStatusController
+import org.dhis2.mobile.sync.domain.SyncStatusController
 import org.dhis2.usescases.biometrics.repositories.BiometricsConfigRepository
 import org.dhis2.usescases.biometrics.usecases.SelectBiometricsConfig
 import org.hisp.dhis.android.core.D2
@@ -25,6 +24,7 @@ import org.hisp.dhis.android.core.D2
 @Module
 class ProgramModule(
     private val view: ProgramView,
+    private val syncStatusController: SyncStatusController,
 ) {
     @Provides
     @PerFragment
@@ -34,7 +34,6 @@ class ProgramModule(
         featureConfigRepository: FeatureConfigRepository,
         matomoAnalyticsController: MatomoAnalyticsController,
         filterManager: FilterManager,
-        syncStatusController: SyncStatusController,
         schedulerProvider: SchedulerProvider,
         selectBiometricsConfig: SelectBiometricsConfig
     ): ProgramViewModelFactory =

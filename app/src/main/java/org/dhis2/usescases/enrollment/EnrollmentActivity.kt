@@ -434,7 +434,7 @@ class EnrollmentActivity :
             enrollNewVisible
         )
 
-        dialog.setOnOpenTeiDashboardListener { teiUid: String, programUid: String, enrollmentUid: String ->
+        dialog.setOnOpenTeiDashboardListener { teiUid: String, programUid: String, enrollmentUid: String? ->
             presenter.deleteAllSavedData()
             finish()
             startActivity(

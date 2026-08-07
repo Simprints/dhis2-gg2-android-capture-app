@@ -105,7 +105,7 @@ private fun ProvideQRInput(
         inputTextFieldValue = value,
         inputStyle = inputStyle,
         isRequiredField = fieldUiModel.mandatory,
-        onNextClicked = {
+        onImeActionClick = {
             clickedOnNext = true
             onNextClicked()
         },
@@ -162,7 +162,7 @@ private fun ProvideQRInput(
 @Composable
 private fun ProvideDefaultTextInput(
     modifier: Modifier,
-    inputStyle: InputStyle = InputStyle.DataInputStyle(),
+    inputStyle: InputStyle = InputStyle.DarkInputStyle(),
     fieldUiModel: FieldUiModel,
     intentHandler: (FormIntent) -> Unit,
     focusManager: FocusManager,
@@ -204,7 +204,7 @@ private fun ProvideDefaultTextInput(
         inputTextFieldValue = value,
         inputStyle = inputStyle,
         isRequiredField = fieldUiModel.mandatory,
-        onNextClicked = {
+        onImeActionClick = {
             clickedOnNext = true
             onNextClicked()
         },
@@ -269,7 +269,7 @@ private fun ProvideBarcodeInput(
         legendData = fieldUiModel.legend(),
         inputTextFieldValue = value,
         isRequiredField = fieldUiModel.mandatory,
-        onNextClicked = {
+        onImeActionClick = {
             clickedOnNext = true
             onNextClicked()
         },

@@ -1,24 +1,20 @@
 package org.dhis2.mobile.login.main.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import org.dhis2.mobile.commons.extensions.launchUseCase
 import org.dhis2.mobile.commons.extensions.withMinimumDuration
 import org.dhis2.mobile.commons.network.NetworkStatusProvider
 import org.dhis2.mobile.login.main.domain.model.LoginScreenState
-import org.dhis2.mobile.login.main.domain.model.LoginScreenState.LegacyLogin
-import org.dhis2.mobile.login.main.domain.model.LoginScreenState.OauthLogin
+import org.dhis2.mobile.login.main.domain.model.LoginScreenState.LoginCredentials
 import org.dhis2.mobile.login.main.domain.model.ServerValidationResult
 import org.dhis2.mobile.login.main.domain.usecase.GetInitialScreen
 import org.dhis2.mobile.login.main.domain.usecase.ImportDatabase
 import org.dhis2.mobile.login.main.domain.usecase.ValidateServer
-import org.dhis2.mobile.login.main.ui.navigation.AppLinkNavigation
 import org.dhis2.mobile.login.main.ui.navigation.Navigator
 import org.dhis2.mobile.login.main.ui.state.DatabaseImportState
 import org.dhis2.mobile.login.main.ui.state.ServerValidationUiState
@@ -28,17 +24,8 @@ class LoginViewModel(
     private val getInitialScreen: GetInitialScreen,
     private val importDatabase: ImportDatabase,
     private val validateServer: ValidateServer,
-    private val appLinkNavigation: AppLinkNavigation,
-    networkStatusProvider: NetworkStatusProvider,
+    private val networkStatusProvider: NetworkStatusProvider,
 ) : ViewModel() {
-    private val isNetworkOnline =
-        networkStatusProvider.connectionStatus
-            .stateIn(
-                viewModelScope,
-                SharingStarted.Eagerly,
-                false,
-            )
-
     private val _serverValidationState = MutableStateFlow(ServerValidationUiState())
     val serverValidationState = _serverValidationState.asStateFlow()
 
@@ -46,14 +33,8 @@ class LoginViewModel(
     val importDatabaseState = _importDatabaseState.asStateFlow()
 
     private var serverValidationJob: Job? = null
-    private val redirectUri = "https://vgarciabnz.github.io"
 
     init {
-        launchUseCase {
-            appLinkNavigation.appLink.collect { urlString ->
-                handleAppLink(urlString)
-            }
-        }
         goToInitialScreen()
     }
 
@@ -81,8 +62,11 @@ class LoginViewModel(
         }
         serverValidationJob =
             launchUseCase {
+                val isOnline = networkStatusProvider.connectionStatus.firstOrNull() ?: false
                 val result =
-                    withMinimumDuration { validateServer(serverUrl, isNetworkOnline.value) }
+                    withMinimumDuration {
+                        validateServer(serverUrl, isOnline)
+                    }
                 when (result) {
                     is ServerValidationResult.Error -> {
                         _serverValidationState.update {
@@ -94,22 +78,18 @@ class LoginViewModel(
                         }
                     }
 
-                    is ServerValidationResult.Legacy -> {
+                    is ServerValidationResult.Success -> {
                         navigator.navigate(
                             destination =
-                                LegacyLogin(
+                                LoginCredentials(
                                     serverName = result.serverName,
                                     allowRecovery = result.allowRecovery,
                                     selectedServer = serverUrl,
                                     selectedServerFlag = result.countryFlag,
                                     selectedUsername = null,
+                                    oAuthEnabled = result.oAuthEnabled,
                                 ),
                         )
-                        stopValidation()
-                    }
-
-                    ServerValidationResult.Oauth -> {
-                        navigator.navigate(OauthLogin(serverUrl))
                         stopValidation()
                     }
                 }
@@ -123,23 +103,6 @@ class LoginViewModel(
 
     private fun stopValidation() {
         _serverValidationState.update { it.copy(validationRunning = false) }
-    }
-
-    private fun handleAppLink(urlString: String) {
-        if (urlString.startsWith(redirectUri)) {
-            val code = urlString.substringAfter("code=").substringBefore('&')
-            if (code.isNotEmpty()) {
-                // TODO "Use the authorization code to get a token and log in, then show statistics screen"
-            } else {
-                val error = urlString.substringAfter("error=").substringBefore('&')
-                _serverValidationState.update {
-                    it.copy(
-                        error = error,
-                        validationRunning = false,
-                    )
-                }
-            }
-        }
     }
 
     fun onOauthLoginCancelled() {

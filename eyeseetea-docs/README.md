@@ -19,6 +19,19 @@ This folder explains two workflows:
 - always bring Oslo into `develop-eyeseetea` first
 - do not treat every diff as a real client customization
 - keep temporary upgrade progress in `upgrade-<version>-notes.md`, not in stable inventory files
+- before inventing a way to customize shared code, check `customization-techniques.md` — another fork may already have solved the same shape of problem
+
+## Customization techniques
+
+`customization-techniques.md` is the catalogue of **mechanisms** for changing
+shared (Oslo) behavior from a fork: field hooks for replacing the UI of a form
+field, widening visibility, adding constructor parameters, and the anti-pattern
+of copying an Oslo component. Each entry records which fork uses it and what it
+costs at upgrade time.
+
+It complements, but does not replace:
+- `customizations/<client>/customization-files.md` — *what* each fork customizes
+- `upgrade/conflict-rules.md` — *how* to resolve conflicts during a merge
 
 ## 1. New fork
 

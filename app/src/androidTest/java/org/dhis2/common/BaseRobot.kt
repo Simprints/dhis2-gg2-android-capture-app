@@ -10,10 +10,13 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.FailureHandler
+import androidx.test.espresso.IdlingResourceTimeoutException
 import androidx.test.espresso.NoMatchingViewException
 import androidx.test.espresso.UiController
 import androidx.test.espresso.ViewAction
 import androidx.test.espresso.ViewInteraction
+import androidx.test.espresso.base.DefaultFailureHandler
 import androidx.test.espresso.matcher.ViewMatchers.isRoot
 import androidx.test.espresso.util.TreeIterables
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
@@ -105,6 +108,13 @@ open class BaseRobot {
         val maxTries = waitMillis / waitMillisPerTry.toInt()
 
         var tries = 0
+        val defaultFailureHandler = DefaultFailureHandler(getInstrumentation().targetContext)
+        val failureHandler = FailureHandler { error, matcher ->
+            if (error is NoMatchingViewException) {
+                throw error
+            }
+            defaultFailureHandler.handle(error, matcher)
+        }
 
         for (i in 0..maxTries)
             try {
@@ -112,16 +122,20 @@ open class BaseRobot {
                 tries++
 
                 // Search the root for the view
-                onView(isRoot()).perform(searchFor(viewMatcher))
+                onView(isRoot())
+                    .withFailureHandler(failureHandler)
+                    .perform(searchFor(viewMatcher))
 
                 // If we're here, we found our view. Now return it
                 return onView(viewMatcher)
 
             } catch (e: Exception) {
 
-                if (tries == maxTries) {
-                    throw e
-                }
+                if (tries == maxTries) throw e
+                // Retrying on idling timeouts blocks ~26s per attempt and leaves
+                // IdlingResourceRegistry's internal callback registered, corrupting state
+                // for subsequent tests. Fail fast so Espresso cleans up normally.
+                if (e is IdlingResourceTimeoutException || e.cause is IdlingResourceTimeoutException) throw e
                 sleep(waitMillisPerTry)
             }
 

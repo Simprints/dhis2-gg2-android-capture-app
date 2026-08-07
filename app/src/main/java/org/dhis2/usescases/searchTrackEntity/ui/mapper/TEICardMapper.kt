@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import org.dhis2.R
-import org.dhis2.commons.bindings.hasFollowUp
 import org.dhis2.commons.bindings.isFilePathValid
 import org.dhis2.commons.date.toDateSpan
 import org.dhis2.commons.date.toOverdueOrScheduledUiText
@@ -25,16 +24,18 @@ import org.dhis2.commons.date.toUi
 import org.dhis2.commons.prefs.BasicPreferenceProviderImpl
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.ui.model.ListCardUiModel
+import org.dhis2.mobile.commons.extensions.toJavaDate
+import org.dhis2.tracker.search.model.DomainEnrollment
+import org.dhis2.tracker.search.model.DomainProgram
+import org.dhis2.tracker.search.model.EnrollmentStatus
+import org.dhis2.tracker.search.model.SyncState
 import org.dhis2.form.extensions.isNotBiometricText
 import org.dhis2.form.extensions.isNotNhisNumberText
 import org.dhis2.usescases.biometrics.addAttrBiometricsEmojiIfRequired
 import org.dhis2.usescases.biometrics.addAttrNHISNumberEmojiIfRequired
 import org.dhis2.usescases.biometrics.isUnderAgeThreshold
 import org.dhis2.usescases.searchTrackEntity.SearchTeiModel
-import org.hisp.dhis.android.core.common.State
-import org.hisp.dhis.android.core.enrollment.Enrollment
-import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
-import org.hisp.dhis.android.core.program.Program
+import org.dhis2.usescases.searchTrackEntity.adapters.hasFollowUp
 import org.hisp.dhis.mobile.ui.designsystem.component.AdditionalInfoItem
 import org.hisp.dhis.mobile.ui.designsystem.component.AdditionalInfoItemColor
 import org.hisp.dhis.mobile.ui.designsystem.component.Avatar
@@ -60,7 +61,7 @@ class TEICardMapper(
         ListCardUiModel(
             avatar = { ProvideAvatar(searchTEIModel, onImageClick) },
             title = getTitle(searchTEIModel),
-            lastUpdated = searchTEIModel.tei.lastUpdated().toDateSpan(context),
+            lastUpdated = searchTEIModel.tei.lastUpdated?.toJavaDate().toDateSpan(context),
             additionalInfo = getAdditionalInfoList(searchTEIModel),
             actionButton = {
                 if (onSyncIconClick != null) {
@@ -80,7 +81,7 @@ class TEICardMapper(
     ) {
         val programUid: String? =
             if (item.selectedEnrollment != null) {
-                item.selectedEnrollment.program().toString()
+                item.selectedEnrollment.program
             } else {
                 null
             }
@@ -117,7 +118,7 @@ class TEICardMapper(
             item.header?.firstOrNull()
                 ?: item.attributeValues.values
                     .firstOrNull()
-                    ?.value()
+                    ?.value
                     ?.firstOrNull()
 
              return when (firstLetter) {
@@ -126,11 +127,11 @@ class TEICardMapper(
                  else -> firstLetter.uppercaseChar().toString()
              }*/
         val firsNameValue =
-            item.attributeValues.values.firstOrNull { it.trackedEntityAttribute() == firstNameAttrUid }
-                ?.value() ?: "?"
+            item.attributeValues.values.firstOrNull { it.attribute == firstNameAttrUid }
+                ?.value ?: "?"
         val lastNameValue =
-            item.attributeValues.values.firstOrNull { it.trackedEntityAttribute() == lastNameAttrUid }
-                ?.value() ?: "?"
+            item.attributeValues.values.firstOrNull { it.attribute == lastNameAttrUid }
+                ?.value ?: "?"
 
         return "${firsNameValue.first().uppercaseChar()}${lastNameValue.first().uppercaseChar()}"
 
@@ -142,17 +143,17 @@ class TEICardMapper(
             val value =
                 item.attributeValues.values
                     .firstOrNull()
-                    ?.value() ?: "-"
+                    ?.value ?: "-"
             "$key: $value"
         }
 
     private fun getAdditionalInfoList(searchTEIModel: SearchTeiModel): List<AdditionalInfoItem> {
         val attributeList =
-            searchTEIModel.attributeValues
+            searchTEIModel.tei.attributeValues
                 .map {
                     AdditionalInfoItem(
-                        key = it.key,
-                        value = it.value.value() ?: "-",
+                        key = it.displayName,
+                        value = it.value ?: "-",
                     )
                 }.toMutableList()
 
@@ -177,83 +178,84 @@ class TEICardMapper(
         val listWithNHISIcons = addAttrNHISNumberEmojiIfRequired(listWithBiometricsIcons).toMutableList()
 
         return listWithNHISIcons.also { list ->
-            if (
-                !searchTEIModel.ownerOrgUnit.isNullOrEmpty() &&
-                searchTEIModel.ownerOrgUnit != searchTEIModel.enrolledOrgUnit
-            ) {
-                addOwnedBy(
-                    list = list,
-                    ownerOrgUnit = searchTEIModel.ownerOrgUnit,
-                )
+            searchTEIModel.tei.ownerOrgUnit?.let {
+                if (it != searchTEIModel.tei.enrollmentOrgUnit) {
+                    addOwnedBy(
+                        list = list,
+                        ownerOrgUnit = it,
+                    )
+                }
             }
-
-            if (searchTEIModel.displayOrgUnit) {
+            if (searchTEIModel.tei.shouldDisplayOrgUnit) {
                 checkEnrolledIn(
                     list = list,
-                    enrolledOrgUnit = searchTEIModel.enrolledOrgUnit,
+                    enrolledOrgUnit = searchTEIModel.tei.enrollmentOrgUnit,
                 )
             }
 
             checkEnrolledPrograms(
                 list = list,
-                enrolledPrograms = searchTEIModel.programInfo,
+                enrolledPrograms = searchTEIModel.tei.enrolledPrograms,
             )
             val programUid: String? =
                 if (searchTEIModel.selectedEnrollment != null) {
-                    searchTEIModel.selectedEnrollment.program().toString()
+                    searchTEIModel.selectedEnrollment.program
                 } else {
                     null
                 }
             checkEnrollmentStatus(
                 programUid = programUid,
                 list = list,
-                status = searchTEIModel.selectedEnrollment?.status(),
+                status = searchTEIModel.selectedEnrollment?.status?: EnrollmentStatus.ACTIVE,
             )
 
             checkOverdue(
                 list = list,
-                hasOverdue = searchTEIModel.isHasOverdue,
-                overdueDate = searchTEIModel.overdueDate,
+                hasOverdue = searchTEIModel.tei.overDueDate != null,
+                overdueDate = searchTEIModel.tei.overDueDate?.toJavaDate(),
             )
 
             checkFollowUp(
                 list = list,
-                enrollments = searchTEIModel.enrollments,
+                enrollments = searchTEIModel.tei.enrollments,
             )
 
             checkSyncStatus(
                 list = list,
-                state = searchTEIModel.tei.aggregatedSyncState(),
+                state = searchTEIModel.tei.syncState,
             )
         }
     }
 
     private fun checkFollowUp(
         list: MutableList<AdditionalInfoItem>,
-        enrollments: List<Enrollment>,
+        enrollments: List<DomainEnrollment>?,
     ) {
-        if (enrollments.hasFollowUp()) {
-            list.add(
-                AdditionalInfoItem(
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Outlined.Flag,
-                            contentDescription = resourceManager.getString(R.string.marked_follow_up),
-                            tint = AdditionalInfoItemColor.WARNING.color,
-                        )
-                    },
-                    value = resourceManager.getString(R.string.marked_follow_up),
-                    isConstantItem = true,
-                    color = AdditionalInfoItemColor.WARNING.color,
-                ),
-            )
+        enrollments?.let {
+            if (enrollments.hasFollowUp()) {
+                list.add(
+                    AdditionalInfoItem(
+                        icon = {
+                            Icon(
+                                imageVector = Icons.Outlined.Flag,
+                                contentDescription = resourceManager.getString(R.string.marked_follow_up),
+                                tint = AdditionalInfoItemColor.WARNING.color,
+                            )
+                        },
+                        value = resourceManager.getString(R.string.marked_follow_up),
+                        isConstantItem = true,
+                        color = AdditionalInfoItemColor.WARNING.color,
+                    ),
+                )
+            }
         }
+
     }
 
     private fun checkEnrollmentStatus(
         programUid: String?,
         list: MutableList<AdditionalInfoItem>,
-        status: EnrollmentStatus?,
+        status: EnrollmentStatus,
     ) {
         val item =
             when (status) {
@@ -307,11 +309,11 @@ class TEICardMapper(
 
     private fun checkEnrolledPrograms(
         list: MutableList<AdditionalInfoItem>,
-        enrolledPrograms: List<Program>,
+        enrolledPrograms: List<DomainProgram>?,
     ) {
-        val programNames = enrolledPrograms.map { it.name() }
+        val programNames = enrolledPrograms?.map { it.displayName }
 
-        if (programNames.isNotEmpty()) {
+        programNames?.let {
             list.add(
                 AdditionalInfoItem(
                     key = resourceManager.getString(R.string.programs),
@@ -324,15 +326,18 @@ class TEICardMapper(
 
     private fun checkEnrolledIn(
         list: MutableList<AdditionalInfoItem>,
-        enrolledOrgUnit: String,
+        enrolledOrgUnit: String?,
     ) {
-        list.add(
-            AdditionalInfoItem(
-                key = resourceManager.getString(R.string.enrolledIn),
-                value = enrolledOrgUnit,
-                isConstantItem = true,
-            ),
-        )
+        enrolledOrgUnit?.let {
+            list.add(
+                AdditionalInfoItem(
+                    key = resourceManager.getString(R.string.enrolledIn),
+                    value = it,
+                    isConstantItem = true,
+                ),
+            )
+        }
+
     }
 
     private fun addOwnedBy(
@@ -354,16 +359,16 @@ class TEICardMapper(
         onSyncIconClick: () -> Unit,
     ) {
         val buttonText =
-            when (searchTEIModel.tei.aggregatedSyncState()) {
-                State.TO_POST,
-                State.TO_UPDATE,
-                -> {
+            when (searchTEIModel.tei.syncState) {
+                SyncState.TO_POST,
+                SyncState.TO_UPDATE,
+                    -> {
                     resourceManager.getString(R.string.sync)
                 }
 
-                State.ERROR,
-                State.WARNING,
-                -> {
+                SyncState.ERROR,
+                SyncState.WARNING,
+                    -> {
                     resourceManager.getString(R.string.sync_retry)
                 }
 
@@ -412,13 +417,13 @@ class TEICardMapper(
 
     private fun checkSyncStatus(
         list: MutableList<AdditionalInfoItem>,
-        state: State?,
+        state: SyncState?,
     ) {
         val item =
             when (state) {
-                State.TO_POST,
-                State.TO_UPDATE,
-                -> {
+                SyncState.TO_POST,
+                SyncState.TO_UPDATE,
+                    -> {
                     AdditionalInfoItem(
                         icon = {
                             Icon(
@@ -433,7 +438,7 @@ class TEICardMapper(
                     )
                 }
 
-                State.UPLOADING -> {
+                SyncState.UPLOADING -> {
                     AdditionalInfoItem(
                         icon = {
                             Icon(
@@ -448,7 +453,7 @@ class TEICardMapper(
                     )
                 }
 
-                State.ERROR -> {
+                SyncState.ERROR -> {
                     AdditionalInfoItem(
                         icon = {
                             Icon(
@@ -463,7 +468,7 @@ class TEICardMapper(
                     )
                 }
 
-                State.WARNING -> {
+                SyncState.WARNING -> {
                     AdditionalInfoItem(
                         icon = {
                             Icon(
@@ -534,7 +539,7 @@ class TEICardMapper(
         return ListCardUiModel(
             title = getConfirmationDialogTitle(searchTEIModel),
             subTitle = getConfirmationDialogSubtitle(searchTEIModel),
-            lastUpdated = searchTEIModel.tei.lastUpdated().toDateSpan(context),
+            lastUpdated = searchTEIModel.tei.lastUpdated?.toJavaDate()?.toDateSpan(context) ?: "",
             additionalInfo = getAdditionalInfoListForConfirmationDialog(searchTEIModel),
             actionButton = { },
             expandLabelText = "",
@@ -545,16 +550,16 @@ class TEICardMapper(
 
     private fun getConfirmationDialogTitle(item: SearchTeiModel): String {
         val firsNameValue =
-            item.allAttributeValues.values.firstOrNull { it.trackedEntityAttribute() == firstNameAttrUid }
-                ?.value()
+            item.allAttributeValues.values.firstOrNull { it.attribute == firstNameAttrUid }
+                ?.value
 
         val middleNameValue =
-            item.allAttributeValues.values.firstOrNull { it.trackedEntityAttribute() == middleNameAttrUid }
-                ?.value()
+            item.allAttributeValues.values.firstOrNull { it.attribute == middleNameAttrUid }
+                ?.value
 
         val lastNameValue =
-            item.allAttributeValues.values.firstOrNull { it.trackedEntityAttribute() == lastNameAttrUid }
-                ?.value()
+            item.allAttributeValues.values.firstOrNull { it.attribute == lastNameAttrUid }
+                ?.value
 
         return listOfNotNull(firsNameValue, middleNameValue, lastNameValue)
             .filter { it != "-" } // DHIS2 D2 empty attribute default value
@@ -578,7 +583,7 @@ class TEICardMapper(
 
     private fun getAdditionalInfoListForConfirmationDialog(searchTEIModel: SearchTeiModel): List<AdditionalInfoItem> {
         val attributeList = attributeUIdsToShow.mapNotNull { attributeUIdToShow ->
-            searchTEIModel.allAttributeValues.entries.find { it.value.trackedEntityAttribute() == attributeUIdToShow }
+            searchTEIModel.allAttributeValues.entries.find { it.value.attribute == attributeUIdToShow }
         }.map {
 
             val key = if (it.key.startsWith("Traceable address")) it.key.replace(
@@ -588,7 +593,7 @@ class TEICardMapper(
 
             AdditionalInfoItem(
                 key = "$key:",
-                value = it.value.value() ?: "",
+                value = it.value.value ?: "",
             )
         }.toMutableList()
 
