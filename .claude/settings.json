@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew *)",
+      "Bash(openspec *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git status *)",
+      "Bash(git branch *)",
+      "Bash(git show *)",
+      "Bash(git merge-base *)",
+      "Read(app/build.gradle.kts)",
+      "Read(settings.gradle.kts)",
+      "Read(gradle/libs.versions.toml)",
+      "Read(eyeseetea-docs/**)",
+      "Read(openspec/**)"
+    ]
+  }
+}
