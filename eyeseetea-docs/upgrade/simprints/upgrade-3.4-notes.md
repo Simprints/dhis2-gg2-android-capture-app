@@ -574,8 +574,11 @@ cross-check above).
 
 ### ⚠️ ACCEPTED REGRESSION: biometrics config no longer syncs with metadata
 
-**Most urgent item to restore after this merge compiles.** Deliberately not
-fixed during conflict resolution, to keep the merge free of new design work.
+**Resolved 2026-08-08** via the `PostMetadataSyncAction` hook — see "B4
+implementation" below. Deliberately not fixed during conflict resolution, to keep
+the merge free of new design work; fixed in its own commit once the merge compiled.
+The regression description below is kept as the record of what was lost and why.
+Confirmed working on device the same day (validation flow #2, manual metadata sync).
 
 #### What was lost
 
@@ -601,13 +604,14 @@ Baseline deleted that whole method. Metadata sync is now the KMP use case
 | Scenario | Biometrics config synced? |
 |----------|---------------------------|
 | Logout → login into Home | **Yes** — `SyncBiometricsConfig` → `LoginModule:49` → `LoginActivity:111` (`onNavigateToHome` branch), chain intact |
-| User syncs metadata from settings | **No — regression** |
-| Periodic background metadata sync | **No — regression** |
-| First login → initial sync (`SyncActivity`, `onNavigateToSync` branch) | Not verified — that branch does not call `syncBiometricsConfig` |
+| User syncs metadata from settings | Was **No — regression**; **restored and verified on device 2026-08-08** via the `PostMetadataSyncAction` hook |
+| Periodic background metadata sync | Was **No — regression**; **restored 2026-08-08** by the same hook. Not exercised directly, but it goes through the same `SyncMetadataWorker` → `SyncMetadata` path that was verified. |
+| First login → initial sync (`SyncActivity`, `onNavigateToSync` branch) | Not verified — that branch does not call `syncBiometricsConfig`, but it does run a metadata sync, so the hook should now cover it. Confirm on device. |
 
-So config still refreshes on login, but stops refreshing on metadata sync. If
-the server changes the biometrics configuration, a user who stays logged in will
-not receive it until they log out and back in.
+Originally config still refreshed on login but stopped refreshing on metadata
+sync, so a user who stayed logged in would not receive a server-side change to
+the biometrics configuration until logging out and back in. The hook restores
+both metadata-sync paths.
 
 The login-time sync is a **different use case** and does not replace this one:
 it covers logout/login needing fresh config without a metadata sync. Both are
@@ -660,19 +664,83 @@ nowhere in this project (Koin 4.1.1), so its behaviour here is unverified.
 Files touched: 1 new file in `:commonskmm`, ~4 lines in `:sync/SyncMetadata.kt`,
 1 line in `SyncModule.android.kt`, plus fork-only files.
 
-#### Open questions before implementing
+#### Open questions — resolved (2026-08-08)
 
-1. Does Koin resolve an injected `List<T>` reliably (generic type erasure)? Verify first.
-2. Failure isolation — proposed: log and continue, so a failing fork action does not fail metadata sync. Not agreed.
-3. Progress reporting — actions run inside the 50→60 jump; a slow action freezes the bar there.
-4. Ordering — with one list per fork the fork controls it, but nothing enforces it across forks.
-5. Naming/scope — if the same need appears after *data* sync, a generic `PostSyncAction` with a phase enum may fit better than a metadata-specific name.
+1. **Does Koin resolve an injected `List<T>`?** **Yes.** Verified empirically with a
+   throwaway spike test on Koin 4.1.1 (since deleted): a `factory<List<T>>` of a
+   functional interface registered in one module resolves into a consumer in another,
+   and `getOrNull() ?: emptyList()` gives a clean no-op when nothing is registered.
+   Type erasure is not a problem here.
+2. **Failure isolation** — decided: **log and continue**. An action that fails, or
+   throws, never fails the metadata sync, and never blocks later actions.
+3. **Progress reporting** — accepted as-is. Actions run in the 50→60 jump. The
+   biometrics config sync is a single small datastore call, so the freeze is not
+   observable in practice. Revisit if a slow action is ever registered.
+4. **Ordering** — one list per fork; the fork controls order, and the implementation
+   runs the list sequentially in order (covered by a test).
+5. **Naming/scope** — decided: keep the specific `PostMetadataSyncAction`. A generic
+   `PostSyncAction` with a phase enum designs for a case that does not exist yet and
+   widens the surface being proposed to baseline. Add a second contract if the need
+   appears after *data* sync.
 
-#### Plan
+#### B4 implementation (2026-08-08)
 
-Fix immediately **after** the merge commit compiles, as its own commit, and
-propose it to `develop-eyeseetea` — see the promotion list above. Do not fold it
-into the merge.
+**Baseline-destined (propose to `develop-eyeseetea`):**
+
+- `commonskmm/src/commonMain/.../domain/PostMetadataSyncAction.kt` — new contract,
+  no EyeSeeTea marker: it is a generic extension point, not a customization.
+- `sync/src/commonMain/.../domain/SyncMetadata.kt` — third constructor parameter
+  defaulting to `emptyList()` (so existing call sites and tests are unaffected), plus
+  `runPostMetadataSyncActions()` invoked at `input(50)`, where the old hook ran.
+- `sync/src/androidMain/.../di/SyncModule.android.kt` — `factoryOf(::SyncMetadata)`
+  replaced by an explicit `factory { }`. **Required:** `factoryOf` uses constructor
+  reflection and does not honour the default parameter.
+- `sync/src/commonTest/.../SyncMetadataTest.kt` — 4 new tests: ordering, not-run on
+  sync failure, and isolation for both a returned failure and a thrown exception.
+
+Documented in `customizations/eyeseetea/customizations-eyeseetea.md` §6.1 — baseline
+inventory, since none of it is Simprints-specific.
+
+**Fork-side** (the only Simprints-owned part, in `customization-files.md` §2.2):
+
+- `app/src/simprints/java/org/dhis2/di/PostMetadataSyncModule.kt` — registers the
+  biometrics config action.
+- The same file in the other 4 flavors (`dhis2`, `dhis2PlayServices`, `dhis2Training`,
+  `eyeseetea`) as an empty module. This follows the existing per-flavor DI pattern
+  (`GranularSyncModule.kt`) and keeps `KoinInitialization.kt` — a pure-Oslo file with
+  zero fork drift — down to a **single added line**.
+
+**Bug the tests caught.** The first implementation put the logging inside the outer
+`try` of `invoke`. In host tests `logDebug` → `android.util.Log.d` is not mocked and
+throws, which the outer `try` swallowed as a *sync failure* — the exact opposite of
+the intended isolation. The logging call is now itself wrapped in `runCatching`. Worth
+keeping in mind when promoting: isolation must cover the logging, not just the action.
+
+**Known limitation (pre-existing, not introduced here).**
+`BiometricsConfigRepositoryImpl.sync()` catches its own exceptions and emits nothing on
+error, so a failed config refresh is reported as success to the hook. This matches the
+old `downloadBiometricsConfig()` behaviour exactly; changing repository semantics was
+left out of this fix deliberately.
+
+**Second bug, caught only on device.** The action first collected the repository flow
+with `firstOrNull()`. That cancels the flow with an `AbortFlowException`, which
+`BiometricsConfigRepositoryImpl.sync()`'s broad `catch (e: Exception)` swallowed and
+logged as an error — after the sync had already succeeded. Harmless but misleading in
+logcat, and invisible to the unit tests, which mock the repository. Now uses
+`collect { }`, matching what `SyncBiometricsConfig` already does.
+
+**Verified:** `:sync` tests 16/16, `assembleSimprintsDebug` builds, `dhis2` and
+`eyeseetea` flavors compile, ktlint passes on every changed module.
+
+**Verified on device (emulator, 2026-08-08).** Manual metadata sync from settings logs
+`BiometricsConfig synced!` with the 6 configs, worker returns SUCCESS, and no
+`AbortFlowException`. Temporary `B4DEBUG` instrumentation confirmed the whole chain —
+flavor factory called → `getOrNull()` resolved the list → action ran — and was removed
+afterwards.
+
+**Process note.** The first device test appeared to fail because the APK on the emulator
+was still the pre-B4 build. Always `installSimprintsDebug` before concluding a runtime
+check failed; a green `assemble` does not put the code on the device.
 
 ### `SyncPresenterImpl.kt` + `SyncGranularRxModule.kt` (resolved 2026-08-07)
 
@@ -1121,18 +1189,32 @@ Status values: `pending` (found, not yet promoted) / `promoted` (in a baseline P
   customizing shared code. Each fork was rediscovering them.
 - **Fix to promote:** move the file and its two links to `develop-eyeseetea`.
   It currently documents five techniques found during this upgrade: field hooks
-  (T1, Simprints), post-metadata-sync actions (T2, needed by Simprints and WIDP,
-  not built yet — same as B4), widening visibility (T3), extra constructor
-  parameter (T4), and copying an Oslo component as an anti-pattern (T5).
+  (T1, Simprints), post-metadata-sync actions (T2, needed by Simprints and WIDP —
+  **implemented and device-verified 2026-08-08**, promote together with B4),
+  widening visibility (T3), extra constructor parameter (T4), and copying an Oslo
+  component as an anti-pattern (T5).
+- **Promote B4 and B5 together.** T2 is the reusable write-up of the mechanism B4
+  implements; separating them would ship a doc describing code that is not there,
+  or code with no documentation. WIDP needs both to solve its notifications case.
 - **Note:** WIDP should review T1 and T5 — both were written from the Simprints
   side, and WIDP may have equivalents worth recording, or a better solution.
 
 ### B4. No extension point after metadata sync (blocks two forks)
 
 - **Baseline files:** `sync/src/commonMain/.../domain/SyncMetadata.kt`,
-  `sync/src/androidMain/.../di/SyncModule.android.kt`, plus a new contract in
-  `:commonskmm`
-- **Status:** `pending` — **highest priority of this list**
+  `sync/src/androidMain/.../di/SyncModule.android.kt`,
+  `sync/src/commonTest/.../SyncMetadataTest.kt`, a new contract in `:commonskmm`
+  (`domain/PostMetadataSyncAction.kt`), one line in
+  `app/src/main/.../di/KoinInitialization.kt`, the empty `postMetadataSyncModule`
+  in the 4 non-Simprints flavor source sets, and the inventory entry in
+  `customizations/eyeseetea/customizations-eyeseetea.md` §6.1
+- **Status:** `implemented` (2026-08-08) — ready to propose to `develop-eyeseetea`
+- **Inventory note:** this is a **baseline** extension point, not a fork
+  customization, so it is documented in the EyeSeeTea inventory (§6 "Extension
+  points added for downstream flavors"), not in Simprints'. Simprints' §2.2 only
+  records that it *consumes* the hook. Keeping the contract in the fork inventory
+  would have marked baseline code as Simprints-owned and pushed the next upgrade
+  to treat it as fork-specific.
 - **Evidence:** the old `SyncPresenterImpl.syncMetadata()` in `app/` let forks
   hook work onto the end of a metadata sync; Simprints used it for biometrics
   config and WIDP for notifications. Baseline replaced it with the KMP
@@ -1145,8 +1227,8 @@ Status values: `pending` (found, not yet promoted) / `promoted` (in a baseline P
   notifications on its next upgrade.
 - **Fix to promote:** a `PostMetadataSyncAction` contract in `:commonskmm` that
   `SyncMetadata` runs after a successful sync, with each fork registering its own
-  list in DI. Draft design and open questions are in the regression section
-  below — **not agreed yet**, needs review before implementing.
+  list in DI. **Implemented 2026-08-08** — see "B4 implementation" below for the
+  resolved open questions and the final shape.
 
 ### B3. OpenSpec Claude scaffolding is generated by an outdated CLI
 

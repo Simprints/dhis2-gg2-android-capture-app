@@ -36,7 +36,14 @@ actual val syncModule =
             AndroidSyncRepository(get(), get(), get(), get(), get())
         }
 
-        factoryOf(::SyncMetadata)
+        factory {
+            SyncMetadata(
+                repository = get(),
+                syncBackgroundJobAction = get(),
+                // Downstream builds may register their own post-metadata-sync work.
+                postMetadataSyncActions = getOrNull() ?: emptyList(),
+            )
+        }
 
         factoryOf(::SyncData)
 

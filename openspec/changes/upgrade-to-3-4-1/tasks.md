@@ -67,3 +67,17 @@
 - [ ] 9.3 Run `python3 eyeseetea-docs/scripts/check_upgrade_docs.py --client simprints` and confirm only expected out-of-scope noise remains (2FA/login, `settings.gradle.kts` baseline comments).
 - [ ] 9.4 Run `openspec validate --specs --strict` and confirm all 13 specs still pass unchanged.
 - [ ] 9.5 If this change surfaced a genuine capability-behavior change (not just an implementation move), stop and raise it with the user as a separate change instead of folding it in here.
+
+## 10. Merge `develop-simprints` (last step)
+
+Run only once the upgrade is validated (sections 8 and 9 complete). `develop-simprints` carries
+fork fixes made in parallel with the upgrade (as of 2026-08-09: 12 commits / 15 files, mostly
+biometric search and SID response mapping, plus `gradle/libs.versions.toml`). Merging it earlier
+would mix new fork behavior with upgrade casualties and make validation results ambiguous.
+
+- [ ] 10.1 `git fetch origin develop-simprints:develop-simprints` and re-check the incoming scope (`git log --oneline HEAD..develop-simprints`); it may have grown since 2026-08-09.
+- [ ] 10.2 Confirm the working tree is clean, then `git merge develop-simprints` from `feature-simprints/upgrade_3.4.1`.
+- [ ] 10.3 Resolve conflicts per `conflict-rules.md`. Expect them concentrated in the biometric search/TEI files already reapplied in sections 4-5 — check whether each incoming fix is still needed against the 3.4.1 baseline, since some fixed bugs Oslo may have fixed upstream (e.g. the recycler-race revert and ANDROAPP-7647 stale-program-results fix already present in the incoming commits).
+- [ ] 10.4 Run the automerge verification from section 7 again over `customization-files.md` — this second merge can silently drop reapplied customization lines just like the baseline merge did.
+- [ ] 10.5 Re-run `./gradlew testSimprintsDebugUnitTest` and `./gradlew assembleSimprintsDebug`.
+- [ ] 10.6 Re-validate the high-risk flows touched by the incoming commits (#1 Biometric Search Integration, #10 Biometrics In TEI Cards/Dashboard/Enrollment/Form, #13 Simprints Data Exchange And Mapping) from `upgrade-validation-checklist.md`.

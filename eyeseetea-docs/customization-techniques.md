@@ -83,9 +83,9 @@ because Oslo relocated the mapping. Expect to re-point it, not to rewrite it.
 
 ## T2. Post-metadata-sync actions — running extra sync work after a metadata sync
 
-> **Status: not implemented yet.** Documented here because two forks need it and
-> the mechanism should be designed once. See B4 in
-> `eyeseetea-docs/upgrade/simprints/upgrade-3.4-notes.md`.
+> **Status: implemented on `feature-simprints/upgrade_3.4.1` (2026-08-08), pending
+> promotion to `develop-eyeseetea`.** See B4 in
+> `eyeseetea-docs/upgrade/simprints/upgrade-3.4-notes.md` for the full write-up.
 
 **Use when:** a client has its own configuration or data that must be refreshed
 every time the user syncs metadata — not only at login.
@@ -100,16 +100,115 @@ would be circular), and its consumer `SyncMetadataWorker` injects the concrete,
 `final` `SyncMetadata` class, so a decorator registered in the fork's DI cannot
 intercept it. Any solution has to add an extension point to baseline.
 
-**Draft shape (not agreed).** A `PostMetadataSyncAction` contract in
-`:commonskmm`, which `SyncMetadata` runs after a successful sync, with each fork
-registering its own list in DI. Open questions — Koin's handling of an injected
-`List<T>`, failure isolation, progress reporting, ordering, and whether to
-generalise to other sync phases — are recorded alongside the draft in the notes
-file above.
+### How it works
 
-**Until it exists:** a fork in this situation has an accepted regression. Note
-it explicitly in the upgrade notes rather than working around it locally, since
-a local workaround would collide with every other fork's workaround.
+The mechanism splits in two. **Everything in `:commonskmm` and `:sync` already
+exists** — you do not touch it. You only write the flavor module in the lower box.
+
+```
+  BASELINE (already there — do not touch)
+┌──────────────────────────────────────────────────────────────────────────┐
+│  :commonskmm    PostMetadataSyncAction        the contract               │
+│                 fun interface { suspend invoke(): Result<Unit> }         │
+│                                ▲                                         │
+│  :sync          SyncMetadata   │  ctor param, default emptyList()        │
+│                 └─ runs the list at input(50), after a successful sync   │
+│                                ▲                                         │
+│  :app/main      KoinInitialization.kt ── registers the flavor module     │
+└────────────────────────────────┼─────────────────────────────────────────┘
+                                 │ Koin resolves List<PostMetadataSyncAction>
+  YOUR FLAVOR (what you write)   │
+┌────────────────────────────────┼─────────────────────────────────────────┐
+│  app/src/<flavor>/java/org/dhis2/di/PostMetadataSyncModule.kt            │
+│      factory<List<PostMetadataSyncAction>> { listOf( …your actions… ) }  │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+#### Baseline side — already in place, nothing to do
+
+| Module | File | Role |
+|---|---|---|
+| `:commonskmm` | `domain/PostMetadataSyncAction.kt` | The contract. Lives here because it is the only module `:sync` and `:app` share. |
+| `:sync` | `domain/SyncMetadata.kt` | Receives `List<PostMetadataSyncAction>` (default `emptyList()`) and runs it at `input(50)`. |
+| `:sync` | `di/SyncModule.android.kt` | Explicit `factory { }` with `getOrNull() ?: emptyList()`. |
+| `:app/src/main` | `di/KoinInitialization.kt` | One flavor-agnostic line registering `postMetadataSyncModule`. |
+
+Full inventory: `customizations/eyeseetea/customizations-eyeseetea.md` §6.1.
+
+#### Your side — the only file you write
+
+```kotlin
+// app/src/<flavor>/java/org/dhis2/di/PostMetadataSyncModule.kt
+val postMetadataSyncModule =
+    module {
+        factory<List<PostMetadataSyncAction>> {
+            listOf(
+                PostMetadataSyncAction { /* refresh the fork's configuration */ },
+                PostMetadataSyncAction { /* …add more here, they run in order */ },
+            )
+        }
+    }
+```
+
+**If your flavor already has this file**, adding a process is one more element in the
+`listOf(...)` — nothing else changes.
+
+**If it does not**, the file must exist in **every** flavor source set, empty where
+unused (`val postMetadataSyncModule = module { }`). There is no shared default to
+override — that was tried and rejected, because in Koin 4 the winner between two
+definitions depends on module load order, not specificity, so a reorder in
+`KoinInitialization.kt` would silently drop your actions. Rationale and the measured
+behaviour: `customizations/eyeseetea/customizations-eyeseetea.md` §6.1.
+
+Actions run sequentially, in list order, at the `input(50)` progress point.
+
+#### Gotchas when writing an action (your side)
+
+- **Register a list, not individual actions.** Two bare `factory<PostMetadataSyncAction>`
+  definitions would overwrite each other without qualifiers. Koin resolves an injected
+  `List<T>` fine (verified on 4.1.1) — it is the individual registration that breaks.
+- **Collect flows with `collect { }`, not `first()`/`firstOrNull()`.** The terminal
+  `first*` operators cancel the flow with an `AbortFlowException`. Several fork
+  repositories wrap their body in a broad `catch (e: Exception)` that swallows it and
+  logs a spurious error *after* the work already succeeded. Unit tests will not catch
+  this — they mock the repository.
+- **Your failure is invisible by design.** An action that returns `Result.failure` or
+  throws is logged and skipped; the sync still succeeds and later actions still run.
+  Deliberate — one flavor's broken action must not break syncing for everyone — but it
+  means you cannot rely on the action to surface errors to the user.
+- **You run inside the 50→60 progress jump.** A slow action freezes the bar there.
+  Fine for a small datastore call; rethink progress reporting if yours is slow.
+
+#### Gotcha when touching the baseline side
+
+- **`factoryOf(::X)` does not honour default parameters.** It uses constructor
+  reflection, so a use case with a defaulted hook list must be registered with an
+  explicit `factory { }` and `getOrNull() ?: emptyList()`. Anyone "simplifying"
+  `SyncModule.android.kt` back to `factoryOf(::SyncMetadata)` silently breaks every
+  flavor's actions — they stop being injected, with no error.
+
+#### Verifying it works
+
+`./gradlew install<Flavor>Debug` — **`install`, not `assemble`**: a green `assemble`
+does not put the code on the device, and testing against a stale APK looks exactly
+like a hook that never fires. Then trigger a manual metadata sync and read logcat.
+
+Unit tests alone will not tell you the wiring works: they mock the repository and
+never exercise the DI graph.
+
+If the wiring is suspect, log at the three links in the chain to find the break:
+your flavor factory (is the module registered?) → the `SyncMetadata` factory (does
+`getOrNull()` return the list or `null`?) → `runPostMetadataSyncActions()` (does it
+arrive with `size > 0`?).
+
+**Upgrade cost.** Asymmetric, and that is the point:
+
+- **Your side: near zero.** The flavor file is level 1 of the placement hierarchy —
+  Oslo never touches it, so it never conflicts.
+- **Baseline side: real but paid once, by baseline.** The contract and the call site
+  live in shared code, so they must be **promoted to `develop-eyeseetea`** rather than
+  kept per-fork. If they are not, every fork carrying them locally re-fights the same
+  conflict on every upgrade, and the second fork to need the hook reinvents it.
 
 ---
 

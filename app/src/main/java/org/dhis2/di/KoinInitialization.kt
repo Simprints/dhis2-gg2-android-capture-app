@@ -63,6 +63,7 @@ object KoinInitialization {
                 matomoModule,
                 syncModule,
                 chartsModule,
+                postMetadataSyncModule,
             )
         }
     }

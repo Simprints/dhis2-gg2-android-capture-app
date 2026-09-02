@@ -87,10 +87,14 @@ Main implementation points:
 Supporting files in the same workflow:
 - `app/src/main/java/org/dhis2/usescases/login/SyncBiometricsConfig.kt`
 - `app/src/main/java/org/dhis2/usescases/login/LoginActivity.kt`
-- `app/src/main/java/org/dhis2/data/service/SyncPresenterImpl.kt`
+- `app/src/simprints/java/org/dhis2/di/PostMetadataSyncModule.kt` — registers the post-metadata-sync refresh (since 3.4.1)
+- `app/src/main/java/org/dhis2/di/KoinInitialization.kt` — single line registering `postMetadataSyncModule` (Oslo file, flavor-agnostic)
+
+Depends on the baseline `PostMetadataSyncAction` extension point — **not a Simprints customization**. Documented in `customizations/eyeseetea/customizations-eyeseetea.md` §6; see also technique T2 in `customization-techniques.md`.
 
 Technical note:
 - The fork downloads a list of biometrics configurations, stores them locally, and chooses one active configuration when the user enters a program. Selection precedence is `program` first, then matching `orgUnitGroup`, then `default`. A `default` config is required and absence is treated as an error. The chosen configuration is flattened into preferences and drives `projectId`, `biometricsMode`, thresholds, module-id logic, verification duration, and TE type identification behavior.
+- The configuration is refreshed on two independent paths: at login (`SyncBiometricsConfig` → `LoginActivity`) and after every metadata sync (`PostMetadataSyncAction`). Both are required — login covers a logged-out user getting fresh config, the hook covers a user who stays logged in. Until 3.4.1 the second path lived in `SyncPresenterImpl.syncMetadata()`, which Oslo removed when metadata sync moved to the KMP `:sync` module.
 
 ### 2.3 Biometrics Mode Controls Per Program
 
