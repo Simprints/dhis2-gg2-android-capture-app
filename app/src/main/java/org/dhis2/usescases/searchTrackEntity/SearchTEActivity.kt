@@ -30,7 +30,6 @@ import com.google.android.material.snackbar.BaseTransientBottomBar
 import com.google.android.material.snackbar.Snackbar
 import dhis2.org.analytics.charts.ui.GroupAnalyticsFragment.Companion.forProgram
 import io.reactivex.functions.Consumer
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.dhis2.App
 import org.dhis2.R
@@ -62,6 +61,7 @@ import org.dhis2.commons.sync.SyncContext.TrackerProgramTei
 import org.dhis2.data.biometrics.BiometricsClientFactory
 import org.dhis2.data.biometrics.biometricsClient.models.ConfirmIdentityResult
 import org.dhis2.data.biometrics.biometricsClient.models.IdentifyResult
+import org.dhis2.data.biometrics.biometricsClient.models.ScannedCredential
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 
 import org.dhis2.data.forms.dataentry.ProgramAdapter
@@ -831,6 +831,7 @@ class SearchTEActivity :
         // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
         // Simprints behavior: hide RecyclerView before launching biometric app
         viewModel.notifyBiometricAppLaunching()
+
         BiometricsClientFactory.get(this).identify(this, moduleId, userOrgUnits)
     }
 
@@ -917,7 +918,7 @@ class SearchTEActivity :
                         Toast.LENGTH_SHORT
                     ).show()
 
-                    simulateNotFoundBiometricsSearch(null)
+                    simulateNotFoundBiometricsSearch(null, null)
 
                     launchSearchFormIfRequired()
                 } else if (result is IdentifyResult.UserNotFound) {
@@ -926,14 +927,14 @@ class SearchTEActivity :
                         Toast.LENGTH_SHORT
                     ).show()
 
-                    simulateNotFoundBiometricsSearch(result.sessionId)
+                    simulateNotFoundBiometricsSearch(result.sessionId, result.scannedCredential)
                 } else if (result is IdentifyResult.Failure) {
                     Toast.makeText(
                         context, R.string.biometrics_failed,
                         Toast.LENGTH_SHORT
                     ).show()
 
-                    simulateNotFoundBiometricsSearch(null)
+                    simulateNotFoundBiometricsSearch(null, null)
 
                     launchSearchFormIfRequired()
                 } else if (result is IdentifyResult.AgeGroupNotSupported) {
@@ -942,13 +943,12 @@ class SearchTEActivity :
                         Toast.LENGTH_SHORT
                     ).show()
 
-                    simulateNotFoundBiometricsSearch(null)
+                    simulateNotFoundBiometricsSearch(null, null)
                 }
 
-                lifecycleScope.launch {
-                    delay(200)
-                    viewModel.resetBiometricAppLaunching()
-                }
+                // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
+                // Simprints behavior: reset biometric app launching flag when search completes
+                viewModel.resetBiometricAppLaunching()
             }
 
             BIOMETRICS_CONFIRM_IDENTITY_REQUEST -> {
@@ -977,10 +977,10 @@ class SearchTEActivity :
         super.onActivityResult(requestCode, resultCode, data)
     }
 
-    private fun simulateNotFoundBiometricsSearch(sessionId: String?) {
+    private fun simulateNotFoundBiometricsSearch(sessionId: String?, scannedCredential: ScannedCredential?) {
         presenter.searchOnBiometrics(
             listOf(SimprintsIdentifiedItem(BIOMETRICS_USER_NOT_FOUND, 0f, false, false)),
-            sessionId, false, null
+            sessionId, false, scannedCredential
         )
     }
 

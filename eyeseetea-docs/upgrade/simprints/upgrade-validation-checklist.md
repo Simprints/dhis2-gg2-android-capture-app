@@ -26,10 +26,12 @@ Manual flow:
 1. Launch biometric search from the search screen.
 2. Confirm the search list is hidden and a loader is shown while the Simprints app is being launched.
 3. Complete the external Simprints identify flow and return to DHIS2.
+4. Repeat the launch, but drop the app below `STARTED` while Simprints is foregrounded (e.g. lock the screen or switch apps) before returning, and confirm the previous (stale) program results are not shown once the search list reappears.
 
 Expected result:
 - Returned Simprints GUIDs are reused as biometrics attribute values in a DHIS2 search.
 - The search workflow continues with normal DHIS2 search results, not a disconnected local list.
+- Stale program results from before the biometric app launch are never shown on return, including after a lifecycle drop while Simprints is in the foreground.
 
 ### 2. Biometrics Configuration Selection Per Program Or Org Unit Group
 
@@ -213,12 +215,14 @@ Preconditions:
 Manual flow:
 1. Trigger identification, registration, verification, and `registerLast` and inspect the outbound metadata payload (`forkVersion`, `trackedEntityInstanceId`, `enrollingOrgUnitId`, `enrollingOrgUnitName`, `userOrgUnits`, `subjectAge`).
 2. Confirm the client is built from the selected `projectId`, current username, and `confidenceScoreFilter`.
-3. Return a response with scanned credential data and confirm it propagates back into TEI-side credential state.
-4. Force the missing-preferences fallback path and confirm the client still boots with the hardcoded defaults.
+3. Return a response with scanned credential data on a successful identify and confirm it propagates back into TEI-side credential state.
+4. Return an identify response where no candidate is found (`userNotFound`) but scanned credential data is present, from a demographic (attribute) search entry point, and confirm the confirm-identity call still carries that credential.
+5. Force the missing-preferences fallback path and confirm the client still boots with the hardcoded defaults.
 
 Expected result:
 - Every outbound call includes the expected metadata payload.
 - Responses (registration, identify, verify, confirm-identity) are converted into DHIS2-side result models, including credential data when present.
+- Scanned credential data is preserved on the `userNotFound` identify outcome, not only on a successful match.
 - The missing-preferences fallback uses the hardcoded default `projectId`, username `admin`, and confidence threshold `0`.
 
 ### 14. Areas Explicitly Out Of Scope For Preservation
