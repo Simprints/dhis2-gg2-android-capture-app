@@ -1,7 +1,7 @@
 package org.dhis2.data.biometrics.utils
 
 import org.dhis2.bindings.blockingSetCheck
-import org.dhis2.usescases.biometrics.nhisNumberAttributeId
+import org.dhis2.mobile.commons.biometrics.nhisNumberAttributeId
 import org.hisp.dhis.android.core.D2
 
 fun updateNHISNumberAttributeValue(

@@ -15,7 +15,7 @@ import org.dhis2.mobile.commons.coroutine.Dispatcher
 import org.dhis2.mobile.commons.error.DomainErrorMapper
 import org.dhis2.mobile.commons.providers.PreferenceProvider
 import org.dhis2.mobile.sync.domain.SyncStatusController
-import org.dhis2.usescases.biometrics.biometricAttributeId
+import org.dhis2.mobile.commons.biometrics.biometricAttributeId
 import org.dhis2.usescases.main.HomeItemData
 import org.dhis2.usescases.settings.deleteCache
 import org.dhis2.usescases.sync.WAS_INITIAL_SYNC_DONE

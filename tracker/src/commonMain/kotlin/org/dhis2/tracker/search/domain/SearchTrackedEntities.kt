@@ -2,6 +2,7 @@ package org.dhis2.tracker.search.domain
 
 import androidx.paging.PagingData
 import kotlinx.coroutines.flow.Flow
+import org.dhis2.mobile.commons.biometrics.biometricAttributeId
 import org.dhis2.mobile.commons.customintents.CustomIntentRepository
 import org.dhis2.mobile.commons.domain.UseCase
 import org.dhis2.mobile.commons.error.DomainError
@@ -75,7 +76,14 @@ class SearchTrackedEntities(
             if (input.selectedProgram != null || isTETypeAttribute) {
                 val normalizedValues =
                     data.values?.let {
+                        // EyeSeeTea customization - Biometric Search Integration
+                        // The biometric attribute holds a list of Simprints-returned candidate
+                        // GUIDs, not free text where a comma could be a literal search character -
+                        // they must reach addToQuery() as a list so multiple candidates use an
+                        // OR/`in` filter instead of being collapsed into a single non-matching
+                        // comma-joined string.
                         if (it.size > 1 &&
+                            data.attributeId != biometricAttributeId &&
                             !customIntentRepository.attributeHasCustomIntentAndReturnsAListOfValues(
                                 data.attributeId,
                                 CustomIntentActionTypeModel.SEARCH,

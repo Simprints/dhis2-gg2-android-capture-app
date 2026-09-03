@@ -28,7 +28,7 @@ import org.dhis2.tracker.events.CreateEventUseCase
 import org.dhis2.tracker.events.CreateEventUseCaseRepository
 import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.tracker.events.CreateEventUseCaseRepositoryImpl
-import org.dhis2.usescases.biometrics.biometricAttributeId
+import org.dhis2.mobile.commons.biometrics.biometricAttributeId
 import org.dhis2.usescases.teiDashboard.DashboardRepository
 import org.dhis2.usescases.teiDashboard.dashboardfragments.teidata.teievents.ui.mapper.TEIEventCardMapper
 import org.dhis2.usescases.teiDashboard.domain.GetNewEventCreationTypeOptions

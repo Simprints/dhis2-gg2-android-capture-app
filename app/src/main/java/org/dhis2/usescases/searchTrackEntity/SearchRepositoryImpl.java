@@ -1,5 +1,7 @@
 package org.dhis2.usescases.searchTrackEntity;
 
+// EyeSeeTea customization - Biometric Search Integration
+import static org.dhis2.mobile.commons.biometrics.AttributesKt.biometricAttributeId;
 // EyeSeeTea customization - Biometric Verification Persistence
 import static org.dhis2.data.biometrics.utils.VerificationKt.updateBiometricsAttributeValue;
 
@@ -164,7 +166,6 @@ public class SearchRepositoryImpl implements SearchRepository {
             String dataId = searchParametersModel.getQueryData().keySet().toArray()[i].toString();
             List<String> dataValues = searchParametersModel.getQueryData().get(dataId);
 
-
             boolean isTETypeAttribute = d2.trackedEntityModule().trackedEntityTypeAttributes()
                     .byTrackedEntityTypeUid().eq(teiType)
                     .byTrackedEntityAttributeUid().eq(dataId).one().blockingExists();
@@ -175,7 +176,13 @@ public class SearchRepositoryImpl implements SearchRepository {
                 boolean isUnique = attribute.unique();
                 boolean isOptionSet = (attribute.optionSet() != null);
                 assert dataValues != null;
-                if(!customIntentRepository.attributeHasCustomIntentAndReturnsAListOfValues(dataId, CustomIntentActionTypeModel.SEARCH) && dataValues.size() > 1) {
+                // EyeSeeTea customization - Biometric Search Integration
+                // The biometric attribute is excluded here because its values are a list of
+                // Simprints-returned candidate GUIDs, not free text where a comma could be a
+                // literal search character - they must reach getTrackedEntityQuery() as a list
+                // so multiple candidates use an OR/`in` filter instead of being collapsed into a
+                // single non-matching comma-joined string.
+                if(!dataId.equals(biometricAttributeId) && !customIntentRepository.attributeHasCustomIntentAndReturnsAListOfValues(dataId, CustomIntentActionTypeModel.SEARCH) && dataValues.size() > 1) {
                     //Only search with a list of values when the attribute is linked to a custom intent
                     //that returns a list of values, otherwise the comma was one of the search characters
                     dataValues = Collections.singletonList(String.join(",", dataValues));
@@ -204,9 +211,10 @@ public class SearchRepositoryImpl implements SearchRepository {
                     //legacy code could no longer be needed
                     dataValue = dataValue.split(OPTION_SET_REGEX)[1];
                     return trackedEntityInstanceQuery.byFilter(dataId).eq(dataValue);
-                } else
+                } else {
                     // return tracked entities that contain the data value
                     return trackedEntityInstanceQuery.byFilter(dataId).like(dataValue);
+                }
             } else {
                 return trackedEntityInstanceQuery;
             }

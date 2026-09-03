@@ -220,6 +220,7 @@ Main implementation points:
 - `app/src/main/java/org/dhis2/usescases/searchTrackEntity/SearchRepositoryImpl.java`
 - `app/src/main/java/org/dhis2/usescases/searchTrackEntity/listView/SearchTEList.kt`
 - `app/src/main/java/org/dhis2/usescases/searchTrackEntity/ui/mapper/TEICardMapper.kt`
+- `tracker/src/commonMain/kotlin/org/dhis2/tracker/search/domain/SearchTrackedEntities.kt` (Oslo file; single condition added to `prepareQuery()`, see technical note)
 
 Supporting files in the same workflow:
 - `app/src/main/java/org/dhis2/usescases/biometrics/ui/SequentialSearch.kt`
@@ -228,9 +229,16 @@ Supporting files in the same workflow:
 - `app/src/main/java/org/dhis2/usescases/biometrics/duplicates/BiometricsDuplicatesDialog.kt`
 - `app/src/main/java/org/dhis2/usescases/biometrics/duplicates/BiometricsDuplicatesDialogPresenter.kt`
 - `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/BiometricsClient.kt`
+- `commonskmm/src/commonMain/kotlin/org/dhis2/mobile/commons/biometrics/attributes.kt` (`biometricAttributeId`, `nhisNumberAttributeId` — moved here from `:app` 2026-09-03 so KMP modules like `:tracker` can read them without an Android-only dependency; see technical note)
 
 Technical note:
 - Search behavior is tightly coupled to the Simprints biometric app and duplicate handling. `BiometricsClient.handleIdentifyResponse()` keeps credential-linked matches even when below the confidence threshold, and the duplicate flow can branch into confirm identity, open existing TEI dashboard, or `registerLast` for new enrollment completion. `BiometricsDuplicatesDialogPresenter` resolves duplicate candidates by issuing a normal DHIS2 search on the biometrics attribute UID with the Simprints GUID list. Several files already carry `EyeSeeTea customization` comments that point to active fork behavior.
+- **Biometric search with multiple Simprints candidates bug (found and fixed 2026-09-03, upgrade 3.4.1):** `SearchRepositoryImpl.getFilteredRepository()` already carries the correct 3.3.1 behavior — it excludes the biometric attribute from the generic "collapse multiple values into one comma-joined string" logic (`!dataId.equals(biometricAttributeId)`), because a `identify` search resolves to a list of Simprints-returned candidate GUIDs, not free text where a comma could be literal. There are **three independent, non-overlapping search call paths** across `SearchTEIViewModel` and `BiometricsDuplicatesDialogPresenter`, and this bug affected two of them:
+  - **List view** (`SearchTEIViewModel.loadSearchResults()`/`loadDisplayInListResults()`): calls `searchTrackedEntities.invoke(...)`, the KMP use case `SearchTrackedEntities.prepareQuery()` (`tracker/src/commonMain/.../domain/SearchTrackedEntities.kt`). **Broken.**
+  - **Duplicate resolution** (`BiometricsDuplicatesDialogPresenter`, line ~95): calls the *same* `searchTrackedEntities.invoke(input)` use case, built by its own Dagger provider in `BiometricsDuplicatesDialogModule.kt` — `searchRepository` (the Java one) is injected there too, but only for `updateAttributeValue`/`downloadTei`, never for the search itself. **Broken.**
+  - **Map view** (`SearchTEIViewModel.fetchMapResults()` → `MapDataRepository.searchTeiForMap()` → `SearchRepositoryKt`/`SearchRepositoryImplKt.searchTeiForMap()` → `SearchRepositoryImpl.getFilteredRepository()`): this is `SearchRepositoryImpl.java`'s only real caller today. **Never broken** — already had the correct exclusion from 3.3.1.
+  - Baseline's `[ANDROAPP-7495]` search refactor introduced `SearchTrackedEntities.kt` with the same generic collapse logic as `SearchRepositoryImpl` but **never had the biometric exclusion** — it's new baseline code with no 3.3.1 equivalent to diff against, so the automerge-casualty checklist (which compares against a known prior version) didn't catch it. Confirmed with device tracing on 2026-09-03: `identify` returning 2+ candidates always collapsed to `"guid1,guid2"` and hit `.like()` with no match on the list-view path, while a single candidate happened to skip the collapse branch (`size == 1`) and worked, which is why the bug wasn't obvious in casual testing. Verified the log trail stopped right after `SearchTEIViewModel.onSearch()` and never reached `SearchRepositoryImpl`.
+  - Fixed by mirroring the same exclusion in `SearchTrackedEntities.prepareQuery()` (`data.attributeId != biometricAttributeId`), reading the constant directly from `:commonskmm` rather than adding a constructor parameter, to keep the Oslo-file diff to a single added condition. This single fix covers both the list-view and duplicate-resolution paths, since both build their own `SearchTrackedEntities` instance from the same class. `SearchRepositoryImpl.java`'s exclusion is untouched and still needed for the map-view path — not redundant, since these are genuinely separate code paths.
 
 ### 2.10 Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
 

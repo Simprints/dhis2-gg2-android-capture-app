@@ -46,7 +46,7 @@ import org.dhis2.form.data.RulesUtilsProviderImpl
 import org.dhis2.form.model.EventMode
 import org.dhis2.mobileProgramRules.RuleEngineHelper
 import org.dhis2.tracker.events.CreateEventUseCase
-import org.dhis2.usescases.biometrics.biometricAttributeId
+import org.dhis2.mobile.commons.biometrics.biometricAttributeId
 import org.dhis2.usescases.biometrics.duplicates.LastPossibleDuplicates
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.getAgeInMonthsByAttributes

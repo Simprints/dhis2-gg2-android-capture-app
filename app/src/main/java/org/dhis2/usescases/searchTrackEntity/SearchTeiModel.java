@@ -1,7 +1,7 @@
 package org.dhis2.usescases.searchTrackEntity;
 
 // EyeSeeTea customization - Biometric Search Integration
-import static org.dhis2.usescases.biometrics.AttributesKt.biometricAttributeId;
+import static org.dhis2.mobile.commons.biometrics.AttributesKt.biometricAttributeId;
 
 import org.dhis2.mobile.commons.model.MetadataIconData;
 import org.dhis2.tracker.search.model.DomainEnrollment;

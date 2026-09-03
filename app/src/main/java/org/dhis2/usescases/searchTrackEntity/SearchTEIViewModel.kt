@@ -73,7 +73,7 @@ import org.dhis2.tracker.search.model.FetchSearchParametersData
 import org.dhis2.tracker.search.model.QueryData
 import org.dhis2.tracker.search.model.SearchTrackedEntitiesInput
 import org.dhis2.tracker.search.ui.state.SearchParametersUiState
-import org.dhis2.usescases.biometrics.biometricAttributeId
+import org.dhis2.mobile.commons.biometrics.biometricAttributeId
 import org.dhis2.usescases.biometrics.containsAgeFilterAndIsUnderAgeThreshold
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.ui.SequentialSearch
