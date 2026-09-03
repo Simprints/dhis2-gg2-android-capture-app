@@ -28,6 +28,7 @@ import org.dhis2.data.biometrics.utils.updateVerification
 import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.RowAction
 import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
+import org.dhis2.form.ui.intent.FormIntent
 import org.dhis2.usescases.biometrics.BIOMETRICS_ENABLED
 import org.dhis2.usescases.biometrics.duplicates.LastPossibleDuplicates
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
@@ -43,6 +44,7 @@ import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.arch.repositories.`object`.ReadOnlyOneObjectRepositoryFinalImpl
 import org.hisp.dhis.android.core.common.Geometry
 import org.hisp.dhis.android.core.common.State
+import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.enrollment.Enrollment
 import org.hisp.dhis.android.core.enrollment.EnrollmentAccess
 import org.hisp.dhis.android.core.enrollment.EnrollmentObjectRepository
@@ -454,8 +456,16 @@ class EnrollmentPresenterImpl(
     }
 
     private fun saveBiometricValue(value: String?) {
-        biometricsUiModel!!.onTextChange(value)
-        biometricsUiModel!!.onSave(value)
+        // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
+        // Submit the FormIntents directly to FormView's ViewModel instead of going through
+        // biometricsUiModel.onTextChange()/onSave() (which route through FieldUiModel.Callback,
+        // only (re)attached when Form() renders that exact model instance). Since
+        // onFieldsLoadingListener/onFieldsLoadedListener moved into FormViewModel.items' map{},
+        // the biometricsUiModel instance captured here can be one Compose never painted, leaving
+        // its callback null and silently dropping these calls. See upgrade-3.4-notes.md.
+        val biometricsUid = biometricsUiModel!!.uid
+        view.submitFormIntent(FormIntent.OnTextChange(biometricsUid, value, ValueType.TEXT))
+        view.submitFormIntent(FormIntent.OnSave(biometricsUid, value, ValueType.TEXT))
 
         if (value != null) {
             val teiUid = teiRepository.blockingGet()?.uid() ?: ""

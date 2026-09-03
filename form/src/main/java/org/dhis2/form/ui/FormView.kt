@@ -229,8 +229,22 @@ class FormView : Fragment() {
                     uiEventHandler = ::uiEventHandler,
                 )
 
-                LaunchedEffect(items) {
-                    render(items)
+                // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
+                // LaunchedEffect(items) { render(items) } only re-runs when `items` changes by
+                // structural equality, so a `viewModel.items` emission that Compose considers
+                // equal to the previous one never reaches render() / onFieldItemsRendered.
+                // Simprints' pendingSave flow (registerLast -> onFieldItemsRendered ->
+                // formView.onSaveClick()) relies on render() firing on every emission, the way
+                // the pre-Compose LiveData.observe() used to. collect on Unit restores that.
+                // Verified empirically: without this, the biometric value updates correctly
+                // (FormView.submitIntent bypasses the callback issue) but onFieldItemsRendered
+                // never fires for that emission, so the TEI never saves/navigates.
+                // TODO: revisit — collecting the raw flow here bypasses Compose's recomposition
+                // skipping for every consumer of onFieldItemsRendered, not just Simprints' case.
+                // A narrower fix (e.g. having EnrollmentPresenterImpl react to onFieldsLoaded,
+                // which already fires per-emission) would avoid touching this Oslo file at all.
+                LaunchedEffect(Unit) {
+                    viewModel.items.collect { render(it) }
                 }
                 resultDialogData?.let {
                     DataEntryBottomSheet(
@@ -580,6 +594,18 @@ class FormView : Fragment() {
 
     fun onSaveClick() {
         viewModel.saveDataEntry()
+    }
+
+    // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
+    // Lets a fork submit a FormIntent directly against the ViewModel, bypassing
+    // FieldUiModel.Callback. That callback is only (re)attached when Form() renders a field
+    // (Form.kt: fieldUiModel.setCallback(callback)), and since onFieldsLoadingListener /
+    // onFieldsLoadedListener now run inside FormViewModel.items' map{} instead of inside this
+    // composable, a fork-held FieldUiModel reference (e.g. EnrollmentPresenterImpl.biometricsUiModel)
+    // can outlive the callback assignment race and end up with callback == null, silently
+    // swallowing onSave()/onTextChange() calls. See upgrade-3.4-notes.md for the full trace.
+    fun submitIntent(intent: FormIntent) {
+        viewModel.submitIntent(intent)
     }
 
     fun reload() {

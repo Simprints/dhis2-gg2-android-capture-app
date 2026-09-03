@@ -29,6 +29,7 @@ import org.dhis2.form.data.GeometryController
 import org.dhis2.form.data.GeometryParserImpl
 import org.dhis2.form.model.EventMode
 import org.dhis2.form.ui.FormView
+import org.dhis2.form.ui.intent.FormIntent
 import org.dhis2.maps.views.MapSelectorActivity
 import org.dhis2.usescases.biometrics.duplicates.BiometricsDuplicatesDialog
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
@@ -173,6 +174,34 @@ class EnrollmentActivity :
         resultCode: Int,
         data: Intent?,
     ) {
+        // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
+        // BiometricsClient.handleRegisterResponse() already interprets non-RESULT_OK codes
+        // (e.g. SIMPRINTS_ENROLMENT_LAST_BIOMETRICS_FAILED) into RegisterLastFailure/Failure, so
+        // these two request codes must run regardless of resultCode. Gating them behind
+        // resultCode == RESULT_OK silently dropped Simprints failure responses, leaving
+        // pendingSave stuck true with no way to resolve it.
+        when (requestCode) {
+            BIOMETRICS_ENROLL_REQUEST -> {
+                if (data != null) {
+                    val result = BiometricsClientFactory.get(this).handleRegisterResponse(
+                        resultCode, data
+                    )
+
+                    presenter.handleRegisterResponse(result)
+                }
+            }
+
+            BIOMETRICS_ENROLL_LAST_REQUEST -> {
+                if (data != null) {
+                    val result = BiometricsClientFactory.get(this).handleRegisterResponse(
+                        resultCode, data
+                    )
+
+                    presenter.handleRegisterResponse(result)
+                }
+            }
+        }
+
         if (resultCode == Activity.RESULT_OK) {
             when (requestCode) {
                 RQ_INCIDENT_GEOMETRY, RQ_ENROLLMENT_GEOMETRY -> {
@@ -190,26 +219,6 @@ class EnrollmentActivity :
                 }
 
                 RQ_EVENT -> presenter.getEnrollment()?.uid()?.let { openDashboard(it) }
-
-                BIOMETRICS_ENROLL_REQUEST -> {
-                    if (data != null) {
-                        val result = BiometricsClientFactory.get(this).handleRegisterResponse(
-                            resultCode, data
-                        )
-
-                        presenter.handleRegisterResponse(result)
-                    }
-                }
-
-                BIOMETRICS_ENROLL_LAST_REQUEST -> {
-                    if (data != null) {
-                        val result = BiometricsClientFactory.get(this).handleRegisterResponse(
-                            resultCode, data
-                        )
-
-                        presenter.handleRegisterResponse(result)
-                    }
-                }
             }
         }
         super.onActivityResult(requestCode, resultCode, data)
@@ -387,6 +396,10 @@ class EnrollmentActivity :
         formView.onSaveClick()
     }
 
+    override fun submitFormIntent(intent: FormIntent) {
+        formView.submitIntent(intent)
+    }
+
     override fun showDateEditionWarning(message: String?) {
         val dialog =
             MaterialAlertDialogBuilder(this, R.style.DhisMaterialDialog)
@@ -496,7 +509,10 @@ class EnrollmentActivity :
     }
 
     override fun showUnableSaveBiometricsMessage() {
-        TODO("Not yet implemented")
+        Toast.makeText(
+            context, getString(R.string.unable_save_biometrics),
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     override fun showBiometricsAgeGroupNotSupported() {
