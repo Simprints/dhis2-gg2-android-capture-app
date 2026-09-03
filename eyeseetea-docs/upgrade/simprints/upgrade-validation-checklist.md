@@ -27,11 +27,13 @@ Manual flow:
 2. Confirm the search list is hidden and a loader is shown while the Simprints app is being launched.
 3. Complete the external Simprints identify flow and return to DHIS2.
 4. Repeat the launch, but drop the app below `STARTED` while Simprints is foregrounded (e.g. lock the screen or switch apps) before returning, and confirm the previous (stale) program results are not shown once the search list reappears.
+5. Note the GUID of a TEI found via biometric search, clear the search, and manually enter that same GUID as a text value into the biometrics attribute's search field.
 
 Expected result:
 - Returned Simprints GUIDs are reused as biometrics attribute values in a DHIS2 search.
 - The search workflow continues with normal DHIS2 search results, not a disconnected local list.
 - Stale program results from before the biometric app launch are never shown on return, including after a lifecycle drop while Simprints is in the foreground.
+- Manually searching by that same GUID as text returns the identical TEI, confirming the match comes from the normal DHIS2 search index on the biometrics attribute, not a fork-only in-memory store.
 
 ### 2. Biometrics Configuration Selection Per Program Or Org Unit Group
 
@@ -45,10 +47,12 @@ Manual flow:
 3. Confirm the effective biometrics behavior for that program.
 4. Open a second program without direct match but with matching capture `orgUnitGroup`.
 5. Open a third program that only falls back to `default`.
+6. Force a fixture with no `default` config present (e.g. remove/misconfigure it server-side before sync) and open any program that would fall through to `default`.
 
 Expected result:
 - The active config is selected in precedence order `program -> orgUnitGroup -> default`.
 - Downstream biometrics behavior changes with the selected program instead of staying application-global.
+- With no `default` config present, the program still opens normally (`SelectBiometricsConfig`/`ProgramViewModel.onItemClick` never blocks navigation), but biometrics config selection fails silently in the background (`SelectBiometricsConfig.getDefaultConfig()` throws, uncaught) and biometrics behavior for that program stays without an active config until metadata is re-synced with a valid `default` configured on the server.
 
 ### 3. Biometrics Mode Controls Per Program
 
@@ -134,9 +138,11 @@ Preconditions:
 Manual flow:
 1. From a relationship-driven search whose TE type matches `enableIdentificationForTET`, confirm biometric identification is available regardless of `biometricsMode`.
 2. From a relationship-driven search whose TE type does not match, confirm biometric identification is not available.
+3. From a normal (non-relationship) search on the tracked entity type configured in `enableIdentificationForTET`, with `biometricsMode` set to `limited` or `zero` for that program, confirm biometric identification is not available.
 
 Expected result:
 - Relationship search biometric availability follows the TE type toggle, not the normal per-program mode rule.
+- Normal (non-relationship) search availability always follows `biometricsMode == full`, even when the current TE type matches `enableIdentificationForTET` — the TE type toggle never leaks into the normal search entry point.
 
 ### 9. Biometric Duplicate Review And Confirm Identity
 
@@ -147,11 +153,13 @@ Preconditions:
 Manual flow:
 1. Launch biometric search and complete identification with duplicate candidates returned.
 2. Review the duplicate candidates shown by DHIS2, including a credential-linked but low-confidence candidate.
-3. Confirm identity on one candidate, both manually and via the automatic path if available.
-4. From enrollment, trigger a duplicate outcome and choose both "open existing TEI" and `registerLast`.
+3. Inspect the confirmation dialog card for a candidate whose biometric attribute would otherwise be empty and confirm the biometric row still appears with its distinct icon/marker, instead of being hidden like other empty attributes.
+4. Confirm identity on one candidate, both manually and via the automatic path if available.
+5. From enrollment, trigger a duplicate outcome and choose both "open existing TEI" and `registerLast`.
 
 Expected result:
 - Duplicate review is backed by normal DHIS2 search results, not a disconnected local list.
+- The confirmation dialog shows Simprints-aware display data: the biometric attribute row stays visible (with its icon) even when empty, unlike other empty attributes which are hidden.
 - Credential-linked candidates remain visible even below the confidence threshold.
 - Confirm identity returns to the correct DHIS2 continuation path and resets sequential biometric search state.
 - Enrollment duplicates allow both opening the existing TEI dashboard and continuing with `registerLast`.
@@ -231,10 +239,14 @@ Preconditions:
 - None — this is a negative check performed after merging `develop-eyeseetea`.
 
 Manual flow:
-1. After the upgrade merge, check that 2FA/login changes, notifications, change server URL, and granular sync flavor wiring match the `develop-eyeseetea` baseline behavior, not any prior Simprints-specific variant.
+1. After the upgrade merge, check that 2FA/login changes (except biometrics config sync, see below) and notifications match the `develop-eyeseetea` baseline behavior, not any prior Simprints-specific variant.
+2. Confirm login still triggers a biometrics config sync (`SyncBiometricsConfig`, wired from `LoginActivity.kt`/`LoginModule.kt`) — this one login-area piece is a real Simprints customization and must survive, unlike the rest of `login/`.
 
 Expected result:
-- No Simprints-specific behavior survives in these areas; they match upstream/baseline behavior exactly.
+- No Simprints-specific behavior survives in 2FA/login (other than biometrics config sync) or notifications; they match upstream/baseline behavior exactly.
+- Biometrics config sync on login still runs and updates the active biometrics configuration.
+
+Note (verified 2026-09-03): Change Server URL and granular sync flavor wiring were previously listed here but don't belong — Change Server URL no longer exists anywhere in the codebase (nothing to check), and granular sync flavor wiring (`app/src/simprints/java/org/dhis2/utils/granularsync/GranularSyncModule.kt`) is active Simprints DI wiring, not an out-of-scope area to discard. See `customization-files.md` §3 for the corrected inventory.
 
 ## Maintenance rule
 

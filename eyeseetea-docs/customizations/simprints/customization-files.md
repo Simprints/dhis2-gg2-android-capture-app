@@ -341,21 +341,18 @@ See `openspec/config.yaml` ("Out of scope for OpenSpec") for the same list.
 Status: `removed`
 
 Main implementation points:
-- `login/`
+- `login/` and `app/src/main/java/org/dhis2/usescases/login/` — **except** `SyncBiometricsConfig.kt`, which is an active Simprints customization (syncs biometrics config as part of login, wired from `LoginActivity.kt`/`LoginModule.kt`; part of the `PostMetadataSyncAction`/biometrics-config-sync mechanism fixed 2026-09-02, commit `829b1b75a8`) and must be preserved, not removed.
 - `app/src/main/java/org/dhis2/data/server/OpenIdSession.kt`
-- `app/src/main/java/org/dhis2/usescases/login/`
 - `app/src/main/java/org/dhis2/data/notifications/`
 - `app/src/main/java/org/dhis2/usescases/notifications/`
-- `app/src/main/java/org/dhis2/utils/session/ChangeServerURLComponent.kt`
-- `app/src/main/java/org/dhis2/utils/session/ChangeServerURLModule.kt`
-- `app/src/main/java/org/dhis2/utils/session/ChangeServerURLPresenter.kt`
-- `app/src/main/java/org/dhis2/utils/session/ChangeServerUrlDialog.kt`
-- `app/src/simprints/java/org/dhis2/data/user/GranularSyncModule.kt`
 - `app/src/main/java/org/dhis2/data/service/SyncPresenterImpl.kt`
-- `app/src/main/java/org/dhis2/utils/granularsync/SyncStatusDialog.kt`
 
 Technical note:
-- These differences are explicitly not part of the Simprints customization scope to preserve. During the merge with `develop-eyeseetea`, login/OpenID/2FA, notifications, change server URL, and granular sync flavor wiring should be removed rather than ported.
+- These differences are explicitly not part of the Simprints customization scope to preserve. During the merge with `develop-eyeseetea`, login/OpenID/2FA (except the biometrics-config-sync piece above) and notifications should be removed rather than ported.
+- **Verified 2026-09-03, this list was stale on three points:**
+  - Change Server URL (`ChangeServerURLComponent.kt`, `ChangeServerURLModule.kt`, `ChangeServerURLPresenter.kt`, `ChangeServerUrlDialog.kt`) **no longer exists anywhere in the codebase** — already fully removed in an earlier merge, not something left to verify against baseline. Dropped from this list.
+  - `app/src/simprints/java/org/dhis2/data/user/GranularSyncModule.kt` had the wrong path — the real file is `app/src/simprints/java/org/dhis2/utils/granularsync/GranularSyncModule.kt`.
+  - `app/src/main/java/org/dhis2/utils/granularsync/SyncStatusDialog.kt` still exists (along with `SyncStatusDialogProvider.kt`/`SyncStatusDialogNavigator.kt`) — not removed, kept as shared baseline code the `simprints` flavor's `GranularSyncModule.kt` wires into, not something to remove during merge. Dropped from this "removed" list; not re-added elsewhere because it isn't a Simprints customization itself, just baseline code the flavor DI depends on.
 
 ## 4. Shared drift still differing
 

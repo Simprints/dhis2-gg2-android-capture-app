@@ -1277,6 +1277,20 @@ Confirmed with device tracing on 2026-09-03: `identify` returning 2+ candidates 
 
 An earlier version of this fix added an `excludedAttributeIdsFromCollapse: Set<String>` constructor parameter to `SearchTrackedEntities`, injected from `:app`'s Dagger modules — rejected as a bigger conflict surface on the constructor signature than the `commonskmm` move. See `customization-files.md` §2.9 for the full file inventory.
 
+### DHIS2 core 2.43 API research: watch item for a future 3.4.2 upgrade (2026-09-03)
+
+The client is moving their server to DHIS2 core 2.43 on this same 3.4.1 release (the driver for this whole upgrade, see the top of this file). Read the official 2.43 release notes (`dhis2.github.io/dhis2-releases/releases/2.43/`, GitHub `dhis2/dhis2-releases`) looking for anything that could affect the 13 Simprints customizations, specifically the biometric search fix from this same session.
+
+**Watch item — Tracked Entity Search Performance Configuration (`ROADMAP-128`).** 2.43 lets the server define, per tracked entity attribute (via the Maintenance app), a `preferredSearchOperator` and a list of `blockedSearchOperators` (`LIKE`/`EQ`/`SW`/`EW`), and the release notes explicitly say: *"Web and Android Capture use recommended operators, restrict inefficient ones, avoid LIKE by default."* This is the exact same surface as the biometric search fix above — `SearchRepositoryImpl.getTrackedEntityQuery()` (map view) and `SearchTrackedEntityRepositoryImpl.addToQuery()` (list view/duplicate resolution, via `SearchTrackedEntities`) both fall back to `.like(dataValues[0])` when there's exactly one candidate GUID (`searchOperator == null`).
+
+**Checked directly against the SDK we ship (`dhis2-android-sdk` tag `1.14.1-eyeseetea-fork-1`, local clone), not assumed from the release notes:**
+- `TrackedEntityAttribute.preferredSearchOperator()`/`.blockedSearchOperators()` (`core/src/main/java/org/hisp/dhis/android/core/trackedentity/TrackedEntityAttribute.java`) already exist as metadata fields, synced from the server and persisted (`TrackedEntityAttributeDB.kt`).
+- `git grep` across the whole SDK tag for both field names, excluding the model/DTO/DB/test files that just declare or map them, returns **zero results** — nothing in query-building code (`TrackedEntitySearchOperators.kt`, the repository/filter connectors) reads or enforces them yet.
+- **Conclusion: not a blocker for this 3.4.1 upgrade.** The server can tag the biometric attribute with `blockedSearchOperators: [LIKE]` today and this SDK version will keep sending `.like()` unaffected — the restriction is metadata-only in `1.14.1-eyeseetea-fork-1`.
+- **Why this matters for a future 3.4.2 (or later SDK) upgrade:** if a later SDK version starts enforcing `blockedSearchOperators` client-side, and the GHS server config marks `LIKE` as blocked for the biometric attribute (plausible, since `LIKE` is explicitly called out as "commonly associated with slow performance" and "no longer selected by default" in 2.43), the single-candidate biometric search path (`size == 1` → `.like()`) could start failing or behaving differently. **Action before any future SDK bump past `1.14.1-eyeseetea-fork-1`:** re-run this same `git grep` against the new SDK tag, and if usages appear in query-building code this time, check the biometric attribute's `blockedSearchOperators` config on the client's server and re-verify the single-candidate search path on device.
+
+Other 2.43 items reviewed and found **not** relevant to Simprints: Enrollment AOCs (`ROADMAP-140`, backend-only in 2.43, no capture/analytics app support yet); removed error codes `E1084`/`E1085` (nothing in this codebase catches those specific codes); `changelog.tracker` config move (server-side only). The `Program`/`Enrollment` `categoryCombo`/`enrollmentCategoryCombo`/`attributeOptionCombo` builder fields becoming `@NonNull` (already hit and fixed in `EnrollmentPresenterImplTest.kt` this session, see the CI-fix commit) is consistent with Enrollment AOCs backend work landing in the SDK, but is a test-fixture concern, not a runtime customization risk.
+
 ## Automerge casualties
 
 Pending.
