@@ -239,6 +239,7 @@ Status: `active`
 Main implementation points:
 - `app/src/main/java/org/dhis2/usescases/enrollment/EnrollmentActivity.kt`
 - `app/src/main/java/org/dhis2/usescases/enrollment/EnrollmentPresenterImpl.kt`
+- `app/src/main/java/org/dhis2/usescases/enrollment/EnrollmentView.kt`
 - `app/src/main/java/org/dhis2/data/forms/dataentry/ValueStoreImpl.kt`
 - `app/src/main/java/org/dhis2/usescases/teiDashboard/TeiDashboardMobileActivity.kt`
 - `app/src/main/java/org/dhis2/usescases/teiDashboard/dashboardfragments/teidata/TEIDataFragment.kt`
@@ -251,9 +252,13 @@ Supporting files in the same workflow:
 - `app/src/main/java/org/dhis2/usescases/biometrics/addAttrBiometricsIconIfRequired.kt`
 - `app/src/main/java/org/dhis2/usescases/biometrics/addAttrNHISNumberIconIfRequired.kt`
 - `app/src/main/java/org/dhis2/usescases/searchTrackEntity/ui/mapper/TEICardMapper.kt`
+- `form/src/main/java/org/dhis2/form/ui/FormView.kt` (Oslo file; single added method `submitIntent(intent: FormIntent)`, see technical note)
 
 Technical note:
 - Simprints extends enrollment, TEI form, dashboard, and search-card workflows with biometric status, actions, attribute handling, and registration/verification mapping. In enrollment/TEI form the active behavior is registration, duplicate handling, and `registerLast`; verification is not driven from the form flow. In TEI dashboard there are both registration and verification flows. `TEICardMapper` preserves biometrics and NHIS rows even when other empty attributes are hidden, decorates those rows with custom markers, and derives avatar initials from first-name/last-name attributes. This looks like core product behavior, not upgrade drift.
+- `EnrollmentPresenterImpl.saveBiometricValue()` submits its `FormIntent.OnTextChange`/`OnSave` directly via `FormView.submitIntent()` (new method, `EnrollmentView.submitFormIntent()`), instead of `biometricsUiModel.onTextChange()/onSave()`. Reason: `BiometricsAttributeUiModelImpl` is a data class whose `callback: FieldUiModel.Callback?` field is not a constructor parameter, so `.copy()` (used by `onFieldsLoading`'s `.setValue().setEditable().setAgeUnderThreshold()`) drops it; the callback is only reattached when `Form.kt` actually paints that exact instance. Since baseline moved `onFieldsLoadingListener`/`onFieldsLoadedListener` from the `FormView` composable into `FormViewModel.items`' `map{}` (as part of its own upstream migration), the presenter-held `biometricsUiModel` reference can outlive that repaint and end up with `callback == null`, silently swallowing the save. Found and fixed 2026-09-02 (upgrade 3.4.1); see `upgrade-3.4-notes.md` for the full trace and the two other independent causes fixed alongside it (`onActivityResult` dropping non-`RESULT_OK` Simprints results, and Compose's `LaunchedEffect(items)` deduplication skipping `onFieldItemsRendered` on some emissions — the latter fixed via `LaunchedEffect(Unit) { viewModel.items.collect { render(it) } }`, also in `FormView.kt`).
+
+**Tech debt (not addressed 2026-09-02, deferred):** this fix works but is a workaround, not a clean design — it bypasses `FieldUiModel.Callback` entirely for the biometrics field instead of fixing why the callback goes stale, and it required adding two new methods across three files (`FormView.submitIntent`, `EnrollmentView.submitFormIntent`, `EnrollmentActivity` impl) plus a second Oslo-file change (`LaunchedEffect(Unit)` in the same `FormView.kt`) just to keep the pre-existing `pendingSave` mechanism working. Worth revisiting for a cleaner approach — e.g. having `EnrollmentPresenterImpl` react to `onFieldsLoaded` (which already fires per-emission from `FormViewModel`, unaffected by the callback/Compose timing issue) instead of holding a `biometricsUiModel` reference and depending on Compose to keep its `callback` alive. Deferred deliberately to keep the upgrade fix minimal and attributable; revisit once the upgrade is closed.
 
 ### 2.11 Biometric Verification Persistence
 

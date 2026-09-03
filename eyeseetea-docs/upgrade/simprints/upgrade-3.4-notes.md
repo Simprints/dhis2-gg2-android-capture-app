@@ -1252,6 +1252,14 @@ Status values: `pending` (found, not yet promoted) / `promoted` (in a baseline P
 - Whether `app/build.gradle.kts`, `settings.gradle.kts`, and `gradle/libs.versions.toml` contain any Simprints-specific flavor identity that should be preserved beyond pure drift cleanup.
 - Whether there are Simprints biometrics customizations outside the already reviewed biometrics/search/enrollment/dashboard surface.
 
+### Tech debt: `FormView.submitIntent` workaround for the stale `FieldUiModel.Callback` (2026-09-02)
+
+The `registerLast` fix (see "Second causa raíz" write-up for that day, `customization-files.md` §2.10) bypasses `FieldUiModel.Callback` entirely for the biometrics field, instead of fixing why the callback goes stale on the `biometricsUiModel` instance `EnrollmentPresenterImpl` holds. It works and is verified on device, but it is a workaround: it needed two new methods across three files (`FormView.submitIntent`, `EnrollmentView.submitFormIntent`, `EnrollmentActivity` impl) plus a second unrelated Oslo-file change in the same `FormView.kt` (`LaunchedEffect(Unit)` instead of `LaunchedEffect(items)`, to keep the pre-existing `pendingSave`/`onFieldItemsRendered` mechanism firing on every emission).
+
+A cleaner alternative worth exploring later: have `EnrollmentPresenterImpl` react to `onFieldsLoaded(fields)` — which already fires per-emission from `FormViewModel.items`' `map{}`, unaffected by the Compose repaint timing that leaves `callback == null` — instead of caching a `biometricsUiModel` reference and calling methods on it later, after Simprints has come and gone. That would remove the need for both new `submitIntent` entry points.
+
+Deferred deliberately: the priority this session was a minimal, attributable fix to unblock the 3.4.1 upgrade, not a redesign of the biometrics field's plumbing. Revisit once the upgrade is closed and validated.
+
 ## Automerge casualties
 
 Pending.
