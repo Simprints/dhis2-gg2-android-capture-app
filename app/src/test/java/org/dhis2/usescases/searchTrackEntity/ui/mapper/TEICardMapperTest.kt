@@ -26,11 +26,6 @@ import org.dhis2.commons.ui.model.ListCardUiModel
 import org.dhis2.usescases.teiDashboard.ui.mapper.firstNameAttrUid
 import org.dhis2.usescases.teiDashboard.ui.mapper.lastNameAttrUid
 import org.dhis2.usescases.teiDashboard.ui.mapper.middleNameAttrUid
-import org.hisp.dhis.android.core.common.State
-import org.hisp.dhis.android.core.enrollment.Enrollment
-import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
-import org.hisp.dhis.android.core.program.Program
-import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -202,11 +197,35 @@ class TEICardMapperTest {
         val model = SearchTeiModel().apply {
             setAttributeValues(attributeValues)
             attributeValues.forEach { (key, value) -> addToAllAttributes(key, value) }
-            tei = TrackedEntityInstance.builder()
-                .uid("TEIUid")
-                .lastUpdated(currentDate)
-                .aggregatedSyncState(State.SYNCED)
-                .build()
+            tei = TrackedEntitySearchItemResult(
+                uid = "TEIUid",
+                created = null,
+                lastUpdated = currentDate.toKtxInstant(),
+                createdAtClient = null,
+                lastUpdatedAtClient = null,
+                ownerOrgUnit = null,
+                enrollmentOrgUnit = null,
+                shouldDisplayOrgUnit = false,
+                geometry = null,
+                syncState = SyncState.SYNCED,
+                aggregatedSyncState = SyncState.SYNCED,
+                deleted = false,
+                isOnline = true,
+                teTypeName = null,
+                type = TrackedEntityTypeDomain(
+                    trackedEntityTypeAttributeDomains = emptyList(),
+                    featureType = GeometryFeatureType.NONE,
+                ),
+                header = null,
+                overDueDate = null,
+                selectedEnrollment = null,
+                profilePicture = null,
+                enrolledPrograms = null,
+                enrollments = null,
+                relationships = null,
+                defaultTypeIcon = null,
+                attributeValues = emptyList(),
+            )
         }
         return mapper.mapForConfirmationDialog(model)
     }
@@ -275,9 +294,25 @@ class TEICardMapperTest {
                     icon = "iconUid",
                     color = "colorUid"
                 )
-                setAttributeValues(attributeValues)
-                // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
-                attributeValues.forEach { (key, value) -> addToAllAttributes(key, value) }
+            ),
+                DomainProgram(
+                uid = "Program2Uid",
+                displayName = "Program 2",
+                style = DomainObjectStyle(
+                    icon = "iconUid2",
+                    color = "colorUid2"
+                )
+            ),),
+            enrollments = enrollments,
+            relationships = null,
+            defaultTypeIcon = null,
+            attributeValues = listOf(attribute),
+        )
+        val searchTeiModel = SearchTeiModel()
+        searchTeiModel.tei = tei
+        searchTeiModel.setAttributeValues(attributeValues)
+        // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
+        attributeValues.forEach { (key, value) -> searchTeiModel.addToAllAttributes(key, value) }
 
         return searchTeiModel
     }

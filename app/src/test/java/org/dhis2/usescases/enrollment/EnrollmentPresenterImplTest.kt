@@ -497,7 +497,6 @@ class EnrollmentPresenterImplTest {
                 selectableDates = null,
                 eventCategories = null,
                 periodSelector = null,
-                url = null,
                 label = "",
                 optionSetConfiguration = null,
                 valueType = ValueType.TEXT
@@ -511,7 +510,6 @@ class EnrollmentPresenterImplTest {
                 selectableDates = null,
                 eventCategories = null,
                 periodSelector = null,
-                url = null,
                 editable = true,
                 ageUnderThreshold = false,
                 customIntent = null

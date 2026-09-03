@@ -567,6 +567,7 @@ class TeiDataPresenterTest {
             programUid,
             teiUid,
             enrollmentUid,
+            false,
             schedulers,
             analytics,
             valueStore,
