@@ -5,7 +5,6 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import android.os.Build
 import androidx.annotation.RequiresPermission
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -24,11 +23,8 @@ class NetworkStatusProviderImpl(
         NetworkRequest
             .Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .also { builder ->
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    builder.addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
-                }
-            }.build()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            .build()
 
     private val availableNetworks = mutableSetOf<Network>()
 
@@ -46,7 +42,12 @@ class NetworkStatusProviderImpl(
                         ) {
                             super.onCapabilitiesChanged(network, networkCapabilities)
                             val networkState = networkCapabilities.asNetworkState()
-                            trySend(networkState)
+                            if (networkState) {
+                                availableNetworks.add(network)
+                            } else {
+                                availableNetworks.remove(network)
+                            }
+                            trySend(availableNetworks.isNotEmpty())
                         }
 
                         override fun onUnavailable() {
@@ -59,13 +60,16 @@ class NetworkStatusProviderImpl(
                             val networkCapabilities = manager.getNetworkCapabilities(network)
 
                             val networkState = networkCapabilities?.asNetworkState() ?: false
-                            trySend(networkState)
+                            if (networkState) {
+                                availableNetworks.add(network)
+                            }
+                            trySend(availableNetworks.isNotEmpty())
                         }
 
                         override fun onLost(network: Network) {
                             super.onLost(network)
                             availableNetworks.remove(network)
-                            trySend(false)
+                            trySend(availableNetworks.isNotEmpty())
                         }
                     }
 
@@ -77,14 +81,11 @@ class NetworkStatusProviderImpl(
 
     @RequiresPermission("android.permission.ACCESS_NETWORK_STATE")
     private fun ConnectivityManager.getCurrentNetworkState(): Boolean {
-        @Suppress("DEPRECATION")
-        return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            activeNetworkInfo?.isConnected == true
-        } else {
-            val networkCapabilities = getNetworkCapabilities(activeNetwork)
-            networkCapabilities?.asNetworkState() ?: false
-        }
+        val networkCapabilities = getNetworkCapabilities(activeNetwork)
+        return networkCapabilities?.asNetworkState() ?: false
     }
 
-    private fun NetworkCapabilities.asNetworkState(): Boolean = hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    private fun NetworkCapabilities.asNetworkState(): Boolean =
+        hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
 }

@@ -26,7 +26,7 @@
 # Preserve attributes related to DataBinding
 -keepattributes *Annotation*
 
--dontwarn org.dhis2.commons.bindings.CommonExtensionsKt
+-dontwarn org.dhis2.bindings.CommonExtensionsKt
 -dontwarn org.dhis2.commons.filters.data.FilterBindingsKt
 -dontwarn org.dhis2.commons.resources.ColorType
 -dontwarn org.dhis2.commons.resources.ColorUtils

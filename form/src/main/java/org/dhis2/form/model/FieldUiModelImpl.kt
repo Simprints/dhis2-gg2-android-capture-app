@@ -36,7 +36,6 @@ data class FieldUiModelImpl(
     override val eventCategories: List<EventCategory>? = null,
     override val periodSelector: PeriodSelector? = null,
     override var customIntent: CustomIntentModel? = null,
-    override val url: String? = null,
 ) : FieldUiModel {
     private var callback: FieldUiModel.Callback? = null
 

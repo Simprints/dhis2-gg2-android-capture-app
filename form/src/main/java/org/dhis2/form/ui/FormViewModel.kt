@@ -13,11 +13,15 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.launch
 import org.dhis2.commons.date.DateUtils
 import org.dhis2.commons.dialogs.bottomsheet.BottomSheetDialogUiModel
@@ -49,6 +53,7 @@ import org.dhis2.form.model.ValueStoreResult
 import org.dhis2.form.ui.event.RecyclerViewUiEvents
 import org.dhis2.form.ui.idling.FormCountingIdlingResource
 import org.dhis2.form.ui.intent.FormIntent
+import org.dhis2.form.ui.mapper.FormSectionMapper
 import org.dhis2.form.ui.provider.FormResultDialogProvider
 import org.dhis2.mobile.commons.model.CustomIntentRequestArgumentModel
 import org.dhis2.mobile.commons.providers.CustomIntentFailure
@@ -74,6 +79,7 @@ class FormViewModel(
     private val geometryController: GeometryController = GeometryController(GeometryParserImpl()),
     private val openErrorLocation: Boolean = false,
     private val resultDialogUiProvider: FormResultDialogProvider,
+    private val formSectionMapper: FormSectionMapper,
 ) : ViewModel() {
     val loading = MutableLiveData(true)
     val showToast = MutableLiveData<Int>()
@@ -81,8 +87,26 @@ class FormViewModel(
     val showInfo = MutableLiveData<InfoUiModel>()
     val confError = MutableLiveData<List<RulesUtilsProviderConfigurationError>>()
     var dateFormatConfig: String = "ddMMyyyy"
-    private val _items = MutableLiveData<List<FieldUiModel>>()
-    val items: LiveData<List<FieldUiModel>> = _items
+
+    private val _items = MutableSharedFlow<List<FieldUiModel>>()
+
+    // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
+    // Hooks set by FormView so a fork can transform the fields before they are mapped to
+    // sections. Simprints uses them to drop the biometrics attribute when the program is not in
+    // `full` mode, and to configure BiometricsAttributeUiModelImpl (value, editability, age
+    // threshold) so it renders as its custom component. Null for every other flavor.
+    var onFieldsLoadingListener: ((List<FieldUiModel>) -> List<FieldUiModel>)? = null
+    var onFieldsLoadedListener: ((List<FieldUiModel>) -> Unit)? = null
+
+    val items = _items.map { items ->
+        // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
+        // Must run on the unmapped fields: the hooks work on individual FieldUiModel, which stop
+        // being reachable once they are grouped into sections.
+        val finalItems = onFieldsLoadingListener?.invoke(items) ?: items
+        onFieldsLoadedListener?.invoke(finalItems)
+
+        formSectionMapper.mapFromFieldUiModelList(finalItems)
+    }.shareIn(viewModelScope, SharingStarted.Eagerly, 0)
 
     var previousActionItem: RowAction? = null
 
@@ -107,9 +131,6 @@ class FormViewModel(
     private val _completionPercentage = MutableLiveData<Float>()
     val completionPercentage = _completionPercentage
 
-    private val _calculationLoop = MutableLiveData(false)
-    val calculationLoop = _calculationLoop
-
     private val pendingIntents = MutableSharedFlow<FormIntent>()
 
     private val fieldListChannel =
@@ -119,6 +140,7 @@ class FormViewModel(
         )
 
     private val handler = Handler(Looper.getMainLooper())
+    private var textChangeDebounceRunnable: Runnable? = null
 
     var filePath: String? = null
 
@@ -143,7 +165,7 @@ class FormViewModel(
             fieldListChannel.consumeEach { fieldListConfiguration ->
                 FormCountingIdlingResource.increment()
                 val result = repository.composeList(fieldListConfiguration.skipProgramRules)
-                _items.postValue(result)
+                _items.emit(result)
                 if (fieldListConfiguration.finish) {
                     runDataIntegrityCheck()
                 }
@@ -152,6 +174,11 @@ class FormViewModel(
         }
 
         loadData()
+    }
+
+    override fun onCleared() {
+        textChangeDebounceRunnable?.let { handler.removeCallbacks(it) }
+        super.onCleared()
     }
 
     private fun displayResult(result: Pair<RowAction, StoreResult>) {
@@ -302,6 +329,18 @@ class FormViewModel(
 
     private fun handleOnTextChangeAction(action: RowAction): StoreResult {
         repository.updateValueOnList(action.id, action.value, action.valueType)
+        textChangeDebounceRunnable?.let { handler.removeCallbacks(it) }
+        textChangeDebounceRunnable = Runnable {
+            viewModelScope.launch {
+                pendingIntents.emit(
+                    FormIntent.OnSave(
+                        uid = action.id,
+                        value = action.value,
+                        valueType = action.valueType,
+                    ),
+                )
+            }
+        }.also { handler.postDelayed(it, 1_000L) }
         return StoreResult(
             action.id,
             ValueStoreResult.TEXT_CHANGING,
@@ -436,26 +475,26 @@ class FormViewModel(
             false
         } else {
             valueType.isNumeric ||
-                valueType.isText &&
-                renderType?.isPolygon() != true ||
-                valueType == ValueType.URL ||
-                valueType == ValueType.EMAIL ||
-                valueType == ValueType.PHONE_NUMBER
+                    valueType.isText &&
+                    renderType?.isPolygon() != true ||
+                    valueType == ValueType.URL ||
+                    valueType == ValueType.EMAIL ||
+                    valueType == ValueType.PHONE_NUMBER
         }
 
     private fun getLastFocusedTextItem() =
         repository.currentFocusedItem()?.takeIf {
             it.optionSet == null &&
-                (
-                    valueTypeIsTextField(
-                        it.valueType,
-                        it.renderingType,
-                    ) ||
-                        it.valueType == ValueType.AGE ||
-                        it.valueType == ValueType.DATETIME ||
-                        it.valueType == ValueType.DATE ||
-                        it.valueType == ValueType.TIME
-                )
+                    (
+                            valueTypeIsTextField(
+                                it.valueType,
+                                it.renderingType,
+                            ) ||
+                                    it.valueType == ValueType.AGE ||
+                                    it.valueType == ValueType.DATETIME ||
+                                    it.valueType == ValueType.DATE ||
+                                    it.valueType == ValueType.TIME
+                            )
         }
 
     private fun rowActionFromIntent(intent: FormIntent): RowAction =
@@ -833,7 +872,7 @@ class FormViewModel(
                 Timber.e(e)
             } finally {
                 val list = repository.composeList()
-                _items.postValue(list)
+                _items.emit(list)
                 FormCountingIdlingResource.decrement()
             }
         }
@@ -857,10 +896,14 @@ class FormViewModel(
 
             EventStatus.COMPLETED -> {
                 val resultAction = provideShowResultDialog(result)
+                // EyeSeeTea fix - "mark as complete?" dialog always shown for completed events
+                // (Oslo ANDROAPP-7666, introduced 3.3.1)
+                // Remove when Oslo returns FormActions.OnFinish for completed events with no issues.
                 if (resultAction?.fieldsWithIssues?.isEmpty() == true) {
                     FormActions.OnFinish
+                } else {
+                    resultAction
                 }
-                resultAction
             }
 
             EventStatus.SKIPPED -> {
@@ -874,7 +917,7 @@ class FormViewModel(
             EventStatus.SCHEDULE,
             EventStatus.VISITED,
             EventStatus.OVERDUE,
-            -> FormActions.OnFinish
+                -> FormActions.OnFinish
         }
 
     private fun provideShowResultDialog(result: DataIntegrityCheckResult): FormActions.ShowResultDialog? =
@@ -941,7 +984,9 @@ class FormViewModel(
         viewModelScope.launch {
             val result =
                 async(dispatcher.io()) {
-                    repository.completedFieldsPercentage(_items.value ?: emptyList())
+                    repository.completedFieldsPercentage(
+                        value = _items.firstOrNull() ?: emptyList()
+                    )
                 }
             try {
                 _completionPercentage.postValue(result.await())
@@ -966,20 +1011,6 @@ class FormViewModel(
     fun activateEvent() {
         viewModelScope.launch(dispatcher.io()) {
             repository.activateEvent()
-        }
-    }
-
-    fun displayLoopWarningIfNeeded() {
-        viewModelScope.launch {
-            val result =
-                async(dispatcher.io()) {
-                    repository.calculationLoopOverLimit()
-                }
-            try {
-                _calculationLoop.postValue(result.await())
-            } catch (e: Exception) {
-                Timber.e(e)
-            }
         }
     }
 
@@ -1022,10 +1053,10 @@ class FormViewModel(
                     repository.getDateFormatConfiguration()
                 }.await()
             try {
-                _items.postValue(result)
+                _items.emit(result)
             } catch (e: Exception) {
                 Timber.e(e)
-                _items.postValue(emptyList())
+                _items.emit(emptyList())
             } finally {
                 FormCountingIdlingResource.decrement()
             }

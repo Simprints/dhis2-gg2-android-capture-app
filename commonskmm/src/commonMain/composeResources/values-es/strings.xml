@@ -23,18 +23,11 @@
     <string name="conf_error_value_option_set">El valor del campo %s no pertenece al conjunto de opciones en %s</string>
     <string name="field_is_mandatory">El campo es obligatorio</string>
     <string name="missing_warning_fields_completed_events">Tienes algunos mensajes de aviso.</string>
-    <string name="missing_warning_fields_events">Tiene algunos mensajes de advertencia.\n¿Deseas marcar este formulario como completo?</string>
+    <string name="missing_warning_fields_events">Tiene algunos mensajes de advertencia.\n¿Deseas marcar este formulario como completo\?</string>
     <string name="required">Necesario</string>
-    <string name="date">Fecha</string>
-    <string name="hint_year">Años</string>
-    <string name="hint_month">Meses</string>
-    <string name="hint_day">Días</string>
-    <string name="wrong_date_format">%s no es una fecha válida</string>
     <string name="polygon">Polígono</string>
     <string name="latitude">Latitud</string>
     <string name="longitude">Longitud</string>
-    <string name="coordinates_error">El valor de las coordenadas no es válido</string>
-    <string name="polygon_captured">Polígono capturado</string>
     <string name="enter_value">Introduzca valor</string>
     <string name="enter_url">Introduzca url</string>
     <string name="enter_email">Introduzca email</string>
@@ -49,33 +42,23 @@
     <string name="enter_long_text">Introducir texto largo</string>
     <string name="enter_text">Introducir texto</string>
     <string name="due_date">Fecha de vencimiento</string>
-    <string name="mandatory_field">Campo obligatorio</string>
-    <string name="form_latitude_prefix">Lat:</string>
-    <string name="form_longitude_prefix">Long:</string>
     <string name="not_saved">No guardado</string>
     <string name="review">Revisar</string>
     <string name="complete">Completar</string>
     <string name="discard_changes">Descartar los cambios</string>
     <string name="saved">¡Guardado!</string>
-    <string name="event_error_on_complete">Tienes algunos mensajes de error.\n¿Deseas revisarlos?</string>
-    <string name="missing_error_fields_events">Algunos campos tienen errores y no se han guardado.\n¿Deseas revisar el formulario?</string>
-    <string name="review_message">Algunos campos necesitan tu atención.\n¿Deseas revisar el formulario?</string>
+    <string name="event_error_on_complete">Tienes algunos mensajes de error.\n¿Deseas revisarlos\?</string>
+    <string name="missing_error_fields_events">Algunos campos tienen errores y no se han guardado.\n¿Deseas revisar el formulario\?</string>
+    <string name="review_message">Algunos campos necesitan tu atención.\n¿Deseas revisar el formulario\?</string>
     <string name="not_now">Ahora no</string>
-    <string name="save_anyway">Guardar de todos modos</string>
     <string name="keep_editing">Seguir editando</string>
     <string name="event_can_be_completed">¿Desea marcar este formulario como completo?</string>
     <string name="discard_go_back">Si sale toda la información del formulario será descartada.</string>
     <string name="field_errors_not_saved_discard">Algunos campos presentan errores y no se han guardado.\nSi sales ahora, los cambios se descartarán.</string>
-    <string name="field_errors_not_saved">Algunos campos tienen errores y no serán guardados.</string>
-    <string name="fields_mandatory_missing">Algunos campos obligatorios faltan llenarse, el formulario no puede ser guardado</string>
-    <string name="fields_mandatory_missing_discard">Faltan algunos campos obligatorios y el formulario no puede guardarse.\nSi sales ahora, los cambios se descartarán.</string>
     <string name="share">Compartir</string>
     <string name="camera_permission_denied">El permiso de cámara está denegado.\nDebes activarlo para usar esta función.</string>
     <string name="action_close">Cerrar</string>
-    <string name="program_rules_loop_warning_title">Advertencia de reglas del programa</string>
-    <string name="program_rules_loop_warning_message">Hay un problema de configuración que provoca un bucle en las reglas. Póngase en contacto con su administrador.</string>
     <string name="copied_text">Copiado</string>
-    <string name="empty_description">No hay información para este campo</string>
     <string name="take_photo">Tomar foto</string>
     <string name="from_gallery_v2">Desde la galería</string>
     <string name="warning_error_on_complete_title">¡Importante!</string>
@@ -100,13 +83,10 @@
     <string name="tei_coordinates">Coordenadas para</string>
     <string name="no_reserved_values">No quedan valores reservados. Contacte con el administrador del sistema.</string>
     <string name="incident_date">Fecha del incidente</string>
-    <string name="location_permission_denied">Se requiere el permiso de localización para obtener coordenadas. Por favor, habilítelo desde los ajustes del dispositivo.</string>
     <string name="open_with">Abrir con</string>
     <string name="no_option_found">No se ha encontrado opción</string>
     <string name="download">Descargar</string>
     <string name="scan">Escanear</string>
-    <string name="qr_code">Código QR</string>
-    <string name="bar_code">Código de barras</string>
     <string name="add_location">Agregar ubicación</string>
     <string name="form_without_fields">Este formulario no tiene campos configurados</string>
     <string name="event_details_section_title">%s detalles</string>
@@ -137,12 +117,11 @@
     <string name="search_to_find_more">Busca para ver más</string>
     <string name="action_done">Hecho</string>
     <string name="input_not_supported">No soportado</string>
-    <!--*******************->
+    <!--*******************
         D2 Error Messages
     **********************-->
     <string name="login_error_null_pass">La contraseña está vacía. Ingrese la contraseña.</string>
     <string name="login_error_null_username">El usuario está vacío. Ingrese el usuario.</string>
-    <string name="login_error_dhis_version">Este servidor trabaja sobre una versión de dhis distinta a 2.29. Actualice el servidor o utilice el entorno de pruebas para continuar.</string>
     <string name="login_error_dhis_version_v2">Este servidor tiene una version de DHIS2 diferente de %s. Actualice su servidor o contacte a su administrador.</string>
     <string name="login_error_unsuccessful_response">Algo ha ido mal. Por favor, compruebe que tanto la url del servidor como el usuario y contraseña son correctos y pruebe otra vez.</string>
     <string name="login_error_error_response">Disculpe, hubo un error del lado del servidor.</string>
@@ -163,7 +142,6 @@
     <string name="error_create_existing_error">No se puede crear un objeto que ya existe.</string>
     <string name="error_delete_non_existing_object">No se puede eliminar un objeto que no existe.</string>
     <string name="error_instance_keystore">No se puede inicializar el almacén de llaves.</string>
-    <string name="error_reserve_value_on_server">No se pudo reservar los valores. Por favor contacte a su administrador</string>
     <string name="error_export_login">Inicie sesión para exportar la base de datos.</string>
     <string name="error_export_encrypted">Exportar una base de datos encriptada no está soportado.</string>
     <string name="error_import_exist">Está intentando importar una base de datos que ya existe.</string>
@@ -190,7 +168,6 @@
     <string name="error_socket_timeout">El servidor ha tardado mucho en responder. Se ha cancelado la petición.</string>
     <string name="error_relationship_updated">La relación no puede actualizarse.</string>
     <string name="error_too_many_periods">Hay demasiados periodos.</string>
-    <string name="error_url_not_found">No pudimos encontrar la URL. Por favor revísela.</string>
     <string name="error_account_disabled">Su cuenta de usuario ha sido desactivada. Si esto es un error, contacte con su administrador.</string>
     <string name="error_account_locked">Su cuenta de usuario ha sido bloqueada. Si es un error, contacte con su administrador.</string>
     <string name="error_set_value">No se ha podido cambiar el valor.</string>
@@ -202,8 +179,11 @@
     <string name="error_invalid_characters">La consulta contiene caracteres inválidos. Por favor contacte a su administrador para verificar la configuración del servidor (relaxedQueryChars,...).</string>
     <string name="error_server_unavailable">El servidor no está disponible actualmente. Vuelve a intentarlo más tarde.</string>
     <string name="error_no_internet_connection">Estas desconectado. Conéctese a Internet e inténtelo nuevamente.</string>
-    <!--*******************->
-       END OF D2 Error Messages
-    **********************-->
+    <string name="database_import_failed">Importación de la base de datos fallida</string>
+    <string name="invalid_file">Archivo no válido</string>
+    <string name="age">EDAD</string>
+    <string name="date_of_birth">FECHA DE NACIMIENTO</string>
+    <string name="cancel">Cancelar</string>
+    <string name="ok">Aceptar</string>
 
 </resources>

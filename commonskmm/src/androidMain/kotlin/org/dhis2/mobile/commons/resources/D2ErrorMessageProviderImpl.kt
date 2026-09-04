@@ -51,8 +51,13 @@ class D2ErrorMessageProviderImpl : D2ErrorMessageProvider {
             D2ErrorCode.BAD_CREDENTIALS ->
                 getString(Res.string.login_error_bad_credentials)
 
-            D2ErrorCode.UNKNOWN_HOST ->
-                getString(Res.string.login_error_unknown_host)
+            D2ErrorCode.UNKNOWN_HOST -> {
+                if (isNetworkAvailable) {
+                    getString(Res.string.login_error_unknown_host)
+                } else {
+                    getString(Res.string.error_no_internet_connection)
+                }
+            }
 
             D2ErrorCode.UNEXPECTED ->
                 getString(Res.string.error_unexpected)
@@ -203,6 +208,8 @@ class D2ErrorMessageProviderImpl : D2ErrorMessageProvider {
 
             D2ErrorCode.ORGUNIT_NOT_IN_SEARCH_SCOPE ->
                 getString(Res.string.error_org_unit_scope)
+            D2ErrorCode.INVALID_CONFIGURATION ->
+                getString(Res.string.invalid_configuration)
 
             D2ErrorCode.INVALID_CHARACTERS ->
                 getString(Res.string.error_invalid_characters)
@@ -224,35 +231,13 @@ class D2ErrorMessageProviderImpl : D2ErrorMessageProvider {
             D2ErrorCode.NOT_IN_TOTP_2FA_ENROLLMENT_MODE ->
                 getString(Res.string.not_in_totp_2fa_enrollment_mode)
 
-            // EyeSeeTea customization - errors for 2FA
-            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE, D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_TOTP ->
-                getString(
-                    Res.string.incorrect_two_factor_code
-                )
-            D2ErrorCode.EMAIL_TWO_FACTOR_CODE_SENT->
-                getString(
-                    Res.string.email_two_factor_code_sent
-                )
-
-            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_EMAIL->
-                getString(
-                    Res.string.incorrect_two_factor_code_email
-                )
-
-            D2ErrorCode.TWO_FACTOR_MANY_SEND_ATTEMPTS->
-                getString(
-                    Res.string.two_factor_code_many_send_attemps
-                )
-
-            D2ErrorCode.SMS_TWO_FACTOR_CODE_SENT->
-                getString(
-                    Res.string.sms_two_factor_code_sent
-                )
-
-            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_SMS->
-                getString(
-                    Res.string.incorrect_two_factor_code_sms
-                )
+            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE,
+            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_TOTP,
+            D2ErrorCode.EMAIL_TWO_FACTOR_CODE_SENT,
+            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_EMAIL,
+            D2ErrorCode.TWO_FACTOR_MANY_SEND_ATTEMPTS,
+            D2ErrorCode.SMS_TWO_FACTOR_CODE_SENT,
+            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_SMS -> defaultError()
         }
 
     private suspend fun defaultError() = getString(Res.string.error_unexpected)

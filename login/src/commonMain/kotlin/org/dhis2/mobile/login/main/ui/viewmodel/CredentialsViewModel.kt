@@ -6,27 +6,32 @@ import coil3.PlatformContext
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import org.dhis2.mobile.commons.domain.invoke
 import org.dhis2.mobile.commons.extensions.launchUseCase
 import org.dhis2.mobile.commons.extensions.withMinimumDuration
 import org.dhis2.mobile.commons.network.NetworkStatusProvider
+import org.dhis2.mobile.login.main.domain.model.DeviceEnrollmentInfo
 import org.dhis2.mobile.login.main.domain.model.LoginResult
 import org.dhis2.mobile.login.main.domain.model.LoginScreenState
-import org.dhis2.mobile.login.main.domain.model.TwoFactorState
-import org.dhis2.mobile.login.main.domain.model.TwoFactorType
+import org.dhis2.mobile.login.main.domain.model.OpenIdLoginConfiguration
 import org.dhis2.mobile.login.main.domain.usecase.BiometricLogin
 import org.dhis2.mobile.login.main.domain.usecase.GetAvailableUsernames
 import org.dhis2.mobile.login.main.domain.usecase.GetBiometricInfo
+import org.dhis2.mobile.login.main.domain.usecase.GetDeviceEnrollmentUrl
 import org.dhis2.mobile.login.main.domain.usecase.GetHasOtherAccounts
 import org.dhis2.mobile.login.main.domain.usecase.LogOutUser
 import org.dhis2.mobile.login.main.domain.usecase.LoginUser
+import org.dhis2.mobile.login.main.domain.usecase.LoginUserWithOAuth
 import org.dhis2.mobile.login.main.domain.usecase.OpenIdLogin
+import org.dhis2.mobile.login.main.domain.usecase.ProcessDeviceEnrollment
 import org.dhis2.mobile.login.main.domain.usecase.UpdateBiometricPermission
 import org.dhis2.mobile.login.main.domain.usecase.UpdateTrackingPermission
+import org.dhis2.mobile.login.main.ui.navigation.AppLinkNavigation
 import org.dhis2.mobile.login.main.ui.navigation.Navigator
 import org.dhis2.mobile.login.main.ui.state.AfterLoginAction
 import org.dhis2.mobile.login.main.ui.state.CredentialsInfo
@@ -46,8 +51,12 @@ class CredentialsViewModel(
     private val logOutUser: LogOutUser,
     private val biometricLogin: BiometricLogin,
     private val openIdLogin: OpenIdLogin,
+    private val loginUserWithOAuth: LoginUserWithOAuth,
+    private val getDeviceEnrollmentUrl: GetDeviceEnrollmentUrl,
+    private val processDeviceEnrollment: ProcessDeviceEnrollment,
     private val updateTrackingPermission: UpdateTrackingPermission,
     private val updateBiometricPermission: UpdateBiometricPermission,
+    private val appLinkNavigation: AppLinkNavigation,
     networkStatusProvider: NetworkStatusProvider,
     private val serverName: String?,
     private val serverUrl: String,
@@ -57,6 +66,7 @@ class CredentialsViewModel(
     private val forgotPinUseCase: ForgotPinUseCase,
     private val oidcInfo: OidcInfo?,
     private val fromHome: Boolean,
+    private val oAuthEnable: Boolean,
 ) : ViewModel() {
     private val isNetworkOnline =
         networkStatusProvider.connectionStatus
@@ -90,9 +100,7 @@ class CredentialsViewModel(
             hasOtherAccounts = false,
             isSessionLocked = false,
             displayBiometricsDialog = false,
-            twoFactorState = null,
-            twoFactorCode = "",
-            infoMessage = null,
+            oAuthEnable = oAuthEnable,
         )
 
     private var loginJob: Job? = null
@@ -107,6 +115,15 @@ class CredentialsViewModel(
                 started = SharingStarted.WhileSubscribed(5000),
                 initialValue = initialState,
             )
+
+    init {
+        appLinkNavigation.appLink
+            .onEach { urlString ->
+                if (credentialsScreenState.value.loginState is LoginState.Running) {
+                    handleOAuthCallbacks(urlString)
+                }
+            }.launchIn(viewModelScope)
+    }
 
     private fun loadData() {
         launchUseCase {
@@ -127,7 +144,7 @@ class CredentialsViewModel(
                             availableUsernames = getAvailableUsernames(),
                             usernameCanBeEdited = username == null,
                         ),
-                    loginState = LoginState.Disabled,
+                    loginState = if (oAuthEnable) LoginState.Enabled else LoginState.Disabled,
                     errorMessage = null,
                     allowRecovery = allowRecovery,
                     canUseBiometrics = getBiometricInfo(serverUrl).canUseBiometrics,
@@ -136,10 +153,115 @@ class CredentialsViewModel(
                     hasOtherAccounts = getHasOtherAccounts(),
                     isSessionLocked = getIsSessionLockedUseCase(),
                     displayBiometricsDialog = biometricInfo.canUseBiometrics && !fromHome,
-                    twoFactorState = null,
-                    twoFactorCode = "",
-                    infoMessage = null,
+                    oAuthEnable = oAuthEnable,
                 ),
+            )
+
+            if (_credentialsScreenState.value.oAuthEnable && !fromHome) {
+                fetchOAuthEnrollmentUrl()
+            }
+        }
+    }
+
+    private fun fetchOAuthEnrollmentUrl() {
+        _credentialsScreenState.update {
+            it.copy(
+                loginState = LoginState.Running,
+            )
+        }
+        launchUseCase {
+            getDeviceEnrollmentUrl(serverUrl).fold(
+                onSuccess = { enrollmentURL ->
+                    // First OAuth call (enrollment) - clear any previous OAuth sessions
+                    navigator.navigate(
+                        LoginScreenState.OauthAuthentication(
+                            selectedServer = enrollmentURL,
+                        ),
+                    )
+                },
+                onFailure = { error ->
+                    _credentialsScreenState.update {
+                        it.copy(
+                            loginState = LoginState.Enabled,
+                            errorMessage = error.message,
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    private fun handleOAuthCallbacks(urlString: String) {
+        // First check if there is any error
+        val error = urlString.substringAfter("error=", "").substringBefore('&')
+        if (error.isNotEmpty()) {
+            _credentialsScreenState.update {
+                it.copy(
+                    errorMessage = error,
+                    loginState = LoginState.Enabled,
+                )
+            }
+            return
+        }
+
+        // Check if there is a device enrollment callback
+        val iat = urlString.substringAfter("iat=", "").substringBefore('&')
+        if (iat.isNotEmpty()) {
+            registerDevice(iat)
+            return
+        }
+
+        // Check if there is a login callback with the authorization code
+        val code = urlString.substringAfter("code=", "").substringBefore('&')
+        if (code.isNotEmpty()) {
+            loginWithOAuthCode(code)
+            return
+        }
+
+        _credentialsScreenState.update {
+            it.copy(
+                loginState = LoginState.Enabled,
+            )
+        }
+    }
+
+    private fun loginWithOAuthCode(code: String) {
+        startLoginJob {
+            loginUserWithOAuth(
+                serverUrl = serverUrl,
+                code = code,
+            )
+        }
+    }
+
+    private fun registerDevice(enrollmentIat: String) {
+        launchUseCase {
+            _credentialsScreenState.update {
+                it.copy(loginState = LoginState.Running)
+            }
+
+            processDeviceEnrollment(
+                DeviceEnrollmentInfo(
+                    iat = enrollmentIat,
+                    serverURL = serverUrl,
+                ),
+            ).fold(
+                onSuccess = { consentUrl ->
+                    // Second OAuth call (consent) - keep session from enrollment
+                    navigator.navigate(
+                        LoginScreenState.OauthAuthentication(
+                            selectedServer = consentUrl,
+                        ),
+                    )
+                },
+                onFailure = { error ->
+                    _credentialsScreenState.update {
+                        it.copy(
+                            errorMessage = error.message,
+                            loginState = LoginState.Enabled,
+                        )
+                    }
+                },
             )
         }
     }
@@ -160,7 +282,6 @@ class CredentialsViewModel(
                         LoginState.Disabled
                     },
                 errorMessage = null,
-                infoMessage = null,
             )
         }
     }
@@ -181,35 +302,38 @@ class CredentialsViewModel(
                         LoginState.Disabled
                     },
                 errorMessage = null,
-                infoMessage = null,
             )
         }
     }
 
     fun onLoginClicked() {
-        startLoginJob {
-            loginUser(
-                serverUrl = _credentialsScreenState.value.serverInfo.serverUrl,
-                username = _credentialsScreenState.value.credentialsInfo.username,
-                password = _credentialsScreenState.value.credentialsInfo.password,
-                isNetworkAvailable = isNetworkOnline.value,
-                twoFactorCode = _credentialsScreenState.value.twoFactorCode.takeIf {
-                    _credentialsScreenState.value.twoFactorState != null
-                },
-            )
+        if (_credentialsScreenState.value.oAuthEnable) {
+            fetchOAuthEnrollmentUrl()
+        } else {
+            startLoginJob {
+                loginUser(
+                    serverUrl = _credentialsScreenState.value.serverInfo.serverUrl,
+                    username = _credentialsScreenState.value.credentialsInfo.username,
+                    password = _credentialsScreenState.value.credentialsInfo.password,
+                    isNetworkAvailable = isNetworkOnline.value,
+                )
+            }
         }
     }
 
     fun onOpenIdLogin() {
         startLoginJob {
             openIdLogin(
-                serverUrl = _credentialsScreenState.value.serverInfo.serverUrl,
-                isNetworkAvailable = isNetworkOnline.value,
-                clientId = _credentialsScreenState.value.oidcInfo?.oidcClientId ?: "",
-                redirectUri = _credentialsScreenState.value.oidcInfo?.oidcRedirectUri ?: "",
-                discoveryUri = _credentialsScreenState.value.oidcInfo?.discoveryUri(),
-                authorizationUri = _credentialsScreenState.value.oidcInfo?.authorizationUri(),
-                tokenUrl = _credentialsScreenState.value.oidcInfo?.tokenUrl(),
+                OpenIdLoginConfiguration(
+                    serverUrl = _credentialsScreenState.value.serverInfo.serverUrl,
+                    isNetworkAvailable = isNetworkOnline.value,
+                    clientId = _credentialsScreenState.value.oidcInfo?.oidcClientId ?: "",
+                    redirectUri = _credentialsScreenState.value.oidcInfo?.oidcRedirectUri ?: "",
+                    discoveryUri = _credentialsScreenState.value.oidcInfo?.discoveryUri(),
+                    authorizationUri = _credentialsScreenState.value.oidcInfo?.authorizationUri(),
+                    tokenUrl = _credentialsScreenState.value.oidcInfo?.tokenUrl(),
+                    prompt = _credentialsScreenState.value.oidcInfo?.userPrompt,
+                ),
             )
         }
     }
@@ -218,6 +342,7 @@ class CredentialsViewModel(
         _credentialsScreenState.update {
             it.copy(
                 loginState = LoginState.Running,
+                errorMessage = null,
             )
         }
         loginJob =
@@ -252,10 +377,6 @@ class CredentialsViewModel(
                                 }
                                 add(AfterLoginAction.NavigateToNextScreen(result.initialSyncDone))
                             },
-                        twoFactorState = null,
-                        twoFactorCode = "",
-                        errorMessage = null, // EyeSeeTea customization - Clear error message on successful login
-                        infoMessage = null, // EyeSeeTea customization - Clear info message on successful login
                     )
                 }
             }
@@ -264,43 +385,6 @@ class CredentialsViewModel(
                 _credentialsScreenState.update {
                     it.copy(
                         errorMessage = result.message,
-                    )
-                }
-            }
-
-            // EyeSeeTea customization - Two Factor Authentication required
-            is LoginResult.TwoFactorError -> {
-                _credentialsScreenState.update {
-                    val code = it.twoFactorState?.code ?: ""
-
-                    val newTwoFactorState = when (result.type) {
-                        TwoFactorType.TOTP -> TwoFactorState.TotpVerification(code)
-                        TwoFactorType.EMAIL -> TwoFactorState.EmailVerification(
-                            code,
-                            resendEnabled = true
-                        )
-
-                        TwoFactorType.SMS -> TwoFactorState.SmsVerification(
-                            code,
-                            resendEnabled = true
-                        )
-                    }
-
-                    // EyeSeeTea customization - Determine if message is error or info based on 2FA type
-                    // EMAIL_TWO_FACTOR_CODE_SENT and SMS_TWO_FACTOR_CODE_SENT are info messages (blue)
-                    // INCORRECT_TWO_FACTOR_CODE_* are error messages (red)
-                    // For TOTP: show error only if field is already visible
-                    val isInfoMessage = result.type == TwoFactorType.EMAIL || result.type == TwoFactorType.SMS
-                    val shouldShowError = when {
-                        isInfoMessage -> false // EMAIL/SMS code sent is always info
-                        it.twoFactorState == null && result.type == TwoFactorType.TOTP -> false // First time TOTP, don't show error
-                        else -> true // TOTP code incorrect or other errors
-                    }
-
-                    it.copy(
-                        twoFactorState = newTwoFactorState,
-                        errorMessage = if (shouldShowError && result.message != null) result.message else null,
-                        infoMessage = if (isInfoMessage && result.message != null) result.message else null,
                     )
                 }
             }
@@ -428,106 +512,6 @@ class CredentialsViewModel(
                 it.copy(
                     isSessionLocked = false,
                 )
-            }
-        }
-    }
-
-    // EyeSeeTea customization - Two Factor Authentication methods
-    fun updateTwoFactorCode(code: String) {
-        _credentialsScreenState.update {
-            val updatedState = when (val currentState = it.twoFactorState) {
-                is TwoFactorState.TotpVerification -> {
-                    TwoFactorState.TotpVerification(code)
-                }
-
-                is TwoFactorState.EmailVerification -> {
-                    TwoFactorState.EmailVerification(code, currentState.resendEnabled)
-                }
-
-                is TwoFactorState.SmsVerification -> {
-                    TwoFactorState.SmsVerification(code, currentState.resendEnabled)
-                }
-
-                null -> null
-            }
-            it.copy(
-                twoFactorState = updatedState,
-                twoFactorCode = code,
-                loginState = if (code.isNotBlank() && it.credentialsInfo.username.isNotBlank() && it.credentialsInfo.password.isNotBlank()) {
-                    LoginState.Enabled
-                } else {
-                    LoginState.Disabled
-                },
-            )
-        }
-    }
-
-    fun onResendEmailTwoFactor() {
-        val currentState =
-            _credentialsScreenState.value.twoFactorState as? TwoFactorState.EmailVerification
-        if (currentState?.resendEnabled == true) {
-            // Disable resend for 30 seconds
-            _credentialsScreenState.update {
-                it.copy(
-                    twoFactorState = currentState.copy(resendEnabled = false),
-                )
-            }
-            // Re-login to trigger email resend
-            startLoginJob {
-                loginUser(
-                    serverUrl = _credentialsScreenState.value.serverInfo.serverUrl,
-                    username = _credentialsScreenState.value.credentialsInfo.username,
-                    password = _credentialsScreenState.value.credentialsInfo.password,
-                    isNetworkAvailable = isNetworkOnline.value,
-                    twoFactorCode = null, // No code to trigger resend
-                )
-            }
-            // Re-enable after 30 seconds
-            launchUseCase {
-                kotlinx.coroutines.delay(30000)
-                _credentialsScreenState.update {
-                    val state = it.twoFactorState as? TwoFactorState.EmailVerification
-                    if (state != null) {
-                        it.copy(twoFactorState = state.copy(resendEnabled = true))
-                    } else {
-                        it
-                    }
-                }
-            }
-        }
-    }
-
-    fun onResendSmsTwoFactor() {
-        val currentState =
-            _credentialsScreenState.value.twoFactorState as? TwoFactorState.SmsVerification
-        if (currentState?.resendEnabled == true) {
-            // Disable resend for 30 seconds
-            _credentialsScreenState.update {
-                it.copy(
-                    twoFactorState = currentState.copy(resendEnabled = false),
-                )
-            }
-            // Re-login to trigger SMS resend
-            startLoginJob {
-                loginUser(
-                    serverUrl = _credentialsScreenState.value.serverInfo.serverUrl,
-                    username = _credentialsScreenState.value.credentialsInfo.username,
-                    password = _credentialsScreenState.value.credentialsInfo.password,
-                    isNetworkAvailable = isNetworkOnline.value,
-                    twoFactorCode = null, // No code to trigger resend
-                )
-            }
-            // Re-enable after 30 seconds
-            launchUseCase {
-                kotlinx.coroutines.delay(30000)
-                _credentialsScreenState.update {
-                    val state = it.twoFactorState as? TwoFactorState.SmsVerification
-                    if (state != null) {
-                        it.copy(twoFactorState = state.copy(resendEnabled = true))
-                    } else {
-                        it
-                    }
-                }
             }
         }
     }

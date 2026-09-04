@@ -64,7 +64,7 @@ interface DashboardRepository {
     fun getTeiActivePrograms(
         teiUid: String,
         showOnlyActive: Boolean,
-    ): Observable<List<kotlin.Pair<Program, MetadataIconData>>>
+    ): Observable<List<Pair<Program, MetadataIconData>>>
 
     fun getTEIEnrollments(teiUid: String): Observable<List<Enrollment>>
 
@@ -92,14 +92,14 @@ interface DashboardRepository {
 
     fun programHasRelationships(): Boolean
 
-    fun programHasAnalytics(): Boolean
+    suspend fun programHasAnalytics(): Boolean
 
     fun getTETypeName(): String?
 
     fun getAttributesMap(
         programUid: String,
         teiUid: String,
-    ): Observable<List<kotlin.Pair<TrackedEntityAttribute, TrackedEntityAttributeValue>>>
+    ): Observable<List<Pair<TrackedEntityAttribute, TrackedEntityAttributeValue>>>
 
     fun getDashboardModel(): DashboardModel?
 
@@ -112,4 +112,6 @@ interface DashboardRepository {
     fun teiCanBeTransferred(): Boolean
 
     fun enrollmentHasWriteAccess(): Boolean
+
+    fun isProgramSelected(): Boolean
 }

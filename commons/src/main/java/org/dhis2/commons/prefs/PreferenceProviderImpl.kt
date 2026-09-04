@@ -225,8 +225,4 @@ open class PreferenceProviderImpl(
             }.minOrNull()
 
     // endregion
-
-    override fun updateServerURL(serverUrl: String) {
-        sharedPreferences.edit().putString(SECURE_SERVER_URL, serverUrl).apply()
-    }
 }

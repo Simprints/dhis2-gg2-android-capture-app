@@ -1,8 +1,8 @@
 package org.dhis2.form.data
 
 import io.reactivex.Flowable
-import org.dhis2.commons.bindings.blockingSetCheck
-import org.dhis2.commons.bindings.withValueTypeCheck
+import org.dhis2.bindings.blockingSetCheck
+import org.dhis2.bindings.withValueTypeCheck
 import org.dhis2.commons.data.EntryMode
 import org.dhis2.commons.extensions.toDate
 import org.dhis2.commons.network.NetworkUtils
@@ -21,6 +21,7 @@ import org.dhis2.mobile.commons.reporting.CrashReportController
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.common.FeatureType
 import org.hisp.dhis.android.core.common.Geometry
+import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.enrollment.EnrollmentObjectRepository
 import org.hisp.dhis.android.core.event.EventObjectRepository
 import org.hisp.dhis.android.core.event.EventStatus
@@ -271,9 +272,7 @@ class FormValueStore(
         return filePath
             ?.let {
                 try {
-                    // EyeSeeTea customization no resize
-                    // saveFileResource(filePath, valueType == ValueType.IMAGE)
-                    saveFileResource(filePath, false)
+                    saveFileResource(filePath, valueType == ValueType.IMAGE)
                 } catch (e: Exception) {
                     return StoreResult(
                         uid = uid,

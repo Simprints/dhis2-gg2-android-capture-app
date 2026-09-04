@@ -108,7 +108,7 @@ fun ProvideInputDate(
             // EyeSeeTea customization, force save method to change date
             fieldUiModel.onSave(value.text)
         },
-        onNextClicked = onNextClicked,
+        onImeActionClick = { onNextClicked() },
     )
 }
 

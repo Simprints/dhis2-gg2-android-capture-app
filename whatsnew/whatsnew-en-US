@@ -1,7 +1,9 @@
 This is a patch version that fixes:
-- ANDROAPP-7269 Crash on search
-- ANDROAPP-7293 Bottom sheet landscape behavior
-- ANDROAPP-7345 Changes to enrollment date not respected by program rules
-- ANDROAPP-7368 Crash when trying to update fields in Tracker
+- ANDROAPP-6516 Values in events and program stages not being updated when syncing with server from them
+- ANDROAPP-7287 Flicker when no TEIs in tei list
+- ANDROAPP-7364 Server URL not well formed error
+- ANDROAPP-7398 Wrong SnackBar color
+- ANDROAPP-7431 Username does not trim trailing white spaces
+
 ....
 You can find all the details on Jira and Github.

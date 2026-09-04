@@ -18,8 +18,8 @@ import org.dhis2.data.server.ServerModule;
 import org.dhis2.data.service.workManager.WorkManagerController;
 import org.dhis2.data.service.workManager.WorkManagerModule;
 import org.dhis2.mobile.commons.reporting.CrashReportController;
+// EyeSeeTea customization - Biometrics Configuration Selection Per Program Or Org Unit Group
 import org.dhis2.usescases.login.LoginComponent;
-import org.dhis2.usescases.notifications.di.NotificationsModule;
 import org.dhis2.usescases.splash.SplashComponent;
 import org.dhis2.usescases.splash.SplashModule;
 import org.dhis2.utils.analytics.AnalyticsModule;
@@ -42,7 +42,6 @@ import dagger.Component;
         DispatcherModule.class,
         FeatureConfigModule.class,
         NetworkUtilsModule.class,
-        NotificationsModule.class
 })
 public  interface AppComponent {
 
@@ -67,8 +66,6 @@ public  interface AppComponent {
         Builder featureConfigModule(FeatureConfigModule featureConfigModule);
 
         Builder networkUtilsModule(NetworkUtilsModule networkUtilsModule);
-
-        Builder notificationsModule(NotificationsModule notificationsModule);
 
         AppComponent build();
     }
@@ -97,5 +94,10 @@ public  interface AppComponent {
 
     SplashComponent plus(SplashModule module);
 
+    // EyeSeeTea customization - Biometrics Configuration Selection Per Program Or Org Unit Group
+    // Base behavior: develop-eyeseetea migrated login to KMP + Koin and dropped the Dagger
+    // LoginComponent, so it no longer declares this subcomponent.
+    // Simprints behavior: LoginActivity still uses the Dagger login, which is where
+    // SyncBiometricsConfig is injected to refresh the biometrics configuration after sign-in.
     LoginComponent plus(org.dhis2.usescases.login.LoginModule module);
 }

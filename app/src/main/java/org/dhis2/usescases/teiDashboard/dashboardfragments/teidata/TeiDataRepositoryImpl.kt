@@ -2,8 +2,8 @@ package org.dhis2.usescases.teiDashboard.dashboardfragments.teidata
 
 import io.reactivex.Single
 import org.dhis2.bindings.profilePicturePath
+import org.dhis2.bindings.userFriendlyValue
 import org.dhis2.commons.bindings.program
-import org.dhis2.commons.bindings.userFriendlyValue
 import org.dhis2.commons.data.EventModel
 import org.dhis2.commons.data.EventViewModelType
 import org.dhis2.commons.data.StageSection
@@ -550,6 +550,20 @@ class TeiDataRepositoryImpl(
             .organisationUnits()
             .byProgramUids(listOf(programUid))
             .blockingCount() > 1
+
+    override fun ownerOrgUnit(teiUid: String): String? {
+
+         return d2
+                .trackedEntityModule()
+                .trackedEntityInstances()
+                .withProgramOwners()
+                .uid(teiUid)
+                .blockingGet()
+                ?.programOwners()
+                ?.firstOrNull {
+                    it.trackedEntityInstance() == teiUid
+                }?.ownerOrgUnit()
+    }
 
     override fun enrollmentOrgUnitInCaptureScope(enrollmentOrgUnit: String): Boolean =
         !getOrgUnitCollectionRepositoryByCaptureScope()

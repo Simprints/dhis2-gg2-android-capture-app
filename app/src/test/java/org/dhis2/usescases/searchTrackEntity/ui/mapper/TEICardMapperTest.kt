@@ -8,17 +8,24 @@ import org.dhis2.commons.biometrics.BiometricsPreference
 import org.dhis2.commons.date.toDateSpan
 import org.dhis2.commons.date.toOverdueOrScheduledUiText
 import org.dhis2.commons.resources.ResourceManager
+import org.dhis2.mobile.commons.extensions.toJavaDate
+import org.dhis2.mobile.commons.extensions.toKtxInstant
+import org.dhis2.tracker.input.model.TrackerInputType
+import org.dhis2.tracker.search.model.DomainEnrollment
+import org.dhis2.tracker.search.model.DomainObjectStyle
+import org.dhis2.tracker.search.model.DomainProgram
+import org.dhis2.tracker.search.model.EnrollmentStatus
+import org.dhis2.tracker.search.model.GeometryFeatureType
+import org.dhis2.tracker.search.model.SyncState
+import org.dhis2.tracker.search.model.TrackedEntitySearchItemAttributeDomain
+import org.dhis2.tracker.search.model.TrackedEntitySearchItemResult
+import org.dhis2.tracker.search.model.TrackedEntityTypeAttributeDomain
+import org.dhis2.tracker.search.model.TrackedEntityTypeDomain
 import org.dhis2.usescases.searchTrackEntity.SearchTeiModel
 import org.dhis2.commons.ui.model.ListCardUiModel
 import org.dhis2.usescases.teiDashboard.ui.mapper.firstNameAttrUid
 import org.dhis2.usescases.teiDashboard.ui.mapper.lastNameAttrUid
 import org.dhis2.usescases.teiDashboard.ui.mapper.middleNameAttrUid
-import org.hisp.dhis.android.core.common.State
-import org.hisp.dhis.android.core.enrollment.Enrollment
-import org.hisp.dhis.android.core.enrollment.EnrollmentStatus
-import org.hisp.dhis.android.core.program.Program
-import org.hisp.dhis.android.core.trackedentity.TrackedEntityAttributeValue
-import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -29,6 +36,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import java.util.Calendar
 import java.util.Date
+import kotlin.time.Instant
 
 class TEICardMapperTest {
     private val context: Context = mock()
@@ -38,6 +46,24 @@ class TEICardMapperTest {
 
     private lateinit var mapper: TEICardMapper
 
+    private val enrollmentUid = "EnrollmentUid"
+    private val programUid = "programUid"
+    private val enrollmentOrgUnit = "OrgUnit"
+    private val teiUid = "TEIUid"
+    private val selectedEnrollment =      DomainEnrollment(
+        uid = enrollmentUid,
+        orgUnit = enrollmentOrgUnit,
+        program = programUid,
+        enrollmentDate = Instant.parse("2020-01-01T00:00:00.00Z"),
+        incidentDate = Instant.parse("2020-01-01T00:00:00.00Z"),
+        completedDate = Instant.parse("2020-01-01T00:00:00.00Z"),
+        followUp = true,
+        status = EnrollmentStatus.COMPLETED,
+        trackedEntityInstance = teiUid,
+    )
+    private val enrollments = listOf(
+        selectedEnrollment
+    )
     @Before
     fun setUp() {
         whenever(context.getString(R.string.interval_now)) doReturn "now"
@@ -60,7 +86,7 @@ class TEICardMapperTest {
 
     @Test
     fun shouldReturnCardFull() {
-        val model = createFakeModel(isOverdue = true)
+        val model = createFakeModel()
 
         val result =
             mapper.map(
@@ -71,24 +97,25 @@ class TEICardMapperTest {
             )
 
         assertEquals(result.title, model.header)
-        assertEquals(result.lastUpdated, model.tei.lastUpdated().toDateSpan(context))
-        assertEquals(result.additionalInfo[0].value, model.attributeValues["Name"]?.value())
-        assertEquals(result.additionalInfo[1].value, model.enrolledOrgUnit)
-        assertEquals(
-            result.additionalInfo[2].value,
-            model.programInfo.map { it.name() }.joinToString(", "),
-        )
+        assertEquals(result.lastUpdated, model.tei.lastUpdated?.toJavaDate().toDateSpan(context))
+        assertEquals(result.additionalInfo[0].value, model.attributeValues["Name"]?.value)
+        assertEquals(result.additionalInfo[1].value, model.tei.ownerOrgUnit)
+        assertEquals(result.additionalInfo[2].value, model.tei.enrollmentOrgUnit)
         assertEquals(
             result.additionalInfo[3].value,
+            model.tei.enrolledPrograms?.joinToString(", ") { it.displayName },
+        )
+        assertEquals(
+            result.additionalInfo[4].value,
             "Enrollment Completed",
         )
 
         assertEquals(
-            result.additionalInfo[4].value,
-            model.overdueDate.toOverdueOrScheduledUiText(resourceManager),
+            result.additionalInfo[5].value,
+            model.tei.overDueDate?.toJavaDate().toOverdueOrScheduledUiText(resourceManager),
         )
         assertEquals(
-            result.additionalInfo[5].value,
+            result.additionalInfo[6].value,
             resourceManager.getString(R.string.marked_follow_up),
         )
     }
@@ -100,7 +127,7 @@ class TEICardMapperTest {
 
         whenever(resourceManager.getPlural(any(), any(), any())) doReturn "2 days"
 
-        val model = createFakeModel(overdueDate.time, true)
+        val model = createFakeModel(overdueDate.time)
 
         val result =
             mapper.map(
@@ -110,8 +137,8 @@ class TEICardMapperTest {
                 onImageClick = {},
             )
         assertEquals(
-            result.additionalInfo[4].value,
-            model.overdueDate.toOverdueOrScheduledUiText(resourceManager),
+            result.additionalInfo[5].value,
+            model.tei.overDueDate?.toJavaDate().toOverdueOrScheduledUiText(resourceManager),
         )
     }
 
@@ -158,96 +185,135 @@ class TEICardMapperTest {
         firstName: String,
         middleName: String,
         lastName: String,
-    ): LinkedHashMap<String, TrackedEntityAttributeValue> = linkedMapOf(
+    ): LinkedHashMap<String, TrackedEntitySearchItemAttributeDomain> = linkedMapOf(
         "First name" to createAttributeValue(firstNameAttrUid, firstName),
         "Middle name" to createAttributeValue(middleNameAttrUid, middleName),
         "Last name" to createAttributeValue(lastNameAttrUid, lastName)
     )
 
     private fun createModelAndMapForConfirmation(
-        attributeValues: LinkedHashMap<String, TrackedEntityAttributeValue>,
+        attributeValues: LinkedHashMap<String, TrackedEntitySearchItemAttributeDomain>,
     ): ListCardUiModel {
         val model = SearchTeiModel().apply {
             setAttributeValues(attributeValues)
             attributeValues.forEach { (key, value) -> addToAllAttributes(key, value) }
-            tei = TrackedEntityInstance.builder()
-                .uid("TEIUid")
-                .lastUpdated(currentDate)
-                .aggregatedSyncState(State.SYNCED)
-                .build()
+            tei = TrackedEntitySearchItemResult(
+                uid = "TEIUid",
+                created = null,
+                lastUpdated = currentDate.toKtxInstant(),
+                createdAtClient = null,
+                lastUpdatedAtClient = null,
+                ownerOrgUnit = null,
+                enrollmentOrgUnit = null,
+                shouldDisplayOrgUnit = false,
+                geometry = null,
+                syncState = SyncState.SYNCED,
+                aggregatedSyncState = SyncState.SYNCED,
+                deleted = false,
+                isOnline = true,
+                teTypeName = null,
+                type = TrackedEntityTypeDomain(
+                    trackedEntityTypeAttributeDomains = emptyList(),
+                    featureType = GeometryFeatureType.NONE,
+                ),
+                header = null,
+                overDueDate = null,
+                selectedEnrollment = null,
+                profilePicture = null,
+                enrolledPrograms = null,
+                enrollments = null,
+                relationships = null,
+                defaultTypeIcon = null,
+                attributeValues = emptyList(),
+            )
         }
         return mapper.mapForConfirmationDialog(model)
     }
 
-    private fun createAttributeValue(uid: String, value: String): TrackedEntityAttributeValue {
-        return TrackedEntityAttributeValue.builder()
-            .trackedEntityAttribute(uid)
-            .value(value)
-            .build()
-    }
+    private fun createAttributeValue(uid: String, value: String): TrackedEntitySearchItemAttributeDomain =
+        TrackedEntitySearchItemAttributeDomain(
+            attribute = uid,
+            displayName = uid,
+            displayFormName = uid,
+            value = value,
+            valueType = TrackerInputType.TEXT,
+            displayInList = true,
+            optionSet = null,
+        )
 
     private fun createFakeModel(
         currentDate: Date = Date(),
-        isOverdue: Boolean = false,
     ): SearchTeiModel {
-        val attributeValues = LinkedHashMap<String, TrackedEntityAttributeValue>()
-        attributeValues["Name"] =
-            TrackedEntityAttributeValue
-                .builder()
-                .value("Peter")
-                .build()
+        val attributeValues = LinkedHashMap<String, TrackedEntitySearchItemAttributeDomain>()
+        val attribute =   TrackedEntitySearchItemAttributeDomain(
+            attribute = "attrUid1",
+            displayName = "Name",
+            displayFormName = "Name",
+            value = "Peter",
+            valueType = TrackerInputType.TEXT,
+            displayInList = true,
+            optionSet = null
+        )
+        attributeValues["Name"] = attribute
 
-        val model =
-            SearchTeiModel().apply {
-                header = "TEI header"
-                tei =
-                    TrackedEntityInstance
-                        .builder()
-                        .uid("TEIUid")
-                        .lastUpdated(currentDate)
-                        .organisationUnit("OrgUnit")
-                        .aggregatedSyncState(State.SYNCED)
-                        .build()
-                enrolledOrgUnit = "OrgUnit"
-                displayOrgUnit = true
-                setCurrentEnrollment(
-                    Enrollment
-                        .builder()
-                        .uid("EnrollmentUid")
-                        .program("programUid")
-                        .status(EnrollmentStatus.COMPLETED)
-                        .build(),
+        val tei = TrackedEntitySearchItemResult(
+            uid = "teiUid",
+            created = Instant.parse("2020-01-01T00:00:00.00Z"),
+            lastUpdated = Instant.parse("2020-01-01T00:00:00.00Z"),
+            createdAtClient = Instant.parse("2020-01-01T00:00:00.00Z"),
+            lastUpdatedAtClient = Instant.parse("2020-01-01T00:00:00.00Z"),
+            ownerOrgUnit = "ownerOrgUnit",
+            enrollmentOrgUnit = "enrollmentOrgUnit",
+            shouldDisplayOrgUnit = true,
+            geometry = null,
+            syncState = SyncState.SYNCED,
+            aggregatedSyncState = SyncState.SYNCED,
+            deleted = false,
+            isOnline = true,
+            teTypeName = "teTypeName",
+            type = TrackedEntityTypeDomain(
+                trackedEntityTypeAttributeDomains = listOf(TrackedEntityTypeAttributeDomain(
+                    trackedEntityTypeUid=  "trackedEntityTypeUid",
+                    trackedEntityAttributeUid = "trackedEntityAttributeUid",
+                    displayInList= true,
+                    mandatory = false,
+                    searchable = true,
+                    sortOrder = 1,
+                )),
+                featureType = GeometryFeatureType.POINT,
+            ),
+            header = "TEI header",
+            overDueDate = currentDate.toKtxInstant(),
+            selectedEnrollment = selectedEnrollment,
+            profilePicture = null,
+            enrolledPrograms = listOf(
+                DomainProgram(
+                uid = "Program1Uid",
+                displayName = "Program 1",
+                style = DomainObjectStyle(
+                    icon = "iconUid",
+                    color = "colorUid"
                 )
-                setAttributeValues(attributeValues)
-                attributeValues.forEach { (key, value) -> addToAllAttributes(key, value) }
+            ),
+                DomainProgram(
+                uid = "Program2Uid",
+                displayName = "Program 2",
+                style = DomainObjectStyle(
+                    icon = "iconUid2",
+                    color = "colorUid2"
+                )
+            ),),
+            enrollments = enrollments,
+            relationships = null,
+            defaultTypeIcon = null,
+            attributeValues = listOf(attribute),
+        )
+        val searchTeiModel = SearchTeiModel()
+        searchTeiModel.tei = tei
+        searchTeiModel.setAttributeValues(attributeValues)
+        // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
+        attributeValues.forEach { (key, value) -> searchTeiModel.addToAllAttributes(key, value) }
 
-                addProgramInfo(
-                    Program
-                        .builder()
-                        .uid("Program1Uid")
-                        .displayName("Program 1")
-                        .build(),
-                    null,
-                )
-                addProgramInfo(
-                    Program
-                        .builder()
-                        .uid("Program2Uid")
-                        .displayName("Program 2")
-                        .build(),
-                    null,
-                )
-                overdueDate = currentDate
-                isHasOverdue = isOverdue
-
-                addEnrollment(
-                    Enrollment
-                        .builder()
-                        .uid("EnrollmentUid")
-                        .followUp(true)
-                        .build(),
-                )
-            }
-        return model
+        return searchTeiModel
     }
 }

@@ -4,6 +4,7 @@ import org.dhis2.commons.bindings.formatData
 import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.ValueStoreResult
 import org.hisp.dhis.android.core.D2
+import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.maintenance.D2Error
 import org.hisp.dhis.android.core.program.ProgramRuleActionType
 import org.hisp.dhis.android.core.program.ProgramStage
@@ -287,6 +288,7 @@ class RulesUtilsProviderImpl(
         ruleEffect: RuleEffect,
         fieldViewModels: MutableMap<String, FieldUiModel>,
     ) {
+        // Not implemented
     }
 
     private fun displayKeyValuePair(
@@ -294,6 +296,7 @@ class RulesUtilsProviderImpl(
         ruleEffect: RuleEffect,
         fieldViewModels: MutableMap<String, FieldUiModel>,
     ) {
+        // Not implemented
     }
 
     private fun hideSection(
@@ -317,7 +320,11 @@ class RulesUtilsProviderImpl(
         val fieldUid = assign.field() ?: ""
         fieldViewModels[fieldUid]?.let { field ->
             val value =
-                if (field.optionSet != null && field.displayName != null) {
+                if (
+                    field.optionSet != null &&
+                    field.displayName != null &&
+                    field.valueType != ValueType.MULTI_TEXT
+                ) {
                     val valueOption =
                         optionsRepository.getOptionByDisplayName(
                             optionSet = field.optionSet!!,
@@ -343,38 +350,19 @@ class RulesUtilsProviderImpl(
                     valuesToChange[fieldUid] = it
                 }
             }
-            val valueToShow =
-                if (field.optionSet != null && ruleEffect.data?.isNotEmpty() == true) {
-                    val effectOption =
-                        optionsRepository.getOptionByCode(
-                            optionSet = field.optionSet!!,
-                            code = ruleEffect.data!!,
-                        )
-                    if (effectOption == null) {
-                        configurationErrors.add(
-                            RulesUtilsProviderConfigurationError(
-                                currentRuleUid,
-                                ActionType.ASSIGN,
-                                ConfigurationError.VALUE_TO_ASSIGN_NOT_IN_OPTION_SET,
-                                listOf(
-                                    currentRuleUid ?: "",
-                                    ruleEffect.data ?: "",
-                                    field.optionSet ?: "",
-                                ),
-                            ),
-                        )
-                    }
-                    effectOption?.displayName()
-                } else {
-                    ruleEffect.data
-                }
+            val valueToShow = getDisplayValue(field.optionSet, field.valueType, ruleEffect.data)
 
             ruleEffect.data?.formatData(field.valueType)?.let { formattedValue ->
                 val updatedField =
                     fieldViewModels[assign.field()]
                         ?.setValue(formattedValue)
-                        ?.setDisplayName(valueToShow?.formatData(field.valueType))
-                        ?.setEditable(false)
+                        ?.setDisplayName(
+                            formatDisplayName(
+                                valueToShow,
+                                field.valueType,
+                                field.optionSet,
+                            ),
+                        )?.setEditable(false)
 
                 updatedField?.let {
                     fieldViewModels[fieldUid] = it
@@ -385,6 +373,56 @@ class RulesUtilsProviderImpl(
                 valuesToChange[fieldUid] = ruleEffect.data?.formatData()
             }
         }
+    }
+
+    private fun formatDisplayName(
+        value: String?,
+        valueType: ValueType?,
+        optionSetUid: String?,
+    ): String? = if (optionSetUid != null) value else value?.formatData(valueType)
+
+    private fun getDisplayValue(
+        optionSetUid: String?,
+        valueType: ValueType?,
+        ruleEffectData: String?,
+    ): String? =
+        if (optionSetUid != null && ruleEffectData?.isNotEmpty() == true) {
+            if (valueType != ValueType.MULTI_TEXT) {
+                getOptionName(optionSetUid, ruleEffectData)
+            } else {
+                val valueCodes = ruleEffectData.split(",")
+                valueCodes.joinToString(",") {
+                    getOptionName(optionSetUid, it) ?: ""
+                }
+            }
+        } else {
+            ruleEffectData
+        }
+
+    private fun getOptionName(
+        optionSetUid: String,
+        code: String,
+    ): String? {
+        val effectOption =
+            optionsRepository.getOptionByCode(
+                optionSet = optionSetUid,
+                code = code,
+            )
+        if (effectOption == null) {
+            configurationErrors.add(
+                RulesUtilsProviderConfigurationError(
+                    currentRuleUid,
+                    ActionType.ASSIGN,
+                    ConfigurationError.VALUE_TO_ASSIGN_NOT_IN_OPTION_SET,
+                    listOf(
+                        currentRuleUid ?: "",
+                        code,
+                        optionSetUid,
+                    ),
+                ),
+            )
+        }
+        return effectOption?.displayName()
     }
 
     private fun createEvent(

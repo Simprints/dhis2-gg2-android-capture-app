@@ -26,6 +26,7 @@ import org.hisp.dhis.android.core.common.Access
 import org.hisp.dhis.android.core.common.DataAccess
 import org.hisp.dhis.android.core.common.FeatureType
 import org.hisp.dhis.android.core.common.Geometry
+import org.hisp.dhis.android.core.common.ObjectWithUid
 import org.hisp.dhis.android.core.common.State
 import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.enrollment.Enrollment
@@ -95,6 +96,8 @@ class EnrollmentPresenterImplTest {
             Program
                 .builder()
                 .uid("")
+                .categoryCombo(ObjectWithUid.create("categoryComboUid"))
+                .enrollmentCategoryCombo(ObjectWithUid.create("categoryComboUid"))
                 .access(
                     Access
                         .builder()
@@ -116,6 +119,8 @@ class EnrollmentPresenterImplTest {
             Program
                 .builder()
                 .uid("")
+                .categoryCombo(ObjectWithUid.create("categoryComboUid"))
+                .enrollmentCategoryCombo(ObjectWithUid.create("categoryComboUid"))
                 .access(
                     Access
                         .builder()
@@ -219,6 +224,7 @@ class EnrollmentPresenterImplTest {
             Enrollment.builder()
                 .uid("uid")
                 .organisationUnit(orgUnit.uid())
+                .attributeOptionCombo("attributeOptionComboUid")
                 .build())
 
         whenever(orgUnitRepository.getByUid(orgUnit.uid())).thenReturn(orgUnit)
@@ -364,7 +370,11 @@ class EnrollmentPresenterImplTest {
                 .geometry(geometry)
                 .uid("random")
                 .build()
-        val program = Program.builder().uid("tUID").build()
+        val program = Program.builder()
+            .uid("tUID")
+            .categoryCombo(ObjectWithUid.create("categoryComboUid"))
+            .enrollmentCategoryCombo(ObjectWithUid.create("categoryComboUid"))
+            .build()
 
         whenever(teiRepository.blockingGet()) doReturn tei
         whenever(programRepository.blockingGet()) doReturn program
@@ -387,7 +397,11 @@ class EnrollmentPresenterImplTest {
     }
 
     private fun givenAProgram(uid: String) {
-        val program = Program.builder().uid(uid).build()
+        val program = Program.builder()
+            .uid(uid)
+            .categoryCombo(ObjectWithUid.create("categoryComboUid"))
+            .enrollmentCategoryCombo(ObjectWithUid.create("categoryComboUid"))
+            .build()
         whenever(programRepository.blockingGet()) doReturn program
     }
 
@@ -461,7 +475,13 @@ class EnrollmentPresenterImplTest {
                 enableIdentificationForTET = null
                 )))
 
-        whenever(programRepository.blockingGet()).thenReturn(Program.builder().uid(program).build())
+        whenever(programRepository.blockingGet()).thenReturn(
+            Program.builder()
+                .uid(program)
+                .categoryCombo(ObjectWithUid.create("categoryComboUid"))
+                .enrollmentCategoryCombo(ObjectWithUid.create("categoryComboUid"))
+                .build(),
+        )
 
         return EnrollmentPresenterImpl(
             enrollmentView,
@@ -492,7 +512,6 @@ class EnrollmentPresenterImplTest {
                 selectableDates = null,
                 eventCategories = null,
                 periodSelector = null,
-                url = null,
                 label = "",
                 optionSetConfiguration = null,
                 valueType = ValueType.TEXT
@@ -506,7 +525,6 @@ class EnrollmentPresenterImplTest {
                 selectableDates = null,
                 eventCategories = null,
                 periodSelector = null,
-                url = null,
                 editable = true,
                 ageUnderThreshold = false,
                 customIntent = null

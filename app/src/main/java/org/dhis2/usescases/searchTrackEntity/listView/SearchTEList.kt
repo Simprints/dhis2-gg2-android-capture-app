@@ -124,6 +124,8 @@ class SearchTEList : FragmentGlobalAbstract() {
         arguments?.getBoolean(ARG_FROM_RELATIONSHIP) ?: false
     }
 
+    private var pagesUpdatedListener: (() -> Unit)? = null
+
     private var currentLastClickedTeiUid: String? = null
 
     companion object {
@@ -164,12 +166,18 @@ class SearchTEList : FragmentGlobalAbstract() {
                     savedInstanceState?.getString(KEY_LAST_CLICKED_TEI_UID)
                 )
                 configureOpenSearchButton(openSearchButton)
-                //EyeSeeTea customization
+                // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
                 configureCreateButton(createButton)
                 configureSequentialSearchNextAction(nextActions)
             }.also {
                 observeNewData()
             }.root
+
+    override fun onDestroyView() {
+        pagesUpdatedListener?.let { liveAdapter.removeOnPagesUpdatedListener(it) }
+        pagesUpdatedListener = null
+        super.onDestroyView()
+    }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
@@ -238,7 +246,7 @@ class SearchTEList : FragmentGlobalAbstract() {
                     liveAdapter.loadStateFlow.collectLatest {
                         if (currentLastClickedTeiUid != null) {
                             val position =
-                                liveAdapter.snapshot().items.indexOfFirst { it.tei.uid() == currentLastClickedTeiUid }
+                                liveAdapter.snapshot().items.indexOfFirst { it.tei.uid == currentLastClickedTeiUid }
                             if (position != -1) {
                                 layoutManager?.scrollToPositionWithOffset(position, 0)
                             }
@@ -320,7 +328,7 @@ class SearchTEList : FragmentGlobalAbstract() {
                 val teTypeName by viewModel.teTypeName.observeAsState()
                 val hasQueryData =
                     remember(viewModel.searchParametersUiState) {
-                        viewModel.queryData.isNotEmpty()
+                        viewModel.queryDataList.isNotEmpty()
                     }
 
                 val sequentialSearch by viewModel.sequentialSearch.observeAsState()
@@ -383,7 +391,7 @@ class SearchTEList : FragmentGlobalAbstract() {
         viewModel.dataResult.observe(viewLifecycleOwner) {
             initLoading(emptyList())
             it.firstOrNull()?.let { searchResult ->
-                if (searchResult.shouldClearProgramData()) {
+                if (searchResult.shouldClearProgramData() && liveAdapter.itemCount > 0) {
                     liveAdapter.refresh()
                 }
                 if (searchResult.shouldClearGlobalData()) {
@@ -409,9 +417,9 @@ class SearchTEList : FragmentGlobalAbstract() {
             } else {
                 displayResult(null)
             }
-        }
 
-        scrollToTopOnSequentialSearch()
+            scrollToTopOnSequentialSearch()
+         }
     }
 
     private fun scrollToTopOnSequentialSearch() {
@@ -451,19 +459,20 @@ class SearchTEList : FragmentGlobalAbstract() {
     private fun initData() {
         displayLoadingData()
 
+        val listener: () -> Unit = {
+            onInitDataLoaded()
+            viewModel.verifyAutoNavigateToTEI(liveAdapter.snapshot().items)
+            CoroutineTracker.decrement()
+        }
+        pagesUpdatedListener = listener
+        liveAdapter.addOnPagesUpdatedListener(listener)
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.searchPagingData.collect { data ->
+                viewModel.searchPagingData.collectLatest { data ->
                     if (data !== lastSearchPagingData) {
                         lastSearchPagingData = data
                         hideStaleProgramResults()
-                    }
-                    liveAdapter.addOnPagesUpdatedListener {
-                        onInitDataLoaded()
-
-                        viewModel.verifyAutoNavigateToTEI(liveAdapter.snapshot().items)
-
-                        CoroutineTracker.decrement()
                     }
                     liveAdapter.submitData(lifecycle, data)
                 }
@@ -594,7 +603,7 @@ class SearchTEList : FragmentGlobalAbstract() {
     }
 
     private fun onSearchTeiModelClick(item: SearchTeiModel) {
-        currentLastClickedTeiUid = item.tei.uid()
+        currentLastClickedTeiUid = item.tei.uid
 
         viewModel.onSearchTeiModelClick(item)
     }

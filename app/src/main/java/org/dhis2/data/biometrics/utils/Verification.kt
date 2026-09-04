@@ -1,7 +1,7 @@
 package org.dhis2.data.biometrics.utils
 
 import com.google.gson.reflect.TypeToken
-import org.dhis2.commons.bindings.blockingSetCheck
+import org.dhis2.bindings.blockingSetCheck
 import org.dhis2.commons.biometrics.BiometricsPreference
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.data.biometrics.getBiometricsConfig
