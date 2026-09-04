@@ -15,6 +15,7 @@ import org.dhis2.bindings.toDate
 import org.dhis2.commons.Constants
 import org.dhis2.commons.network.NetworkUtils
 import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.dhis2.mobile.commons.domain.invoke
 import org.dhis2.usescases.settings.domain.CheckVersionUpdate
 import org.dhis2.usescases.settings.domain.DeleteLocalData
 import org.dhis2.usescases.settings.domain.ExportDatabase
@@ -39,7 +40,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.doReturnConsecutively
 import org.mockito.kotlin.mock
@@ -130,6 +130,8 @@ class SyncManagerPresenterTest {
         MetadataSettingsViewModel(
             metadataSyncPeriod = 100,
             lastMetadataSync = "test",
+            nextMetadataSync = null,
+            nextSettingsSync = null,
             hasErrors = false,
             canEdit = false,
             syncInProgress = false,
@@ -139,6 +141,7 @@ class SyncManagerPresenterTest {
         DataSettingsViewModel(
             dataSyncPeriod = 100,
             lastDataSync = "test",
+            nextDataSync = null,
             syncHasErrors = false,
             dataHasErrors = false,
             dataHasWarnings = false,
@@ -223,21 +226,20 @@ class SyncManagerPresenterTest {
             val timeoutTest = 1
             whenever(
                 getSettingsState.invoke(
-                    anyOrNull(),
-                    any(),
-                    any(),
                     any(),
                 ),
             ) doReturnConsecutively
                 listOf(
-                    mockedSettingState(),
-                    mockedSettingState().copy(
-                        smsSettingsViewModel =
-                            mockedSMSViewModel().copy(
-                                isEnabled = true,
-                                gatewayNumber = gatewayNumberTest,
-                                responseTimeout = timeoutTest,
-                            ),
+                    Result.success(mockedSettingState()),
+                    Result.success(
+                        mockedSettingState().copy(
+                            smsSettingsViewModel =
+                                mockedSMSViewModel().copy(
+                                    isEnabled = true,
+                                    gatewayNumber = gatewayNumberTest,
+                                    responseTimeout = timeoutTest,
+                                ),
+                        ),
                     ),
                 )
 
@@ -254,7 +256,7 @@ class SyncManagerPresenterTest {
                 awaitItem()
                 presenter.enableSmsModule(true, gatewayNumberTest, timeoutTest)
                 awaitItem()
-                verify(getSettingsState, times(2)).invoke(anyOrNull(), any(), any(), any())
+                verify(getSettingsState, times(2)).invoke(any())
             }
         }
 
@@ -262,13 +264,8 @@ class SyncManagerPresenterTest {
     fun `Should not save gateway if validation fails`() =
         runTest {
             whenever(
-                getSettingsState.invoke(
-                    anyOrNull(),
-                    any(),
-                    any(),
-                    any(),
-                ),
-            ) doReturn mockedSettingState()
+                getSettingsState.invoke(any()),
+            ) doReturn Result.success(mockedSettingState())
 
             val gatewayNumberTest = "+111"
             whenever(
@@ -310,13 +307,8 @@ class SyncManagerPresenterTest {
         runTest {
             val smsResultSender = "test"
             whenever(
-                getSettingsState.invoke(
-                    anyOrNull(),
-                    any(),
-                    any(),
-                    any(),
-                ),
-            ) doReturn mockedSettingState()
+                getSettingsState.invoke(any()),
+            ) doReturn Result.success(mockedSettingState())
             whenever(updateSmsResponse(any())) doReturn
                 UpdateSmsResponse.UpdateSmsResponseResult.ValidationError(
                     GatewayValidator.GatewayValidationResult.Invalid,
@@ -364,17 +356,14 @@ class SyncManagerPresenterTest {
     fun `Should load data when setting manual trigger`() =
         runTest {
             whenever(
-                getSettingsState.invoke(
-                    anyOrNull(),
-                    any(),
-                    any(),
-                    any(),
-                ),
+                getSettingsState.invoke(any()),
             ) doReturnConsecutively
                 listOf(
-                    mockedSettingState(),
-                    mockedSettingState().copy(
-                        dataSettingsViewModel = mockedDataViewModel().copy(dataSyncPeriod = 0),
+                    Result.success(mockedSettingState()),
+                    Result.success(
+                        mockedSettingState().copy(
+                            dataSettingsViewModel = mockedDataViewModel().copy(dataSyncPeriod = 0),
+                        ),
                     ),
                 )
 
@@ -402,13 +391,8 @@ class SyncManagerPresenterTest {
     fun `Should open clicked item`() =
         runTest {
             whenever(
-                getSettingsState.invoke(
-                    anyOrNull(),
-                    any(),
-                    any(),
-                    any(),
-                ),
-            ) doReturn mockedSettingState()
+                getSettingsState.invoke(any()),
+            ) doReturn Result.success(mockedSettingState())
 
             presenter.settingsState.test {
                 awaitItem()
@@ -483,13 +467,8 @@ class SyncManagerPresenterTest {
     fun shouldUpdateSyncStatus() =
         runTest {
             whenever(
-                getSettingsState.invoke(
-                    anyOrNull(),
-                    any(),
-                    any(),
-                    any(),
-                ),
-            ) doReturn mockedSettingState()
+                getSettingsState.invoke(any()),
+            ) doReturn Result.success(mockedSettingState())
 
             val dataSyncStartedProgress =
                 LaunchSync.SyncStatusProgress(

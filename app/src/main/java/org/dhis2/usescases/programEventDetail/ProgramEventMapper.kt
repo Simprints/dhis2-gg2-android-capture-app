@@ -1,6 +1,6 @@
 package org.dhis2.usescases.programEventDetail
 
-import org.dhis2.commons.bindings.userFriendlyValue
+import org.dhis2.bindings.userFriendlyValue
 import org.dhis2.commons.data.EventModel
 import org.dhis2.commons.data.EventViewModelType
 import org.dhis2.commons.data.ProgramEventViewModel
@@ -275,6 +275,7 @@ class ProgramEventMapper(
             .byProgramStageUid()
             .eq(programStage)
             .withDataElements()
+            .orderBySortOrder(RepositoryScope.OrderByDirection.ASC)
             .blockingGet()
 
     private fun getCategoryOptionCombo(attributeOptionCombo: String?) =

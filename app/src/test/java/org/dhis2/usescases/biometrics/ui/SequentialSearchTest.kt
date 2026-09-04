@@ -2,7 +2,7 @@ package org.dhis2.usescases.biometrics.ui
 
 import org.dhis2.commons.biometrics.BIOMETRICS_SEARCH_PATTERN
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
-import org.dhis2.usescases.biometrics.biometricAttributeId
+import org.dhis2.mobile.commons.biometrics.biometricAttributeId
 import org.dhis2.usescases.teiDashboard.ui.mapper.firstNameAttrUid
 import org.dhis2.usescases.teiDashboard.ui.mapper.lastNameAttrUid
 import org.junit.Assert

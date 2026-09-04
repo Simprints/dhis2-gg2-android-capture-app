@@ -25,7 +25,6 @@ data class BiometricsAttributeUiModelImpl(
     override val selectableDates: SelectableDates?,
     override val eventCategories: List<EventCategory>?,
     override val periodSelector: PeriodSelector?,
-    override val url: String?,
     override val editable: Boolean = true,
     val ageUnderThreshold: Boolean = false,
     override var customIntent: CustomIntentModel?

@@ -20,5 +20,5 @@
 # hide the original source file name.
 -renamesourcefileattribute SourceFile
 
--dontwarn org.dhis2.commons.bindings.BindingsKt
+-dontwarn org.dhis2.bindings.BindingsKt
 -dontwarn org.dhis2.commons.data.ProgramEventViewModel

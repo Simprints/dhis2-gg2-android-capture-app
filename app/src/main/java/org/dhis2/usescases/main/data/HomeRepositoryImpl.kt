@@ -2,15 +2,20 @@ package org.dhis2.usescases.main.data
 
 import dhis2.org.analytics.charts.Charts
 import kotlinx.coroutines.withContext
+import org.dhis2.commons.biometrics.BIOMETRICS_FAILURE_PATTERN
+import org.dhis2.commons.biometrics.BIOMETRICS_SEARCH_PATTERN
 import org.dhis2.commons.bindings.dataSet
 import org.dhis2.commons.bindings.dataSetInstanceSummaries
 import org.dhis2.commons.bindings.isStockProgram
 import org.dhis2.commons.bindings.programs
 import org.dhis2.commons.prefs.Preference
 import org.dhis2.commons.prefs.Preference.Companion.PIN
+import org.dhis2.data.service.workManager.WorkManagerController
 import org.dhis2.mobile.commons.coroutine.Dispatcher
 import org.dhis2.mobile.commons.error.DomainErrorMapper
 import org.dhis2.mobile.commons.providers.PreferenceProvider
+import org.dhis2.mobile.sync.domain.SyncStatusController
+import org.dhis2.mobile.commons.biometrics.biometricAttributeId
 import org.dhis2.usescases.main.HomeItemData
 import org.dhis2.usescases.settings.deleteCache
 import org.dhis2.usescases.sync.WAS_INITIAL_SYNC_DONE
@@ -18,6 +23,7 @@ import org.dhis2.utils.TRUE
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.maintenance.D2Error
 import org.hisp.dhis.android.core.program.ProgramType
+import timber.log.Timber
 import java.io.File
 
 private const val NO_HOME_ITEM = "No home item found"
@@ -26,9 +32,49 @@ class HomeRepositoryImpl(
     private val d2: D2,
     private val charts: Charts?,
     private val preferences: PreferenceProvider,
+    private val workManagerController: WorkManagerController,
+    private val syncStatusController: SyncStatusController,
     private val domainErrorMapper: DomainErrorMapper,
     private val dispatcher: Dispatcher,
 ) : HomeRepository {
+    // EyeSeeTea customization - Biometric Verification Persistence
+    // Clears biometrics attribute values that were saved in an invalid state: search or failure
+    // placeholders that were never replaced by a real Simprints GUID, plus empty values. Left
+    // behind they make a TEI look like it has biometrics registered when it does not.
+    init {
+        // fix saved invalid biometrics guid
+        val teiAttributeValues =
+            d2.trackedEntityModule().trackedEntityAttributeValues().byTrackedEntityAttribute().eq(
+                biometricAttributeId,
+            ).blockingGet()
+
+        val corruptedBiometricsValues = teiAttributeValues.filter {
+            it.value()?.startsWith(BIOMETRICS_SEARCH_PATTERN) == true ||
+                it.value()?.startsWith(BIOMETRICS_FAILURE_PATTERN) == true ||
+                it.value().isNullOrEmpty()
+        }
+
+        corruptedBiometricsValues.forEach {
+            Timber.d(
+                "Deleting invalid biometrics value for TEI: ${it.trackedEntityInstance()} with value: ${it.value()}",
+            )
+            deleteBiometricsAttributeValue(
+                it.trackedEntityInstance() ?: "",
+                it.trackedEntityAttribute() ?: "",
+            )
+        }
+    }
+
+    // EyeSeeTea customization - Biometric Verification Persistence
+    private fun deleteBiometricsAttributeValue(teiUid: String, biometricUid: String) {
+        val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
+            .value(biometricUid, teiUid)
+
+        Timber.d("Deleting biometric value for TEI: $teiUid and attribute: $biometricUid")
+        valueRepository.blockingDelete()
+        Timber.d("Successfully deleted biometric value")
+    }
+
     private suspend fun <T> execute(block: suspend () -> T): T =
         withContext(dispatcher.io) {
             try {
@@ -89,6 +135,7 @@ class HomeRepositoryImpl(
     override suspend fun logOut() =
         execute {
             d2.userModule().blockingLogOut()
+            Result.success(Unit)
         }
 
     override suspend fun clearPin() =
@@ -99,6 +146,7 @@ class HomeRepositoryImpl(
                 .localDataStore()
                 .value(PIN)
                 .blockingDeleteIfExist()
+            Result.success(Unit)
         }
 
     override suspend fun hasHomeAnalytics(): Boolean =
@@ -187,4 +235,13 @@ class HomeRepositoryImpl(
                 .accountManager()
                 .deleteCurrentAccount()
         }
+
+    override suspend fun stopBackgroundSync() {
+        workManagerController.cancelAllWorkAndWait()
+        workManagerController.pruneWork()
+    }
+
+    override suspend fun restoreSyncStatus() {
+        syncStatusController.restore()
+    }
 }

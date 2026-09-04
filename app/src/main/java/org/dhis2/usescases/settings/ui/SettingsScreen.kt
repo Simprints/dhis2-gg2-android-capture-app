@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarDefaults
@@ -22,7 +21,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import org.dhis2.commons.resources.ColorUtils
 import org.dhis2.usescases.settings.SettingItem
 import org.dhis2.usescases.settings.SyncManagerPresenter
 import org.dhis2.usescases.settings.models.DeleteDataState
@@ -30,8 +31,6 @@ import org.dhis2.usescases.settings.models.ErrorViewModel
 import org.dhis2.usescases.settings.models.SettingsState
 import org.dhis2.usescases.settings.models.SettingsUiAction
 import org.hisp.dhis.mobile.ui.designsystem.theme.Spacing
-import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
-import org.hisp.dhis.mobile.ui.designsystem.theme.TextColor
 import org.hisp.dhis.mobile.ui.designsystem.theme.dropShadow
 import java.io.File
 
@@ -75,8 +74,6 @@ fun SettingsScreen(
                 Snackbar(
                     modifier = Modifier.dropShadow(shape = SnackbarDefaults.shape),
                     snackbarData = data,
-                    containerColor = SurfaceColor.SurfaceBright,
-                    contentColor = TextColor.OnSurface,
                 )
             }
         },
@@ -172,12 +169,17 @@ private fun SettingItemList(
     exportingDatabase: Boolean,
     onSettingsUiAction: (SettingsUiAction) -> Unit,
 ) {
+    val context = LocalContext.current
+    val primaryColor = remember(context) {
+        ColorUtils().getThemePrimaryColor(context)
+    }
+
     LazyColumn(
         modifier =
             modifier
                 .fillMaxSize()
                 .imePadding()
-                .background(MaterialTheme.colorScheme.primary)
+                .background(primaryColor)
                 .background(Color.White, RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                 .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
         contentPadding = PaddingValues(8.dp),

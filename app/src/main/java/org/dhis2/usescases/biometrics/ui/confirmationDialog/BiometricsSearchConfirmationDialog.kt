@@ -92,7 +92,9 @@ class BiometricsSearchConfirmationDialog(
     }
 
     override fun dismiss() {
-        app().releaseSessionComponent()
+        // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
+        // Base behavior: develop-eyeseetea removed App.releaseSessionComponent() along with the
+        // SessionComponent it nulled out, so there is nothing left to release here.
         dismissAllowingStateLoss()
     }
 

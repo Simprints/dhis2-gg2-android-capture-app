@@ -17,6 +17,7 @@ import org.dhis2.bindings.buildInfo
 import org.dhis2.commons.Constants.SESSION_DIALOG_RQ
 import org.dhis2.commons.dialogs.CustomDialog
 import org.dhis2.data.server.OpenIdSession
+import org.dhis2.mobile.login.authentication.OpenIdController
 import org.dhis2.mobile.login.main.ui.navigation.AppLinkNavigation
 import org.dhis2.mobile.login.main.ui.screen.LoginScreen
 import org.dhis2.usescases.about.PolicyView
@@ -27,6 +28,7 @@ import org.hisp.dhis.mobile.ui.designsystem.theme.DHIS2Theme
 import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
 import org.koin.android.ext.android.inject
 import javax.inject.Inject
+import kotlin.getValue
 
 const val EXTRA_SKIP_SYNC = "SKIP_SYNC"
 const val FROM_MAIN_ACTIVITY = "FROM_MAIN_ACTIVITY"
@@ -43,6 +45,7 @@ class LoginActivity : ActivityGlobalAbstract() {
     lateinit var syncBiometricsConfig: SyncBiometricsConfig
 
     private val appLinkNavigation: AppLinkNavigation by inject()
+    private val openIdController: OpenIdController by inject()
 
     private var isPinScreenVisible = false
 
@@ -72,11 +75,6 @@ class LoginActivity : ActivityGlobalAbstract() {
                             true,
                         )
 
-                    OpenIdSession.LogOutReason.UNAUTHORIZED -> putBoolean(
-                        EXTRA_SESSION_EXPIRED,
-                        true
-                    )
-
                     null -> {
                         // Nothing to do in this case
                     }
@@ -94,6 +92,8 @@ class LoginActivity : ActivityGlobalAbstract() {
 
         appComponent.plus(LoginModule(this, serverComponent)).inject(this)
         super.onCreate(savedInstanceState)
+
+        openIdController.bind(this)
 
         checkMessage()
 
@@ -144,6 +144,11 @@ class LoginActivity : ActivityGlobalAbstract() {
             appLinkNavigation.appLink.tryEmit(appLinkData.toString())
             intent?.action = null
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        openIdController.unbind()
     }
 
     @Deprecated("Deprecated in Java")

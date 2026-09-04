@@ -1,13 +1,18 @@
 package org.dhis2.data.forms.dataentry
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.flowOf
 import org.dhis2.commons.data.EntryMode
 import org.dhis2.commons.network.NetworkUtils
 import org.dhis2.commons.resources.ResourceManager
+import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.dhislogic.DhisEnrollmentUtils
 import org.dhis2.form.model.ValueStoreResult
+import org.dhis2.mobile.commons.network.NetworkStatusProvider
 import org.dhis2.mobile.commons.providers.FieldErrorMessageProvider
 import org.dhis2.mobile.commons.reporting.CrashReportController
 import org.hisp.dhis.android.core.D2
+import org.hisp.dhis.android.core.common.ObjectWithUid
 import org.hisp.dhis.android.core.common.ValueType
 import org.hisp.dhis.android.core.dataelement.DataElement
 import org.hisp.dhis.android.core.option.Option
@@ -27,14 +32,18 @@ class ValueStoreTest {
     private lateinit var dvValueStore: ValueStore
     private val d2: D2 = Mockito.mock(D2::class.java, Mockito.RETURNS_DEEP_STUBS)
     private val dhisEnrollmentUtils: DhisEnrollmentUtils = DhisEnrollmentUtils(d2)
-    private val fieldErrorMessageProvider: FieldErrorMessageProvider = mock()
     private val crashReportController: CrashReportController = mock()
-    private val networkUtils: NetworkUtils = mock()
+    private val networkStatusProvider: NetworkStatusProvider = mock()
     private val searchTEIRepository: SearchTEIRepository = mock()
     private val resourceManager: ResourceManager = mock()
+    private val dispatchers: DispatcherProvider =
+        mock {
+            on { io() } doReturn Dispatchers.IO
+        }
 
     @Before
     fun setUp() {
+        whenever(networkStatusProvider.connectionStatus) doReturn flowOf(false)
         attrValueStore =
             ValueStoreImpl(
                 d2,
@@ -42,10 +51,10 @@ class ValueStoreTest {
                 EntryMode.ATTR,
                 dhisEnrollmentUtils,
                 crashReportController,
-                networkUtils,
                 searchTEIRepository,
-                fieldErrorMessageProvider,
                 resourceManager,
+                networkStatusProvider,
+                dispatchers,
             )
         deValueStore =
             ValueStoreImpl(
@@ -54,10 +63,10 @@ class ValueStoreTest {
                 EntryMode.DE,
                 dhisEnrollmentUtils,
                 crashReportController,
-                networkUtils,
                 searchTEIRepository,
-                fieldErrorMessageProvider,
                 resourceManager,
+                networkStatusProvider,
+                dispatchers,
             )
         dvValueStore =
             ValueStoreImpl(
@@ -66,10 +75,10 @@ class ValueStoreTest {
                 EntryMode.DV,
                 dhisEnrollmentUtils,
                 crashReportController,
-                networkUtils,
                 searchTEIRepository,
-                fieldErrorMessageProvider,
                 resourceManager,
+                networkStatusProvider,
+                dispatchers,
             )
     }
 
@@ -346,6 +355,7 @@ class ValueStoreTest {
                 .builder()
                 .uid("fieldUid")
                 .valueType(ValueType.TEXT)
+                .categoryCombo(ObjectWithUid.create("categoryComboUid"))
                 .build()
         val storeResult =
             deValueStore.deleteOptionValueIfSelected(
@@ -418,6 +428,7 @@ class ValueStoreTest {
                 .builder()
                 .uid(testingUid)
                 .valueType(ValueType.TEXT)
+                .categoryCombo(ObjectWithUid.create("categoryComboUid"))
                 .build()
         whenever(
             d2
@@ -509,6 +520,7 @@ class ValueStoreTest {
             .builder()
             .uid("uid")
             .valueType(ValueType.TEXT)
+            .categoryCombo(ObjectWithUid.create("categoryComboUid"))
             .build()
 
     private fun mockedUniqueAttribute(): TrackedEntityAttribute =

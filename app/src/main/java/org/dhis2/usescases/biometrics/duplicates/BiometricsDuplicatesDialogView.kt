@@ -10,12 +10,15 @@ import org.hisp.dhis.android.core.arch.call.D2Progress
 interface BiometricsDuplicatesDialogView {
     fun setLiveData(liveData: Flow<PagingData<SearchTeiModel>>)
     fun getContext(): Context?
-    fun openDashboard(teiUid: String, programUid: String, enrollmentUid: String)
+    // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
+    // enrollmentUid is nullable, matching how the search flow handles it
+    // (SearchTEPresenter.onSearchTEIModelClick): a TEI may have no selected enrollment.
+    fun openDashboard(teiUid: String, programUid: String, enrollmentUid: String?)
     fun downloadProgress(): Consumer<D2Progress>
     fun couldNotDownload(displayName: String)
     fun enrollNew(biometricsSessionId: String)
     fun enrollWithoutBiometrics()
     fun sendBiometricsConfirmIdentity(
-        sessionId: String, guid: String, teiUid: String, enrollmentUid: String, isOnline: Boolean
+        sessionId: String, guid: String, teiUid: String, enrollmentUid: String?, isOnline: Boolean
     )
 }

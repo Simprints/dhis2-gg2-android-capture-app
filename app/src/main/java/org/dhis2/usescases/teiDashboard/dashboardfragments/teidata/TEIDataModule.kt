@@ -28,6 +28,7 @@ import org.dhis2.tracker.events.CreateEventUseCase
 import org.dhis2.tracker.events.CreateEventUseCaseRepository
 import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.tracker.events.CreateEventUseCaseRepositoryImpl
+import org.dhis2.mobile.commons.biometrics.biometricAttributeId
 import org.dhis2.usescases.teiDashboard.DashboardRepository
 import org.dhis2.usescases.teiDashboard.dashboardfragments.teidata.teievents.ui.mapper.TEIEventCardMapper
 import org.dhis2.usescases.teiDashboard.domain.GetNewEventCreationTypeOptions
@@ -43,6 +44,7 @@ class TEIDataModule(
     private val programUid: String?,
     private val teiUid: String,
     private val enrollmentUid: String,
+    private val fragmentIsFromEventCaptureActivity: Boolean,
     private val registry: ActivityResultRegistry,
     private val lastBiometricsSessionId: String?
 ) {
@@ -69,29 +71,30 @@ class TEIDataModule(
         orgUnitRepository: OrgUnitRepository,
     ): TEIDataPresenter =
         TEIDataPresenter(
-            view,
-            d2,
-            dashboardRepository,
-            teiDataRepository,
-            ruleEngineHelper,
-            programUid,
-            teiUid,
-            enrollmentUid,
-            schedulerProvider,
-            analyticsHelper,
-            valueStore,
-            optionsRepository,
-            getNewEventCreationTypeOptions,
-            eventCreationOptionsMapper,
-            contractHandler,
-            dispatcherProvider,
-            createEventUseCase,
-            d2ErrorUtils,
-            preferences,
-            basicPreferenceProvider,
-            resourceManager,
-            lastBiometricsSessionId,
-            orgUnitRepository
+            view = view,
+            d2 = d2,
+            dashboardRepository = dashboardRepository,
+            teiDataRepository =  teiDataRepository,
+            ruleEngineHelper =  ruleEngineHelper,
+            programUid = programUid,
+            teiUid = teiUid,
+            enrollmentUid = enrollmentUid,
+            fragmentIsFromEventCaptureActivity = fragmentIsFromEventCaptureActivity,
+            schedulerProvider = schedulerProvider,
+            analyticsHelper =  analyticsHelper,
+            valueStore =  valueStore,
+            optionsRepository =  optionsRepository,
+            getNewEventCreationTypeOptions =  getNewEventCreationTypeOptions,
+            eventCreationOptionsMapper =  eventCreationOptionsMapper,
+            contractHandler =  contractHandler,
+            dispatcher =  dispatcherProvider,
+            createEventUseCase =  createEventUseCase,
+            d2ErrorUtils =  d2ErrorUtils,
+            preferences =  preferences,
+            basicPreferenceProvider = basicPreferenceProvider,
+            resourceManager = resourceManager,
+            lastBiometricsSearchSessionId = lastBiometricsSessionId,
+            orgUnitRepository = orgUnitRepository
         )
 
     @Provides

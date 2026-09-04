@@ -34,7 +34,6 @@ import androidx.work.Data
 import androidx.work.ExistingWorkPolicy
 import androidx.work.WorkInfo
 import io.reactivex.disposables.CompositeDisposable
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -59,9 +58,17 @@ import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.service.workManager.WorkManagerController
 import org.dhis2.data.service.workManager.WorkerItem
 import org.dhis2.data.service.workManager.WorkerType
+import org.dhis2.mobile.sync.data.SyncBackgroundJobAction
 import org.dhis2.usescases.sms.SmsSendingService
+import org.dhis2.utils.granularsync.data.GranularSyncRepository
+import org.dhis2.utils.granularsync.domain.MissingSyncTargetException
+import org.dhis2.utils.granularsync.domain.SyncStatus
+import org.dhis2.utils.granularsync.ui.SyncUiState
+import org.dhis2.utils.granularsync.ui.SyncUiStateMapper
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.common.State
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import timber.log.Timber
 
 class GranularSyncPresenter(
@@ -73,7 +80,9 @@ class GranularSyncPresenter(
     private val syncContext: SyncContext,
     private val workManagerController: WorkManagerController,
     private val smsSyncProvider: SMSSyncProvider,
-) : ViewModel() {
+    private val mapper: SyncUiStateMapper,
+) : ViewModel(),
+    KoinComponent {
     private val workerName: String
     private var disposable: CompositeDisposable = CompositeDisposable()
     private lateinit var states: MutableLiveData<List<SmsSendingService.SendingStatus>>
@@ -82,23 +91,29 @@ class GranularSyncPresenter(
     private val _currentState = MutableStateFlow<SyncUiState?>(null)
     val currentState: StateFlow<SyncUiState?> = _currentState
 
+    private val syncBackgroundJobAction: SyncBackgroundJobAction by inject()
+
     init {
         workerName = workerName()
     }
 
-    private val _serverAvailability = MutableLiveData<Boolean>()
-    val serverAvailability: LiveData<Boolean> = _serverAvailability
+    private val _serverAvailability = MutableLiveData<Boolean?>()
+    val serverAvailability: LiveData<Boolean?> = _serverAvailability
 
     private fun loadSyncInfo(forcedState: State? = null) {
         viewModelScope.launch(dispatcher.io()) {
-            val syncState =
-                async {
-                    repository.getUiState(forcedState)
-                }.await()
-            val dismissOnUpdate = refreshing && syncState.syncState == State.SYNCED
-            refreshing = false
-            _currentState.update {
-                syncState.copy(shouldDismissOnUpdate = dismissOnUpdate)
+            try {
+                val syncStatusData = repository.getSyncStatus(forcedState)
+                val dismissOnUpdate = refreshing && syncStatusData.syncState == SyncStatus.SYNCED
+                refreshing = false
+                _currentState.update {
+                    mapper.toUiState(syncStatusData, dismissOnUpdate)
+                }
+            } catch (e: MissingSyncTargetException) {
+                refreshing = false
+                _currentState.update {
+                    mapper.missingTargetUiState(e.recordUid)
+                }
             }
         }
     }
@@ -172,7 +187,7 @@ class GranularSyncPresenter(
 
                 workManagerController.beginUniqueWork(workerItem)
             } else {
-                workManagerController.syncDataForWorker(Constants.DATA_NOW, Constants.INITIAL_SYNC)
+                syncBackgroundJobAction.launchDataSync(0)
             }
         }
         return observeWorkInfo()
@@ -392,7 +407,7 @@ class GranularSyncPresenter(
         restartSmsSender()
     }
 
-    private suspend fun getDataSetCatOptCombos(): List<String> {
+    private fun getDataSetCatOptCombos(): List<String> {
         val dataSet =
             d2
                 .dataSetModule()
@@ -450,11 +465,12 @@ class GranularSyncPresenter(
     }
 
     fun checkServerAvailability() {
+        _serverAvailability.value = null
         viewModelScope.launch {
             try {
                 repository.checkServerAvailability()
                 _serverAvailability.value = true
-            } catch (error: RuntimeException) {
+            } catch (_: RuntimeException) {
                 _serverAvailability.value = false
             }
         }
