@@ -14,6 +14,7 @@ This file is not for:
 - temporary upgrade progress
 - stable merge rules
 - functional intent or business justification
+- proposed simplifications/refactors deferred for later — see `refactors-pending.md`
 
 ## Mandatory header
 
@@ -309,6 +310,7 @@ Supporting files in the same workflow:
 - `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/models/sid/IdentificationSID.kt`
 - `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/models/sid/VerificationSID.kt`
 - `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/models/sid/ScannedCredentialSID.kt`
+- `app/src/test/java/org/dhis2/data/biometrics/biometricsClient/BiometricsClientTest.kt` (added 2026-09-03; 21 unit tests for `handleRegisterResponse`/`handleIdentifyResponse`/`handleVerifyResponse`/`handleConfirmIdentityResponse` — pure `Intent`→result mapping, no device needed. Was previously the fork's largest zero-coverage file, see `refactors-pending.md`)
 
 Technical note:
 - `BiometricsClientFactory` creates the client from the currently selected biometrics preferences, using the selected `projectId`, the current DHIS2 username, the selected `confidenceScoreFilter`, and `BuildConfig.VERSION_NAME` as `forkVersion`. If preferences are missing, it falls back to hardcoded defaults (`projectId = Ma9wi0IBdo215PKRXOf5`, username `admin`, threshold `0`). `BiometricsClient` then acts as the integration boundary with the external Simprints app: it builds metadata containing `forkVersion`, `trackedEntityInstanceId`, `enrollingOrgUnitId`, `enrollingOrgUnitName`, `userOrgUnits`, and `subjectAge`; injects the backported `versionCode=20250102` extra to force JSON responses; and converts Simprints registration, identify, verify, confirm-identity, and `registerLast` responses into DHIS2-side result models, including scanned credential propagation when present.

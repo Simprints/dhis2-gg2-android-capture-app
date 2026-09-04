@@ -79,6 +79,7 @@ Use `// EyeSeeTea fix - [description] (Oslo [ticket], introduced [version])` ins
 - `openspec/specs/` — functional specs (source of truth for what each customization does)
 - `openspec/config.yaml` — project context and OpenSpec rules
 - `eyeseetea-docs/customizations/simprints/customization-files.md` — technical file inventory
+- `eyeseetea-docs/customizations/simprints/refactors-pending.md` — deferred simplification/testing work; review at each upgrade
 - `eyeseetea-docs/upgrade/simprints/upgrade-3.4-notes.md` — upgrade progress and status
 - `eyeseetea-docs/upgrade/simprints/upgrade-validation-checklist.md` — manual validation flows
 - `eyeseetea-docs/upgrade/conflict-rules.md` — merge conflict resolution rules
