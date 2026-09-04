@@ -136,9 +136,9 @@ Preconditions:
 - Active config defines `enableIdentificationForTET` for one specific tracked entity type.
 
 Manual flow:
-1. From a relationship-driven search whose TE type matches `enableIdentificationForTET`, confirm biometric identification is available regardless of `biometricsMode`.
-2. From a relationship-driven search whose TE type does not match, confirm biometric identification is not available.
-3. From a normal (non-relationship) search on the tracked entity type configured in `enableIdentificationForTET`, with `biometricsMode` set to `limited` or `zero` for that program, confirm biometric identification is not available.
+1. From a relationship-driven search whose TE type matches `enableIdentificationForTET`, confirm biometric identification is available regardless of `biometricsMode`. — [x] Verified on device 2026-09-03 (created a relationship, biometric search available and worked)
+2. From a relationship-driven search whose TE type does not match, confirm biometric identification is not available. — [ ] Not yet verified
+3. From a normal (non-relationship) search on the tracked entity type configured in `enableIdentificationForTET`, with `biometricsMode` set to `limited` or `zero` for that program, confirm biometric identification is not available. — [ ] Not yet verified
 
 Expected result:
 - Relationship search biometric availability follows the TE type toggle, not the normal per-program mode rule.
@@ -177,11 +177,13 @@ Manual flow:
 4. Open the same TEI in dashboard and inspect available biometrics actions per mode.
 5. Attempt dashboard verification.
 6. Check landscape dashboard mode for the embedded form.
+7. Attempt `registerLast` ("Use Last Biometrics Now") twice, from a new TEI enrollment, with all mandatory attributes already filled from the search screen so the form needs no further input — press save immediately after biometric capture completes, with no other field edited first.
 
 Expected result:
 - Search cards and result details reflect the configured name/biometric/NHIS attribute rules.
 - Enrollment and TEI form support registration, duplicate handling, and `registerLast`, and filter biometric fields out of the form in non-`full` modes.
 - Enrollment and TEI form do not expose a form-driven verification action.
+- Step 7's `registerLast` saves and navigates to the TEI dashboard within a few seconds of biometric capture completing, both times — this is the exact scenario that reproduced a save/navigation hang (2026-09-04, see `customization-files.md` §2.10 and `upgrade-3.4-notes.md` B6).
 - TEI dashboard supports both registration and verification and uses verification state to drive dashboard card state; `zero` mode hides the biometrics card; `limited` mode hides registration when no biometric value exists.
 
 ### 11. Biometric Verification Persistence
@@ -233,20 +235,18 @@ Expected result:
 - Scanned credential data is preserved on the `userNotFound` identify outcome, not only on a successful match.
 - The missing-preferences fallback uses the hardcoded default `projectId`, username `admin`, and confidence threshold `0`.
 
-### 14. Areas Explicitly Out Of Scope For Preservation
+### 14. Biometrics Config Sync On Login
 
 Preconditions:
-- None — this is a negative check performed after merging `develop-eyeseetea`.
+- None.
 
 Manual flow:
-1. After the upgrade merge, check that 2FA/login changes (except biometrics config sync, see below) and notifications match the `develop-eyeseetea` baseline behavior, not any prior Simprints-specific variant.
-2. Confirm login still triggers a biometrics config sync (`SyncBiometricsConfig`, wired from `LoginActivity.kt`/`LoginModule.kt`) — this one login-area piece is a real Simprints customization and must survive, unlike the rest of `login/`.
+1. Log in and confirm login triggers a biometrics config sync (`SyncBiometricsConfig`, wired from `LoginActivity.kt`/`LoginModule.kt`) — the one Simprints customization inside `login/`, everything else in that area is upstream/baseline behavior with no fork-specific preservation to check.
 
 Expected result:
-- No Simprints-specific behavior survives in 2FA/login (other than biometrics config sync) or notifications; they match upstream/baseline behavior exactly.
 - Biometrics config sync on login still runs and updates the active biometrics configuration.
 
-Note (verified 2026-09-03): Change Server URL and granular sync flavor wiring were previously listed here but don't belong — Change Server URL no longer exists anywhere in the codebase (nothing to check), and granular sync flavor wiring (`app/src/simprints/java/org/dhis2/utils/granularsync/GranularSyncModule.kt`) is active Simprints DI wiring, not an out-of-scope area to discard. See `customization-files.md` §3 for the corrected inventory.
+Note (2026-09-03): this flow used to be a broader "check 2FA/login/notifications/Change Server URL/granular sync match baseline" negative check. Narrowed to just the one real customization worth a manual check — Change Server URL no longer exists anywhere in the codebase, and granular sync flavor wiring (`app/src/simprints/java/org/dhis2/utils/granularsync/GranularSyncModule.kt`) is active Simprints DI wiring documented under its own customization, not an out-of-scope area. See `customization-files.md` §3 for the corrected inventory.
 
 ## Maintenance rule
 
