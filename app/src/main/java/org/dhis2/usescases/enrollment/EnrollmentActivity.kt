@@ -8,7 +8,11 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.dhis2.App
 import org.dhis2.R
 import org.dhis2.commons.Constants.ENROLLMENT_UID
@@ -64,6 +68,14 @@ class EnrollmentActivity :
 
     var pendingSave: Boolean = false
 
+    // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
+    // registerLast triggers a burst of near-simultaneous FormIntents (biometric value save +
+    // this auto-save), which can race inside FormViewModel's fieldListChannel (capacity=1,
+    // DROP_OLDEST) and silently drop the OnFinish signal, hanging the save. Debouncing the
+    // auto-save trigger gives that channel time to drain between the two saves, the same way
+    // it naturally does when a user types with pauses. See upgrade-3.4-notes.md.
+    private var pendingSaveJob: Job? = null
+
     companion object {
         const val ENROLLMENT_UID_EXTRA = "ENROLLMENT_UID_EXTRA"
         const val PROGRAM_UID_EXTRA = "PROGRAM_UID_EXTRA"
@@ -72,6 +84,9 @@ class EnrollmentActivity :
         const val RQ_ENROLLMENT_GEOMETRY = 1023
         const val RQ_INCIDENT_GEOMETRY = 1024
         const val RQ_EVENT = 1025
+
+        // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
+        private const val PENDING_SAVE_DEBOUNCE_MS = 500L
 
         fun getIntent(
             context: Context,
@@ -144,10 +159,15 @@ class EnrollmentActivity :
                 dateEditionWarningHandler = dateEditionWarningHandler,
                 onFieldsLoading = { fields ->  presenter.onFieldsLoading(fields) },
                 onFieldsLoaded = { fields -> presenter.onFieldsLoaded(fields) },
+                // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
                 onFieldItemsRendered = {
                     if (pendingSave){
-                        pendingSave = false
-                        formView.onSaveClick()
+                        pendingSaveJob?.cancel()
+                        pendingSaveJob = lifecycleScope.launch {
+                            delay(PENDING_SAVE_DEBOUNCE_MS)
+                            pendingSave = false
+                            formView.onSaveClick()
+                        }
                     }
                 }
             ) {
