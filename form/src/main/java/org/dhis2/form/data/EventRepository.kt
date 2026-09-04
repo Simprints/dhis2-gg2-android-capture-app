@@ -6,9 +6,9 @@ import io.reactivex.Flowable
 import io.reactivex.Single
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import org.dhis2.commons.bindings.blockingGetValueCheck
+import org.dhis2.bindings.blockingGetValueCheck
+import org.dhis2.bindings.userFriendlyValue
 import org.dhis2.commons.bindings.program
-import org.dhis2.commons.bindings.userFriendlyValue
 import org.dhis2.commons.date.DateUtils
 import org.dhis2.commons.extensions.inDateRange
 import org.dhis2.commons.extensions.inOrgUnit
@@ -150,6 +150,7 @@ class EventRepository(
             .byProgramStageUid()
             .eq(event?.programStage())
             .withDataElements()
+            .orderBySortOrder(RepositoryScope.OrderByDirection.ASC)
             .blockingGet()
             .associateBy { section -> section.uid() }
     }
@@ -174,6 +175,7 @@ class EventRepository(
             .byProgramStageUid()
             .eq(programStage?.uid())
             .withDataElements()
+            .orderBySortOrder(RepositoryScope.OrderByDirection.ASC)
             .get()
             .flatMap { programStageSection ->
                 if (programStageSection.isEmpty()) {
@@ -286,7 +288,6 @@ class EventRepository(
             editable = isEventEditable(),
             description = null,
             eventCategories = categories,
-            url = null
         )
     }
 
@@ -430,7 +431,6 @@ class EventRepository(
             editable = accessDataWrite && !shouldBlockEdition,
             description = null,
             featureType = featureType,
-            url = null
         )
     }
 
@@ -464,7 +464,6 @@ class EventRepository(
             editable = eventMode == EventMode.NEW,
             description = null,
             orgUnitSelectorScope = programUid?.let { OrgUnitSelectorScope.ProgramCaptureScope(it) },
-            url = null
         )
 
     private fun getStoredOrgUnit(): String? =
@@ -504,7 +503,6 @@ class EventRepository(
             editable = isEventEditable(),
             description = null,
             periodSelector = getPeriodSelector(),
-            url = null
         )
     }
 
@@ -726,8 +724,6 @@ class EventRepository(
         val renderingType = getSectionRenderingType(programStageSection)
         val featureType = getFeatureType(valueType)
 
-        val url = de?.url()
-
         var fieldViewModel =
             fieldFactory.create(
                 uid,
@@ -747,7 +743,6 @@ class EventRepository(
                 optionSetConfig,
                 featureType,
                 customIntentModel = customIntent,
-                url = url
             )
 
         if (!error.isNullOrEmpty()) {

@@ -1,8 +1,8 @@
 package org.dhis2.usescases.teidashboard.robot
 
-import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.TypeTextAction
 import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.action.ViewActions.closeSoftKeyboard
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.intent.Intents
 import androidx.test.espresso.intent.matcher.IntentMatchers.hasComponent
@@ -30,7 +30,7 @@ fun noteRobot(noteRobot: NoteRobot.() -> Unit) {
 class NoteRobot : BaseRobot() {
 
     fun clickOnFabAddNewNote() {
-        onView(withId(R.id.addNoteButton)).check(matches(isDisplayed())).perform(click())
+        waitForView(withId(R.id.addNoteButton)).check(matches(isDisplayed())).perform(click())
     }
 
     fun verifyNoteDetailActivityIsLaunched() {
@@ -38,24 +38,24 @@ class NoteRobot : BaseRobot() {
     }
 
     fun typeNote(text: String) {
-        onView(withId(R.id.noteText)).perform(TypeTextAction(text))
+        waitForView(withId(R.id.noteText)).perform(TypeTextAction(text))
         closeKeyboard()
     }
 
     fun clickOnSaveButton() {
-        waitForView(withText(R.string.save))
+        waitForView(allOf(withId(R.id.saveButton), withText(R.string.save)),5000)
             .check(matches(allOf(isDisplayed(), isEnabled())))
             .perform(click())
     }
 
     fun clickYesOnAlertDialog() {
-        waitForView(withText(R.string.yes))
+        waitForView(withId(android.R.id.button1), waitMillis = DIALOG_WAIT_TIMEOUT_MS)
             .check(matches(isDisplayed()))
             .perform(click())
     }
 
     fun checkNoteWasNotCreated(text: String) {
-        onView(withId(R.id.notes_recycler)).check(
+        waitForView(withId(R.id.notes_recycler), waitMillis = NOTES_WAIT_TIMEOUT_MS).check(
             matches(
                 not(
                     atPosition(
@@ -68,28 +68,52 @@ class NoteRobot : BaseRobot() {
     }
 
     fun checkNewNoteWasCreated(text: String) {
-        waitForView(withId(R.id.notes_recycler)).check(
-            matches(
-                allOf(
-                    isDisplayed(),
-                    isNotEmpty(),
-                    atPosition(0, hasDescendant(withText(text)))
-                )
-            )
+        // First wait for the RecyclerView to be visible
+        waitForView(withId(R.id.notes_recycler), waitMillis = NOTES_WAIT_TIMEOUT_MS)
+            .check(matches(isDisplayed()))
+        // Now check for the note content
+        waitForView(
+            allOf(
+                withId(R.id.notes_recycler),
+                isDisplayed(),
+                isNotEmpty(),
+                atPosition(0, hasDescendant(withText(text)))
+            ),
+            waitMillis = NOTES_WAIT_TIMEOUT_MS
         )
     }
 
     fun clickOnClearButton() {
         waitForView(withText(R.string.clear))
             .check(matches(allOf(isDisplayed(), isEnabled())))
-            .perform(click())
+            .perform(closeSoftKeyboard(), click())
     }
 
     fun checkNoteDetails(user: String, noteText: String) {
-        waitForView(withId(R.id.notes_recycler)).check(matches(isDisplayed()))
-        waitForView(allOf(withId(R.id.storeBy), withEffectiveVisibility(Visibility.VISIBLE), withText(user)))
+        waitForView(withId(R.id.notes_recycler), waitMillis = NOTES_WAIT_TIMEOUT_MS)
+            .check(matches(isDisplayed()))
+        waitForView(
+            allOf(
+                withId(R.id.storeBy),
+                withEffectiveVisibility(Visibility.VISIBLE),
+                withText(user)
+            ),
+            waitMillis = NOTES_WAIT_TIMEOUT_MS,
+        )
             .check(matches(withEffectiveVisibility(Visibility.VISIBLE)))
-        waitForView(allOf(withId(R.id.note_text), withEffectiveVisibility(Visibility.VISIBLE), withText(noteText)))
+        waitForView(
+            allOf(
+                withId(R.id.note_text),
+                withEffectiveVisibility(Visibility.VISIBLE),
+                withText(noteText)
+            ),
+            waitMillis = NOTES_WAIT_TIMEOUT_MS,
+        )
             .check(matches(withEffectiveVisibility(Visibility.VISIBLE)))
+    }
+
+    companion object {
+        private const val DIALOG_WAIT_TIMEOUT_MS = 10000
+        private const val NOTES_WAIT_TIMEOUT_MS = 15000
     }
 }

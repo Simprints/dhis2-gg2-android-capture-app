@@ -1,7 +1,6 @@
-package org.dhis2.commons.bindings
+package org.dhis2.bindings
 
 import org.dhis2.commons.date.DateUtils
-import org.dhis2.commons.extensions.invoke
 import org.dhis2.commons.extensions.toPercentage
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.common.ValueType
@@ -74,31 +73,6 @@ fun String.userFriendlyValue(
     }
 }
 
-fun TrackedEntityDataValue?.valueByPropName(d2: D2, propName: String): String? {
-    if (this == null) {
-        return null
-    } else {
-        if (value().isNullOrEmpty()) {
-            return value()
-        }
-
-
-        val dataElement = d2.dataElementModule().dataElements()
-            .uid(dataElement())
-            .blockingGet()
-
-        return dataElement?.let { dataElement ->
-            if (check(d2, dataElement.valueType(), dataElement.optionSet()?.uid(), value()!!)) {
-                dataElement.optionSet()?.let {
-                    return checkOptionSetValueByPropName(d2, it.uid(), value()!!, propName)
-                } ?: return checkValueTypeValue(d2, dataElement.valueType(), value()!!)
-            } else {
-                return null
-            }
-        }
-    }
-}
-
 fun checkOptionSetValue(
     d2: D2,
     optionSetUid: String,
@@ -114,25 +88,6 @@ fun checkOptionSetValue(
         .one()
         .blockingGet()
         ?.displayName()
-
-fun checkOptionSetValueByPropName(
-    d2: D2,
-    optionSetUid: String,
-    code: String,
-    propName: String
-): String? {
-    val option = d2.optionModule().options()
-        .byOptionSetUid().eq(optionSetUid)
-        .byCode().eq(code).one().blockingGet()
-
-    return option?.let {
-        return try {
-            option.invoke(propName) as String
-        } catch (e: Exception) {
-            option.displayName()
-        }
-    }
-}
 
 fun checkValueTypeValue(
     d2: D2,
@@ -288,6 +243,8 @@ fun TrackedEntityDataValueObjectRepository.blockingGetValueCheck(
             )
         ) {
             blockingGet()
+        } else if (it.valueType()?.isFile == true) {
+            null
         } else {
             blockingDeleteIfExist()
             null

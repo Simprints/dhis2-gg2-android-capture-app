@@ -34,9 +34,6 @@ public interface SearchRepository {
     void clearFetchedList();
 
     @NonNull
-    Flowable<List<SearchTeiModel>> searchTeiForMap(SearchParametersModel searchParametersModel, boolean isOnline);
-
-    @NonNull
     Observable<Pair<String, String>> saveToEnroll(@NonNull String teiType, @NonNull String orgUnitUID, @NonNull String programUid, @Nullable String teiUid, HashMap<String, List<String>> queryData, @Nullable String fromRelationshipUid);
 
     Observable<List<OrganisationUnit>> getOrgUnits(@Nullable String selectedProgramUid);
@@ -47,13 +44,9 @@ public interface SearchRepository {
 
     TrackedEntityType getTrackedEntityType();
 
-    List<EventModel> getEventsForMap(List<SearchTeiModel> teis);
-
     Observable<D2Progress> downloadTei(String teiUid);
 
     TeiDownloadResult download(String teiUid, @Nullable String enrollmentUid, String reason);
-
-    SearchTeiModel transform(TrackedEntitySearchItem searchItem, @Nullable Program selectedProgram, boolean offlineOnly, SortingItem sortingItem);
 
     TrackedEntitySearchCollectionRepository getFilteredRepository(SearchParametersModel searchParametersModel);
 
@@ -85,13 +78,14 @@ public interface SearchRepository {
 
     boolean filtersApplyOnGlobalSearch();
 
-    @NotNull HashSet<String> getFetchedTeiUIDs();
-
-    SearchParametersModel getSavedSearchParameters();
-
-    FilterManager getSavedFilters();
-
+    // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
+    // Writes the Simprints GUID returned by an identification into the biometrics
+    // tracked entity attribute, so duplicate review and follow-up search run through
+    // normal DHIS2 search instead of a separate local cache.
     void updateAttributeValue(String teiUid, String biometricUid, String guid);
 
+    // EyeSeeTea customization - Org Unit Derived Module Id For Simprints
+    // Supplies the user's capture org units so search biometric identify can derive
+    // the Simprints moduleId from the org unit hierarchy.
     List<String> getUserOrgUnits(String programUid);
 }

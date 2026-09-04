@@ -1,14 +1,20 @@
 package org.dhis2.usescases.biometrics.duplicates
 
 import androidx.paging.map
-import io.reactivex.Flowable
 import io.reactivex.disposables.CompositeDisposable
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import org.dhis2.commons.filters.FilterManager
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.schedulers.SchedulerProvider
+import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
-import org.dhis2.data.search.SearchParametersModel
+import org.dhis2.tracker.search.domain.SearchTrackedEntities
+import org.dhis2.tracker.search.model.QueryData
+import org.dhis2.tracker.search.model.SearchTrackedEntitiesInput
 import org.dhis2.usescases.searchTrackEntity.SearchRepository
 import org.dhis2.usescases.searchTrackEntity.SearchRepositoryKt
 import org.dhis2.utils.NetworkUtils
@@ -21,8 +27,17 @@ class BiometricsDuplicatesDialogPresenter(
     private val searchRepository: SearchRepository,
     private val searchRepositoryKt: SearchRepositoryKt,
     private val schedulerProvider: SchedulerProvider,
-    private val basicPreferenceProvider: BasicPreferenceProvider
+    private val basicPreferenceProvider: BasicPreferenceProvider,
+    // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
+    // Baseline's coroutine use case, replacing the removed SearchRepositoryKt.searchTrackedEntities.
+    private val searchTrackedEntities: SearchTrackedEntities,
+    private val dispatchers: DispatcherProvider,
 ) {
+    // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
+    // Scope for the migrated coroutine search; cancelled in onDetach() alongside the RxJava
+    // disposable still used by downloadTei().
+    private val scope = CoroutineScope(SupervisorJob() + dispatchers.io())
+
     lateinit var view: BiometricsDuplicatesDialogView
     lateinit var possibleDuplicates: List<SimprintsIdentifiedItem>
     lateinit var biometricsSessionId: String
@@ -52,43 +67,56 @@ class BiometricsDuplicatesDialogPresenter(
         loadData()
     }
 
+    // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
+    // Resolves the Simprints candidate GUIDs into TEIs through the normal DHIS2 search, so the
+    // duplicates list is backed by real search results instead of a separate local lookup.
+    // Migrated from RxJava to the coroutine-based SearchTrackedEntities use case in 3.4.1,
+    // mirroring how SearchTEIViewModel now performs a search.
     private fun loadData() {
-        val program = d2.programModule().programs().uid(programUid).blockingGet()
+        scope.launch {
+            try {
+                val input =
+                    SearchTrackedEntitiesInput(
+                        selectedProgram = programUid,
+                        allowCache = false,
+                        excludeValues = null,
+                        hasStateFilters = false,
+                        isOnline = NetworkUtils.isOnline(view.getContext()),
+                        queryDataList =
+                            listOf(
+                                QueryData(
+                                    attributeId = biometricsAttributeUid,
+                                    values = possibleDuplicates.map { it.guid },
+                                    searchOperator = null,
+                                ),
+                            ),
+                    )
 
-        disposable.add(
-            Flowable.just(
-                searchRepositoryKt.searchTrackedEntities(
-                    SearchParametersModel(
-                        program,
-                        hashMapOf(biometricsAttributeUid to possibleDuplicates.map { it.guid })
-                    ),
-                    NetworkUtils.isOnline(view.getContext())
-                ).map { pagingData ->
-                    pagingData.map { item ->
-                        searchRepository.transform(
-                            item,
-                            program,
-                            NetworkUtils.isOnline(view.getContext()),
-                            FilterManager.getInstance().sortingItem,
-                        )
-                    }
-                }
-            ).doOnError { Timber.e(it) }
-                .subscribeOn(schedulerProvider.io())
-                .observeOn(schedulerProvider.ui())
-                .subscribe(
-                    { liveData ->
-                        view.setLiveData(liveData)
+                val results = searchTrackedEntities.invoke(input).getOrThrow()
+
+                view.setLiveData(
+                    results.map { pagingData ->
+                        pagingData.map { item ->
+                            searchRepositoryKt.mapTrackedEntitySearchItemResultToSearchTeiModel(
+                                item,
+                                FilterManager.getInstance().sortingItem,
+                            )
+                        }
                     },
-                    { Timber.e(it) })
-        )
+                )
+            } catch (e: Exception) {
+                Timber.e(e)
+            }
+        }
     }
 
     fun onDetach() {
         disposable.clear()
+        // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
+        scope.cancel()
     }
 
-    fun onTEIClick(teiUid: String, enrollmentUid: String, isOnline: Boolean) {
+    fun onTEIClick(teiUid: String, enrollmentUid: String?, isOnline: Boolean) {
         if (!identityConfirmed) {
             identityConfirmed = true
 
@@ -104,7 +132,7 @@ class BiometricsDuplicatesDialogPresenter(
 
     private fun sendBiometricsConfirmIdentity(
         teiUid: String,
-        enrollmentUid: String,
+        enrollmentUid: String?,
         isOnline: Boolean
     ) {
         val tei = d2.trackedEntityModule().trackedEntityInstances()
@@ -134,7 +162,7 @@ class BiometricsDuplicatesDialogPresenter(
         return guid
     }
 
-    private fun openDashboard(teiUid: String, enrollmentUid: String) {
+    private fun openDashboard(teiUid: String, enrollmentUid: String?) {
         view.openDashboard(
             teiUid,
             programUid,

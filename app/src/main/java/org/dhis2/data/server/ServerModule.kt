@@ -5,7 +5,9 @@ import android.content.ContextWrapper
 import dagger.Module
 import dagger.Provides
 import dhis2.org.analytics.charts.Charts
-import dhis2.org.analytics.charts.DhisAnalyticCharts
+import dhis2.org.analytics.charts.di.ChartsComponent
+import dhis2.org.analytics.charts.di.DaggerChartsComponent
+import dhis2.org.analytics.charts.domain.GetEnrollmentAnalyticsUseCase
 import okhttp3.Interceptor
 import org.dhis2.BuildConfig
 import org.dhis2.R
@@ -21,8 +23,6 @@ import org.dhis2.commons.resources.EventResourcesProvider
 import org.dhis2.commons.resources.MetadataIconProvider
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.schedulers.SchedulerProvider
-import org.dhis2.commons.viewmodel.DispatcherProvider
-import org.dhis2.data.service.SyncStatusController
 import org.dhis2.data.service.VersionRepository
 import org.dhis2.form.data.OptionsRepository
 import org.dhis2.form.data.RulesUtilsProvider
@@ -41,7 +41,6 @@ import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.D2Configuration
 import org.hisp.dhis.android.core.D2Manager
 import org.hisp.dhis.android.core.D2Manager.blockingInstantiateD2
-import org.hisp.dhis.android.core.arch.helpers.FileResizerHelper
 
 @Module
 class ServerModule {
@@ -84,7 +83,20 @@ class ServerModule {
 
     @Provides
     @PerServer
-    fun provideCharts(serverComponent: ServerComponent): Charts = DhisAnalyticCharts.Provider.get(serverComponent)
+    fun provideChartsComponent(serverComponent: ServerComponent): ChartsComponent =
+        DaggerChartsComponent
+            .builder()
+            .dependencies(serverComponent)
+            .build()
+
+    @Provides
+    @PerServer
+    fun provideCharts(chartsComponent: ChartsComponent): Charts = chartsComponent.charts()
+
+    @Provides
+    @PerServer
+    fun provideGetEnrollmentAnalyticsUseCase(chartsComponent: ChartsComponent): GetEnrollmentAnalyticsUseCase =
+        chartsComponent.getEnrollmentAnalyticsUseCase()
 
     @Provides
     @PerServer
@@ -105,7 +117,10 @@ class ServerModule {
 
     @Provides
     @PerServer
-    fun providesRepository(d2: D2): ServerSettingsRepository = ServerSettingsRepository(d2)
+    fun providesRepository(
+        d2: D2,
+        colorUtils: ColorUtils,
+    ): ServerSettingsRepository = ServerSettingsRepository(d2, colorUtils)
 
     @Provides
     @PerServer
@@ -123,11 +138,6 @@ class ServerModule {
             preferenceProvider,
             colorUtils,
         )
-
-    @Provides
-    @PerServer
-    fun providesSyncStatusController(dispatcherProvider: DispatcherProvider): SyncStatusController =
-        SyncStatusController(dispatcherProvider)
 
     @Provides
     @PerServer
@@ -191,7 +201,6 @@ class ServerModule {
                 .networkInterceptors(interceptors)
                 .writeTimeoutInSeconds(10 * 60)
                 .context(context)
-                .fileResizerDimension(FileResizerHelper.Dimension.MEDIUM)
                 .build()
         }
     }

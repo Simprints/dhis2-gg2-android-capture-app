@@ -60,7 +60,7 @@ data class DashboardEnrollmentModel(
             .filter { it.first.uid() != currentEnrollment.program() }
             .map { it.first }
 
-    // EyeSeeTea customizations
+    // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
     fun getBiometricValue(): String? {
         val biometricUid = getBiometricsAttributeUid()
 

@@ -2,12 +2,14 @@ package org.dhis2.mobile.login.main.data
 
 import androidx.core.net.toUri
 import coil3.PlatformContext
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import org.dhis2.mobile.commons.auth.OpenIdController
 import org.dhis2.mobile.commons.biometrics.BiometricActions
 import org.dhis2.mobile.commons.biometrics.CryptographicActions
 import org.dhis2.mobile.commons.coroutine.Dispatcher
+import org.dhis2.mobile.commons.error.DomainError
+import org.dhis2.mobile.commons.error.DomainErrorMapper
 import org.dhis2.mobile.commons.providers.BIOMETRIC_CREDENTIALS
 import org.dhis2.mobile.commons.providers.PreferenceProvider
 import org.dhis2.mobile.commons.providers.SECURE_PASS
@@ -15,17 +17,18 @@ import org.dhis2.mobile.commons.providers.SECURE_SERVER_URL
 import org.dhis2.mobile.commons.reporting.AnalyticActions
 import org.dhis2.mobile.commons.reporting.CrashReportController
 import org.dhis2.mobile.commons.resources.D2ErrorMessageProvider
+import org.dhis2.mobile.login.authentication.OpenIdController
+import org.dhis2.mobile.login.main.domain.model.OpenIdLoginConfiguration
 import org.dhis2.mobile.login.main.domain.model.ServerValidationResult
-import org.dhis2.mobile.login.main.domain.model.TwoFactorRequiredException
-import org.dhis2.mobile.login.main.domain.model.TwoFactorType
 import org.dhis2.mobile.login.resources.Res
+import org.dhis2.mobile.login.resources.error_device_not_registered
 import org.dhis2.mobile.login.resources.openid_invalid_auth_result
 import org.dhis2.mobile.login.resources.openid_process_cancelled
 import org.dhis2.mobile.login.resources.server_url_error
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.arch.helpers.Result
 import org.hisp.dhis.android.core.maintenance.D2Error
-import org.hisp.dhis.android.core.maintenance.D2ErrorCode
+import org.hisp.dhis.android.core.user.oauth2.OAuth2Config
 import org.hisp.dhis.android.core.user.openid.IntentWithRequestCode
 import org.hisp.dhis.android.core.user.openid.OpenIDConnectConfig
 import org.jetbrains.compose.resources.getString
@@ -51,6 +54,7 @@ class LoginRepositoryImpl(
     private val analyticActions: AnalyticActions,
     private val openIdController: OpenIdController,
     private val dispatcher: Dispatcher,
+    private val domainErrorMapper: DomainErrorMapper,
 ) : LoginRepository {
     override suspend fun validateServer(
         server: String,
@@ -59,26 +63,24 @@ class LoginRepositoryImpl(
         withContext(dispatcher.io) {
             when (val result = d2.serverModule().blockingCheckServerUrl(server)) {
                 is Result.Success -> {
-                    if (result.value.isOauthEnabled()) {
-                        ServerValidationResult.Oauth
-                    } else {
-                        val oidcProvider = result.value.oidcProviders.firstOrNull()
-                        val serverName =
-                            result.value.applicationTitle ?: try {
-                                server.substringAfter("://").substringBefore("/")
-                            } catch (_: Exception) {
-                                server
-                            }
-                        ServerValidationResult.Legacy(
-                            serverName = serverName,
-                            serverDescription = result.value.applicationDescription,
-                            countryFlag = result.value.countryFlag,
-                            allowRecovery = result.value.allowAccountRecovery,
-                            oidcIcon = oidcProvider?.icon,
-                            oidcLoginText = oidcProvider?.loginText,
-                            oidcUrl = oidcProvider?.url,
-                        )
-                    }
+                    val serverName =
+                        result.value.applicationTitle ?: try {
+                            server.substringAfter("://").substringBefore("/")
+                        } catch (_: Exception) {
+                            server
+                        }
+
+                    val oidcProvider = result.value.oidcProviders.firstOrNull()
+                    ServerValidationResult.Success(
+                        serverName = serverName.ifEmpty { "DHIS2" },
+                        serverDescription = result.value.applicationDescription,
+                        countryFlag = result.value.countryFlag,
+                        allowRecovery = result.value.allowAccountRecovery,
+                        oidcIcon = oidcProvider?.icon,
+                        oidcLoginText = oidcProvider?.loginText,
+                        oidcUrl = oidcProvider?.url,
+                        oAuthEnabled = result.value.isOauthEnabled(),
+                    )
                 }
 
                 is Result.Failure -> {
@@ -97,25 +99,19 @@ class LoginRepositoryImpl(
         username: String,
         password: String,
         isNetworkAvailable: Boolean,
-        twoFactorCode: String?,
     ) = withContext(dispatcher.io) {
         try {
-            d2.userModule().blockingLogIn(username, password, serverUrl, twoFactorCode)
+            d2.userModule().blockingLogIn(username, password, serverUrl, null)
             kotlin.Result.success(Unit)
         } catch (e: Exception) {
-            if (e is D2Error && isTwoFactorError(e.errorCode())) {
-                // EyeSeeTea customization - Detect 2FA errors
-                handleTwoFactorError(e, isNetworkAvailable)
-            } else {
-                kotlin.Result.failure(
-                    Exception(
-                        d2ErrorMessageProvider.getErrorMessage(
-                            e,
-                            isNetworkAvailable,
-                        ),
+            kotlin.Result.failure(
+                Exception(
+                    d2ErrorMessageProvider.getErrorMessage(
+                        e,
+                        isNetworkAvailable,
                     ),
-                )
-            }
+                ),
+            )
         }
     }
 
@@ -132,6 +128,51 @@ class LoginRepositoryImpl(
                 )
             }
         }
+
+    override suspend fun getDeviceEnrollmentUrl(serverUrl: String) =
+        withContext(dispatcher.io) {
+            try {
+                d2.userModule().oauth2Handler().blockingBuildEnrollmentUrl(serverUrl)
+            } catch (d2Error: D2Error) {
+                throw domainErrorMapper.mapToDomainError(d2Error)
+            }
+        }
+
+    override suspend fun enrollDevice(
+        iat: String,
+        serverURL: String,
+    ) = withContext(dispatcher.io) {
+        try {
+            d2.userModule().oauth2Handler().blockingHandleEnrollmentResponse(
+                serverUrl = serverURL,
+                iat = iat,
+            )
+
+            if (!d2.userModule().oauth2Handler().isDeviceRegistered()) {
+                throw DomainError.AuthenticationError(getString(Res.string.error_device_not_registered))
+            }
+
+            val config = OAuth2Config(serverUrl = serverURL)
+            // Return the authorization URL
+            d2.userModule().oauth2Handler().blockingLogIn(config)
+        } catch (d2Error: D2Error) {
+            throw domainErrorMapper.mapToDomainError(d2Error)
+        }
+    }
+
+    override suspend fun loginUserWithOAuth(
+        serverUrl: String,
+        code: String,
+    ) = withContext(dispatcher.io) {
+        try {
+            val user =
+                d2.userModule().oauth2Handler().blockingHandleLogInResponse(serverUrl, code)
+            kotlin.Result.success(user.username())
+        } catch (d2Error: D2Error) {
+            val mappedError = domainErrorMapper.mapToDomainError(d2Error)
+            kotlin.Result.failure(mappedError)
+        }
+    }
 
     override suspend fun getAvailableLoginUsernames(): List<String> =
         withContext(dispatcher.io) {
@@ -167,12 +208,16 @@ class LoginRepositoryImpl(
 
     override suspend fun displayTrackingMessage(): Boolean =
         withContext(dispatcher.io) {
-            d2
-                .dataStoreModule()
-                .localDataStore()
-                .value(DATA_STORE_ANALYTICS_PERMISSION_KEY)
-                .blockingGet()
-                ?.value() == null
+            try {
+                d2
+                    .dataStoreModule()
+                    .localDataStore()
+                    .value(DATA_STORE_ANALYTICS_PERMISSION_KEY)
+                    .blockingGet()
+                    ?.value() == null
+            } catch (_: Exception) {
+                false
+            }
         }
 
     private fun hasEnabledBiometricsPermission(): Boolean =
@@ -186,7 +231,9 @@ class LoginRepositoryImpl(
         serverUrl: String,
         username: String,
     ): Boolean =
-        withContext(dispatcher.io) { isImportedDatabase(serverUrl, username) or entryExists() }
+        withContext(dispatcher.io) {
+            isImportedDatabase(serverUrl, username) or entryExists()
+        }
 
     override suspend fun canLoginWithBiometrics(serverUrl: String): Boolean =
         withContext(dispatcher.io) {
@@ -271,7 +318,7 @@ class LoginRepositoryImpl(
             preferences.getBiometricCredentials()?.let { ciphertextWrapper ->
                 cryptographyManager
                     .getInitializedCipherForDecryption(ciphertextWrapper.initializationVector)
-                    ?.let { cipher ->
+                    .let { cipher ->
                         suspendCancellableCoroutine { continuation ->
                             authenticator.authenticate(cipher) { cipher ->
                                 val pass =
@@ -296,15 +343,7 @@ class LoginRepositoryImpl(
         }
     }
 
-    override suspend fun loginWithOpenId(
-        serverUrl: String,
-        isNetworkAvailable: Boolean,
-        clientId: String,
-        redirectUri: String,
-        discoveryUri: String?,
-        authorizationUri: String?,
-        tokenUrl: String?,
-    ): kotlin.Result<Unit> =
+    override suspend fun loginWithOpenId(openIdLoginConfiguration: OpenIdLoginConfiguration): kotlin.Result<Unit> =
         withContext(dispatcher.io) {
             suspendCancellableCoroutine { continuation ->
                 val intent =
@@ -313,60 +352,77 @@ class LoginRepositoryImpl(
                         .openIdHandler()
                         .blockingLogIn(
                             OpenIDConnectConfig(
-                                clientId = clientId,
-                                redirectUri = redirectUri.toUri(),
-                                discoveryUri = discoveryUri?.toUri(),
-                                authorizationUri = authorizationUri,
-                                tokenUrl = tokenUrl,
+                                clientId = openIdLoginConfiguration.clientId,
+                                redirectUri = openIdLoginConfiguration.redirectUri.toUri(),
+                                discoveryUri = openIdLoginConfiguration.discoveryUri?.toUri(),
+                                authorizationUri = openIdLoginConfiguration.authorizationUri,
+                                tokenUrl = openIdLoginConfiguration.tokenUrl,
+                                prompt = openIdLoginConfiguration.prompt,
                             ),
                         )
                 openIdController.handleIntent(intent) { resultIntent ->
-                    val result =
-                        when {
-                            resultIntent.isFailure -> {
-                                kotlin.Result.failure(
-                                    resultIntent.exceptionOrNull()
-                                        ?: Exception(getString(Res.string.openid_process_cancelled)),
-                                )
-                            }
-
-                            resultIntent.isSuccess and (resultIntent.getOrNull() !is IntentWithRequestCode) -> {
-                                kotlin.Result.failure(Exception(getString(Res.string.openid_invalid_auth_result)))
-                            }
-
-                            else -> {
-                                try {
-                                    val intent = resultIntent.getOrNull() as IntentWithRequestCode
-                                    d2
-                                        .userModule()
-                                        .openIdHandler()
-                                        .blockingHandleLogInResponse(
-                                            serverUrl = serverUrl,
-                                            intent = intent.intent,
-                                            requestCode = intent.requestCode,
-                                        )
-
-                                    kotlin.Result.success(Unit)
-                                } catch (e: Exception) {
-                                    kotlin.Result.failure(
-                                        Exception(
-                                            d2ErrorMessageProvider.getErrorMessage(
-                                                e,
-                                                isNetworkAvailable,
-                                            ),
-                                        ),
-                                    )
-                                }
-                            }
-                        }
-
-                    continuation.resume(value = result) { _, _, _ -> }
+                    manageIntentResult(resultIntent, openIdLoginConfiguration, continuation)
                 }
                 continuation.invokeOnCancellation {
                     kotlin.Result.failure<Unit>(Exception(""))
                 }
             }
         }
+
+    private suspend fun manageIntentResult(
+        resultIntent: kotlin.Result<Any>,
+        openIdLoginConfiguration: OpenIdLoginConfiguration,
+        continuation: CancellableContinuation<kotlin.Result<Unit>>,
+    ) {
+        withContext(dispatcher.io) {
+            val result =
+                when {
+                    resultIntent.isFailure -> {
+                        kotlin.Result.failure(
+                            resultIntent.exceptionOrNull()
+                                ?: Exception(getString(Res.string.openid_process_cancelled)),
+                        )
+                    }
+
+                    resultIntent.isSuccess and (resultIntent.getOrNull() !is IntentWithRequestCode) -> {
+                        kotlin.Result.failure(Exception(getString(Res.string.openid_invalid_auth_result)))
+                    }
+
+                    else -> {
+                        try {
+                            val intent =
+                                resultIntent.getOrNull() as IntentWithRequestCode
+
+                            d2
+                                .userModule()
+                                .openIdHandler()
+                                .blockingHandleLogInResponse(
+                                    serverUrl = openIdLoginConfiguration.serverUrl,
+                                    intent = intent.intent,
+                                    requestCode = intent.requestCode,
+                                )
+
+                            kotlin.Result.success(Unit)
+                        } catch (d2Error: D2Error) {
+                            kotlin.Result.failure(
+                                Exception(
+                                    d2ErrorMessageProvider.getErrorMessage(
+                                        d2Error,
+                                        openIdLoginConfiguration.isNetworkAvailable,
+                                    ),
+                                ),
+                            )
+                        } catch (_: Exception) {
+                            kotlin.Result.failure(
+                                resultIntent.exceptionOrNull()
+                                    ?: Exception(getString(Res.string.openid_process_cancelled)),
+                            )
+                        }
+                    }
+                }
+            continuation.resume(value = result) { _, _, _ -> }
+        }
+    }
 
     override suspend fun getUsername(): String =
         withContext(dispatcher.io) {
@@ -418,81 +474,4 @@ class LoginRepositoryImpl(
                 )
             }
         }
-
-    // EyeSeeTea customization -
-    private fun isTwoFactorError(errorCode: D2ErrorCode): Boolean {
-        return errorCode == D2ErrorCode.INCORRECT_TWO_FACTOR_CODE ||
-                errorCode == D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_TOTP ||
-                errorCode == D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_EMAIL ||
-                errorCode == D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_SMS ||
-                errorCode == D2ErrorCode.TWO_FACTOR_MANY_SEND_ATTEMPTS ||
-                errorCode == D2ErrorCode.EMAIL_TWO_FACTOR_CODE_SENT ||
-                errorCode == D2ErrorCode.SMS_TWO_FACTOR_CODE_SENT
-    }
-
-    private suspend fun handleTwoFactorError(
-        e: D2Error,
-        isNetworkAvailable: Boolean
-    ): kotlin.Result<Unit> {
-        val errorMessage = d2ErrorMessageProvider.getErrorMessage(e, isNetworkAvailable)
-
-        when (e.errorCode()) {
-            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE,
-            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_TOTP -> {
-                return kotlin.Result.failure(
-                    TwoFactorRequiredException(
-                        type = TwoFactorType.TOTP,
-                        errorMessage = errorMessage,
-                    )
-                )
-            }
-
-            D2ErrorCode.EMAIL_TWO_FACTOR_CODE_SENT -> {
-                return kotlin.Result.failure(
-                    TwoFactorRequiredException(
-                        TwoFactorType.EMAIL,
-                        errorMessage = errorMessage,
-                    )
-                )
-            }
-
-            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_EMAIL -> {
-                return kotlin.Result.failure(
-                    TwoFactorRequiredException(
-                        type = TwoFactorType.EMAIL,
-                        errorMessage = errorMessage,
-                    )
-                )
-            }
-
-            D2ErrorCode.SMS_TWO_FACTOR_CODE_SENT -> {
-                return kotlin.Result.failure(
-                    TwoFactorRequiredException(
-                        TwoFactorType.SMS,
-                        errorMessage = errorMessage,
-                    )
-                )
-            }
-
-            D2ErrorCode.INCORRECT_TWO_FACTOR_CODE_SMS -> {
-                return kotlin.Result.failure(
-                    TwoFactorRequiredException(
-                        type = TwoFactorType.SMS,
-                        errorMessage = errorMessage,
-                    )
-                )
-            }
-
-            else -> {
-                return kotlin.Result.failure(
-                    Exception(
-                        d2ErrorMessageProvider.getErrorMessage(
-                            e,
-                            isNetworkAvailable,
-                        ),
-                    ),
-                )
-            }
-        }
-    }
 }

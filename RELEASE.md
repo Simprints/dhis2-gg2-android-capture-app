@@ -1,75 +1,101 @@
-# Release notes - Android App for DHIS2 - 3.3.1
+# Release notes - Android App for DHIS2 - 3.4.1
 
 ### Bug
 
-[ANDROAPP-6870](https://dhis2.atlassian.net/browse/ANDROAPP-6870) Let the rule-engine apply the logic for useCodeForOptionSet in RuleVariable
+[ANDROAPP-6516](https://dhis2.atlassian.net/browse/ANDROAPP-6516) Values in events and program stages not being updated when syncing with server from them
 
-[ANDROAPP-6975](https://dhis2.atlassian.net/browse/ANDROAPP-6975) Crash when rotating the device with the save dialog open
+[ANDROAPP-6611](https://dhis2.atlassian.net/browse/ANDROAPP-6611) Synchronization does not automatically start on re-connection
 
-[ANDROAPP-7211](https://dhis2.atlassian.net/browse/ANDROAPP-7211) NoSuchElementException: Collection contains no element matching the predicate.
+[ANDROAPP-7238](https://dhis2.atlassian.net/browse/ANDROAPP-7238) Analytics configured with data type int in web show 1 decimal in app
 
-[ANDROAPP-7235](https://dhis2.atlassian.net/browse/ANDROAPP-7235) Program rules not triggered when moving between fields manually
+[ANDROAPP-7287](https://dhis2.atlassian.net/browse/ANDROAPP-7287) Flicker when no teis in tei list
 
-[ANDROAPP-7260](https://dhis2.atlassian.net/browse/ANDROAPP-7260) Incorrect behavior when creating a new event in timeline view
+[ANDROAPP-7352](https://dhis2.atlassian.net/browse/ANDROAPP-7352) Delete TEI/Delete Enrollment is not showing in the menu with the ALL authority
 
-[ANDROAPP-7261](https://dhis2.atlassian.net/browse/ANDROAPP-7261) Keyboard blocks the last field when entering data \(screen doesn’t scroll\)
+[ANDROAPP-7364](https://dhis2.atlassian.net/browse/ANDROAPP-7364) Server URL not well formed error
 
-[ANDROAPP-7269](https://dhis2.atlassian.net/browse/ANDROAPP-7269) Crash on search
+[ANDROAPP-7398](https://dhis2.atlassian.net/browse/ANDROAPP-7398) Wrong Snackbar color
 
-[ANDROAPP-7293](https://dhis2.atlassian.net/browse/ANDROAPP-7293) Bottom sheet landscape behavior
+[ANDROAPP-7406](https://dhis2.atlassian.net/browse/ANDROAPP-7406) Cards are not always displayed in map view
 
-[ANDROAPP-7345](https://dhis2.atlassian.net/browse/ANDROAPP-7345) Changes to enrollment date not respected by program rules \(version 3.2.1.2\)
+[ANDROAPP-7412](https://dhis2.atlassian.net/browse/ANDROAPP-7412) Offline Biometric Login is not accessible
 
-[ANDROAPP-7368](https://dhis2.atlassian.net/browse/ANDROAPP-7368) crash: when trying to update fields in Tracker
+[ANDROAPP-7431](https://dhis2.atlassian.net/browse/ANDROAPP-7431) username does not trim trailing white spaces
 
-[ANDROAPP-7394](https://dhis2.atlassian.net/browse/ANDROAPP-7394) Login blocked after logout “The user is already logged in” error
+[ANDROAPP-7439](https://dhis2.atlassian.net/browse/ANDROAPP-7439) Custom label \(at least enrollment\) is not displayed when editing a TE
 
-[ANDROAPP-7400](https://dhis2.atlassian.net/browse/ANDROAPP-7400) Crash - changing org unit and dates
+[ANDROAPP-7446](https://dhis2.atlassian.net/browse/ANDROAPP-7446) Incorrect flow to create TEI: Display front page list and Allow user to create a TEI without searching
 
-[ANDROAPP-7402](https://dhis2.atlassian.net/browse/ANDROAPP-7402) Bottom sheet org unit not displaying buttons
+[ANDROAPP-7458](https://dhis2.atlassian.net/browse/ANDROAPP-7458) Cannot select lower options in large option sets with checkbox or radio button configuration
 
-[ANDROAPP-7403](https://dhis2.atlassian.net/browse/ANDROAPP-7403) Home cards lose proper layout
+[ANDROAPP-7499](https://dhis2.atlassian.net/browse/ANDROAPP-7499) New Network Status Provider does not handle VPNs and local connections
 
-[ANDROAPP-7411](https://dhis2.atlassian.net/browse/ANDROAPP-7411) Android sync by working lists: After updating predefined list views settings, changes aren't reflected in android app after syncing
+[ANDROAPP-7520](https://dhis2.atlassian.net/browse/ANDROAPP-7520) SSO: Logout does not end IdP session
 
-[ANDROAPP-7415](https://dhis2.atlassian.net/browse/ANDROAPP-7415) Android: WORKING LIST incorrect result in app
+[ANDROAPP-7523](https://dhis2.atlassian.net/browse/ANDROAPP-7523) Cursor moves to the end when updating value
 
-[ANDROAPP-7419](https://dhis2.atlassian.net/browse/ANDROAPP-7419) Server selection title is missing
+[ANDROAPP-7527](https://dhis2.atlassian.net/browse/ANDROAPP-7527) NullPointerException: The callable returned a null value
 
-[ANDROAPP-7421](https://dhis2.atlassian.net/browse/ANDROAPP-7421) Data set table not opening after clicking next for default category combo
+[ANDROAPP-7528](https://dhis2.atlassian.net/browse/ANDROAPP-7528) ApplicationNotResponding: ANR
 
-[ANDROAPP-7425](https://dhis2.atlassian.net/browse/ANDROAPP-7425) NullPointerException: ProgramFragment
+[ANDROAPP-7531](https://dhis2.atlassian.net/browse/ANDROAPP-7531) Program rule: not triggered unless selection is made in option set
 
-[ANDROAPP-7428](https://dhis2.atlassian.net/browse/ANDROAPP-7428) LMIS program is using completed enrollment
+[ANDROAPP-7532](https://dhis2.atlassian.net/browse/ANDROAPP-7532) \[ANR\] In TeiDashboard with displayAnalytics\(\)
 
-[ANDROAPP-7442](https://dhis2.atlassian.net/browse/ANDROAPP-7442) Program rules not triggering for completed enrollments
+[ANDROAPP-7533](https://dhis2.atlassian.net/browse/ANDROAPP-7533) Working list results fluctuating and loading inconsistently
 
-### Task
+[ANDROAPP-7541](https://dhis2.atlassian.net/browse/ANDROAPP-7541) AppTheme color not changing text colors
 
-[ANDROAPP-7286](https://dhis2.atlassian.net/browse/ANDROAPP-7286) Replace deprecated categoryComboUid usages with categoryCombo in Program and DataElement
+[ANDROAPP-7544](https://dhis2.atlassian.net/browse/ANDROAPP-7544) \[Mobile-UI\] When the DateTime input has focus a small section of the supporting Text background color is shown
 
-[ANDROAPP-7288](https://dhis2.atlassian.net/browse/ANDROAPP-7288) Implement UseCase interface
+[ANDROAPP-7546](https://dhis2.atlassian.net/browse/ANDROAPP-7546) Error when assigning more than one option to multi-select field in the Android capture app
 
-[ANDROAPP-7318](https://dhis2.atlassian.net/browse/ANDROAPP-7318) Create AGENTS.md file
+[ANDROAPP-7564](https://dhis2.atlassian.net/browse/ANDROAPP-7564) Description of assigned \(disabled\) data elements are not shown in the android capture
 
-[ANDROAPP-7349](https://dhis2.atlassian.net/browse/ANDROAPP-7349) Sonarcloud - Use full commit SHA hash for this dependency.
+[ANDROAPP-7565](https://dhis2.atlassian.net/browse/ANDROAPP-7565) Crash - toggle between orientation in events
 
-[ANDROAPP-7373](https://dhis2.atlassian.net/browse/ANDROAPP-7373) LogoutUser use case improvements
+[ANDROAPP-7566](https://dhis2.atlassian.net/browse/ANDROAPP-7566) Numeric value type in search screen does not allow decimals
 
-[ANDROAPP-7384](https://dhis2.atlassian.net/browse/ANDROAPP-7384) Update transifex tracker configuration
+[ANDROAPP-7567](https://dhis2.atlassian.net/browse/ANDROAPP-7567) Unsupported fields are visible in search screen
 
-[ANDROAPP-7386](https://dhis2.atlassian.net/browse/ANDROAPP-7386) QA: Remove duplicated UI modules
+[ANDROAPP-7568](https://dhis2.atlassian.net/browse/ANDROAPP-7568) Polygons are not correctly stored in the device
 
-[ANDROAPP-7388](https://dhis2.atlassian.net/browse/ANDROAPP-7388) Create sync module
+[ANDROAPP-7572](https://dhis2.atlassian.net/browse/ANDROAPP-7572) New events use enrollment OU instead of ownership OU after TEI transfer
 
-[ANDROAPP-7395](https://dhis2.atlassian.net/browse/ANDROAPP-7395) Review settings repository data loading for log out request
+[ANDROAPP-7574](https://dhis2.atlassian.net/browse/ANDROAPP-7574) Crash whilst sync \(could not replicate\)
 
-[ANDROAPP-7396](https://dhis2.atlassian.net/browse/ANDROAPP-7396) Remove and update usage to design systems' deprecated methods
+[ANDROAPP-7582](https://dhis2.atlassian.net/browse/ANDROAPP-7582) Unable to close bottomsheet in very long org unit list
 
-[ANDROAPP-7424](https://dhis2.atlassian.net/browse/ANDROAPP-7424) Gradle warnings: Remove RX binding dependency and zxing dependency
+[ANDROAPP-7588](https://dhis2.atlassian.net/browse/ANDROAPP-7588) Sync message not consistent when offline
 
-[ANDROAPP-7426](https://dhis2.atlassian.net/browse/ANDROAPP-7426) Upload proguard mapping on Sentry
+[ANDROAPP-7590](https://dhis2.atlassian.net/browse/ANDROAPP-7590) Sync error due to program rules the assign value of calculated value
 
-[ANDROAPP-7440](https://dhis2.atlassian.net/browse/ANDROAPP-7440) Update Expression parser to 1.2.2
+[ANDROAPP-7601](https://dhis2.atlassian.net/browse/ANDROAPP-7601) Change orientation: Main content area goes blank/white
 
-[ANDROAPP-7441](https://dhis2.atlassian.net/browse/ANDROAPP-7441) Remove username from Sentry reports
+[ANDROAPP-7603](https://dhis2.atlassian.net/browse/ANDROAPP-7603) Allow screenshots and screen sharing in Training APK
+
+[ANDROAPP-7613](https://dhis2.atlassian.net/browse/ANDROAPP-7613) IllegalArgumentException: Can't represent a width of 0 and height of 276000 in Constraints
+
+[ANDROAPP-7614](https://dhis2.atlassian.net/browse/ANDROAPP-7614) IllegalStateException: No database is currently activated.
+
+[ANDROAPP-7619](https://dhis2.atlassian.net/browse/ANDROAPP-7619) \[ANR\] Home filters
+
+[ANDROAPP-7632](https://dhis2.atlassian.net/browse/ANDROAPP-7632) Conscrypt crashing for API 37
+
+[ANDROAPP-7635](https://dhis2.atlassian.net/browse/ANDROAPP-7635) Cannot access TEI as it is marked incorrectly as online
+
+[ANDROAPP-7637](https://dhis2.atlassian.net/browse/ANDROAPP-7637) Programs tab appears when analytics is not configured
+
+[ANDROAPP-7646](https://dhis2.atlassian.net/browse/ANDROAPP-7646) Local search results is not returned if remote request fails
+
+[ANDROAPP-7647](https://dhis2.atlassian.net/browse/ANDROAPP-7647) Past results are not cleared when a new search is made
+
+[ANDROAPP-7658](https://dhis2.atlassian.net/browse/ANDROAPP-7658) Program Rule Errors do not prevent syncing of data
+
+[ANDROAPP-7661](https://dhis2.atlassian.net/browse/ANDROAPP-7661) Race condition to sync images using granular sync
+
+[ANDROAPP-7668](https://dhis2.atlassian.net/browse/ANDROAPP-7668) Images/files \(FileResource\) sometimes not downloaded during granular sync — subsequent edit uploads an empty image Data Element overwriting the image in server
+
+[ANDROAPP-7674](https://dhis2.atlassian.net/browse/ANDROAPP-7674) Crash opening map in tablet from teidashboard
+
+[ANDROAPP-7694](https://dhis2.atlassian.net/browse/ANDROAPP-7694) App crash on logout and \(occasionally\) delete account

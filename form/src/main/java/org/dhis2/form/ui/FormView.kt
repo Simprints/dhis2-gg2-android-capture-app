@@ -13,8 +13,8 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -48,6 +48,7 @@ import org.dhis2.form.data.toMessage
 import org.dhis2.form.di.Injector
 import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.FormRepositoryRecords
+import org.dhis2.form.model.FormSection
 import org.dhis2.form.model.InfoUiModel
 import org.dhis2.form.model.RowAction
 import org.dhis2.form.model.UiRenderType
@@ -189,6 +190,15 @@ class FormView : Fragment() {
         val contextWrapper = ContextThemeWrapper(context, R.style.searchFormInputText)
         formSectionMapper = FormSectionMapper()
 
+        // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
+        // Base behavior: FormViewModel maps FieldUiModel to sections internally, so the raw
+        // fields are no longer visible here.
+        // Simprints behavior: the field hooks have to run on the unmapped fields (to swap the
+        // biometrics attribute for its custom component and apply mode/age rules), so they are
+        // handed to the ViewModel, which applies them right before mapping.
+        viewModel.onFieldsLoadingListener = onFieldsLoadingListener
+        viewModel.onFieldsLoadedListener = onFieldsLoadedListener
+
         FormFileProvider.init(contextWrapper.applicationContext)
 
         return ComposeView(requireContext()).apply {
@@ -196,16 +206,7 @@ class FormView : Fragment() {
                 ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
             )
             setContent {
-                val items by viewModel.items.observeAsState()
-
-                val finalItems = onFieldsLoadingListener?.invoke(items ?: listOf()) ?:items
-                onFieldsLoadedListener?.invoke(finalItems ?: listOf())
-
-                val sections =
-                    finalItems?.let {
-                        formSectionMapper.mapFromFieldUiModelList(it)
-                    } ?: emptyList()
-
+                val items by viewModel.items.collectAsState(emptyList())
                 var resultDialogData: FormViewModel.FormActions.ShowResultDialog? by remember {
                     mutableStateOf(null)
                 }
@@ -223,12 +224,28 @@ class FormView : Fragment() {
                 }
 
                 Form(
-                    sections = sections,
+                    sections = items,
                     intentHandler = ::intentHandler,
                     uiEventHandler = ::uiEventHandler,
-                    resources = Injector.provideResourcesManager(context),
                 )
 
+                // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
+                // LaunchedEffect(items) { render(items) } only re-runs when `items` changes by
+                // structural equality, so a `viewModel.items` emission that Compose considers
+                // equal to the previous one never reaches render() / onFieldItemsRendered.
+                // Simprints' pendingSave flow (registerLast -> onFieldItemsRendered ->
+                // formView.onSaveClick()) relies on render() firing on every emission, the way
+                // the pre-Compose LiveData.observe() used to. collect on Unit restores that.
+                // Verified empirically: without this, the biometric value updates correctly
+                // (FormView.submitIntent bypasses the callback issue) but onFieldItemsRendered
+                // never fires for that emission, so the TEI never saves/navigates.
+                // TODO: revisit — collecting the raw flow here bypasses Compose's recomposition
+                // skipping for every consumer of onFieldItemsRendered, not just Simprints' case.
+                // A narrower fix (e.g. having EnrollmentPresenterImpl react to onFieldsLoaded,
+                // which already fires per-emission) would avoid touching this Oslo file at all.
+                LaunchedEffect(Unit) {
+                    viewModel.items.collect { render(it) }
+                }
                 resultDialogData?.let {
                     DataEntryBottomSheet(
                         model = it.model,
@@ -274,12 +291,6 @@ class FormView : Fragment() {
             onItemChangeListener?.let { it(rowAction) }
         }
 
-        viewModel.items.observe(
-            viewLifecycleOwner,
-        ) { items ->
-            render(items)
-        }
-
         viewModel.loading.observe(
             viewLifecycleOwner,
         ) { loading ->
@@ -315,14 +326,6 @@ class FormView : Fragment() {
         ) { percentage ->
             completionListener?.invoke(percentage)
         }
-
-        viewModel.calculationLoop.observe(
-            viewLifecycleOwner,
-        ) { displayLoopWarning ->
-            if (displayLoopWarning) {
-                showLoopWarning()
-            }
-        }
     }
 
     private fun showInfoDialog(infoUiModel: InfoUiModel) {
@@ -335,15 +338,6 @@ class FormView : Fragment() {
             Constants.DESCRIPTION_DIALOG,
             null,
         ).show()
-    }
-
-    private fun showLoopWarning() {
-        MaterialAlertDialogBuilder(requireContext(), R.style.DhisMaterialDialog)
-            .setTitle(getString(R.string.program_rules_loop_warning_title))
-            .setMessage(getString(R.string.program_rules_loop_warning_message))
-            .setPositiveButton(R.string.action_accept) { _, _ -> }
-            .setCancelable(false)
-            .show()
     }
 
     private fun uiEventHandler(uiEvent: RecyclerViewUiEvents) {
@@ -472,10 +466,9 @@ class FormView : Fragment() {
         }
     }
 
-    private fun render(items: List<FieldUiModel>) {
+    private fun render(items: List<FormSection>) {
         viewModel.calculateCompletedFields()
         viewModel.updateConfigurationErrors()
-        viewModel.displayLoopWarningIfNeeded()
         viewModel.onItemsRendered()
         onFieldItemsRendered?.invoke(items.isEmpty())
     }
@@ -601,6 +594,18 @@ class FormView : Fragment() {
 
     fun onSaveClick() {
         viewModel.saveDataEntry()
+    }
+
+    // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
+    // Lets a fork submit a FormIntent directly against the ViewModel, bypassing
+    // FieldUiModel.Callback. That callback is only (re)attached when Form() renders a field
+    // (Form.kt: fieldUiModel.setCallback(callback)), and since onFieldsLoadingListener /
+    // onFieldsLoadedListener now run inside FormViewModel.items' map{} instead of inside this
+    // composable, a fork-held FieldUiModel reference (e.g. EnrollmentPresenterImpl.biometricsUiModel)
+    // can outlive the callback assignment race and end up with callback == null, silently
+    // swallowing onSave()/onTextChange() calls. See upgrade-3.4-notes.md for the full trace.
+    fun submitIntent(intent: FormIntent) {
+        viewModel.submitIntent(intent)
     }
 
     fun reload() {

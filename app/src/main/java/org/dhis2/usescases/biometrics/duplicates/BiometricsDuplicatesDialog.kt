@@ -53,7 +53,7 @@ import javax.inject.Inject
 class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogView {
 
     private var onEnrollNewListener: ((sessionId: String) -> Unit)? = null
-    private var onOpenTeiDashboardListener: ((String, String, String) -> Unit)? = null
+    private var onOpenTeiDashboardListener: ((String, String, String?) -> Unit)? = null
     private var onEnrollWithoutBiometricsListener: (() -> Unit)? = null
     private lateinit var binding: DialogBiometricsDuplicatesBinding
     private var lastSelection: LastSelection? = null
@@ -117,9 +117,9 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
         this.adapter =
             BiometricsDuplicatesDialogAdapter(teiCardMapper, ColorUtils()) { searchTeiModel ->
                 presenter.onTEIClick(
-                    searchTeiModel.tei.uid(),
-                    searchTeiModel.selectedEnrollment.uid(),
-                    searchTeiModel.isOnline
+                    searchTeiModel.tei.uid,
+                    searchTeiModel.selectedEnrollment?.uid,
+                    searchTeiModel.tei.isOnline
                 )
             }
 
@@ -162,7 +162,7 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
         }
     }
 
-    override fun openDashboard(teiUid: String, programUid: String, enrollmentUid: String) {
+    override fun openDashboard(teiUid: String, programUid: String, enrollmentUid: String?) {
         onOpenTeiDashboardListener?.invoke(teiUid, programUid, enrollmentUid)
     }
 
@@ -216,7 +216,7 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
         sessionId: String,
         guid: String,
         teiUid: String,
-        enrollmentUid: String,
+        enrollmentUid: String?,
         isOnline: Boolean
     ) {
         lastSelection = LastSelection(teiUid, enrollmentUid, isOnline)
@@ -239,7 +239,7 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
         super.onActivityResult(requestCode, resultCode, data)
     }
 
-    fun setOnOpenTeiDashboardListener(onOpenTeiDashboardListener: (teiUid: String, programUid: String, enrollmentUid: String) -> Unit) {
+    fun setOnOpenTeiDashboardListener(onOpenTeiDashboardListener: (teiUid: String, programUid: String, enrollmentUid: String?) -> Unit) {
         this.onOpenTeiDashboardListener = onOpenTeiDashboardListener
     }
 

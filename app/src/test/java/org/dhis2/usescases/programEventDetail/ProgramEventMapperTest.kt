@@ -7,6 +7,7 @@ import org.dhis2.mobile.commons.model.MetadataIconData
 import org.hisp.dhis.android.core.D2
 import org.hisp.dhis.android.core.category.CategoryOptionCombo
 import org.hisp.dhis.android.core.common.ObjectStyle
+import org.hisp.dhis.android.core.common.ObjectWithUid
 import org.hisp.dhis.android.core.common.State
 import org.hisp.dhis.android.core.event.Event
 import org.hisp.dhis.android.core.event.EventStatus
@@ -49,7 +50,7 @@ class ProgramEventMapperTest {
         val result = mapper.eventToProgramEvent(event)
 
         assert(!result.isExpired)
-        assert(event.uid() == result.uid())
+        assert(event.uid() == result.uid)
         assert(result.eventState == State.TO_UPDATE)
     }
 
@@ -64,7 +65,7 @@ class ProgramEventMapperTest {
         val result = mapper.eventToProgramEvent(event)
 
         assert(!result.isExpired)
-        assert(event.uid() == result.uid())
+        assert(event.uid() == result.uid)
         assert(result.eventState == State.SYNCED)
     }
 
@@ -226,6 +227,8 @@ class ProgramEventMapperTest {
             .uid("programUid")
             .completeEventsExpiryDays(0)
             .expiryDays(0)
+            .categoryCombo(ObjectWithUid.create("categoryComboUid"))
+            .enrollmentCategoryCombo(ObjectWithUid.create("categoryComboUid"))
             .build()
 
     private fun dummyCategoryOptionCombo() =

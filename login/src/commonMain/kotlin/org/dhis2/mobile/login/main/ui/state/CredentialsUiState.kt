@@ -1,7 +1,6 @@
 package org.dhis2.mobile.login.main.ui.state
 
 import kotlinx.serialization.Serializable
-import org.dhis2.mobile.login.main.domain.model.TwoFactorState
 
 data class CredentialsUiState(
     val serverInfo: ServerInfo,
@@ -15,10 +14,7 @@ data class CredentialsUiState(
     val displayBiometricsDialog: Boolean,
     val hasOtherAccounts: Boolean,
     val isSessionLocked: Boolean,
-    // EyeSeeTea customization - Two Factor Authentication
-    val twoFactorState: TwoFactorState? = null,
-    val twoFactorCode: String = "",
-    val infoMessage: String?,
+    val oAuthEnable: Boolean,
 ) {
     fun username() = serverInfo.username ?: credentialsInfo.username
 }
@@ -42,6 +38,7 @@ sealed class OidcInfo(
     val buttonText: String?,
     val oidcClientId: String,
     val oidcRedirectUri: String,
+    val userPrompt: String?,
 ) {
     @Serializable
     data class Discovery(
@@ -50,7 +47,14 @@ sealed class OidcInfo(
         val clientId: String,
         val redirectUri: String,
         val discoveryUri: String,
-    ) : OidcInfo(server, loginButtonText, clientId, redirectUri)
+        val prompt: String?,
+    ) : OidcInfo(
+            serverUrl = server,
+            buttonText = loginButtonText,
+            oidcClientId = clientId,
+            oidcRedirectUri = redirectUri,
+            userPrompt = prompt,
+        )
 
     @Serializable
     data class Token(
@@ -60,7 +64,14 @@ sealed class OidcInfo(
         val redirectUri: String,
         val authorizationUrl: String,
         val tokenUrl: String,
-    ) : OidcInfo(server, loginLabel, clientId, redirectUri)
+        val prompt: String?,
+    ) : OidcInfo(
+            serverUrl = server,
+            buttonText = loginLabel,
+            oidcClientId = clientId,
+            oidcRedirectUri = redirectUri,
+            userPrompt = prompt,
+        )
 
     fun discoveryUri() =
         when (this) {

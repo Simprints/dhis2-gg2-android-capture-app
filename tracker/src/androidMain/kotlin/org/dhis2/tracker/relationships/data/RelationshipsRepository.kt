@@ -1,6 +1,6 @@
 package org.dhis2.tracker.relationships.data
 
-import org.dhis2.commons.bindings.userFriendlyValue
+import org.dhis2.bindings.userFriendlyValue
 import org.dhis2.commons.date.toUi
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.mobile.tracker.R

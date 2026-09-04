@@ -8,7 +8,11 @@ import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.dhis2.App
 import org.dhis2.R
 import org.dhis2.commons.Constants.ENROLLMENT_UID
@@ -29,6 +33,7 @@ import org.dhis2.form.data.GeometryController
 import org.dhis2.form.data.GeometryParserImpl
 import org.dhis2.form.model.EventMode
 import org.dhis2.form.ui.FormView
+import org.dhis2.form.ui.intent.FormIntent
 import org.dhis2.maps.views.MapSelectorActivity
 import org.dhis2.usescases.biometrics.duplicates.BiometricsDuplicatesDialog
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
@@ -63,6 +68,14 @@ class EnrollmentActivity :
 
     var pendingSave: Boolean = false
 
+    // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
+    // registerLast triggers a burst of near-simultaneous FormIntents (biometric value save +
+    // this auto-save), which can race inside FormViewModel's fieldListChannel (capacity=1,
+    // DROP_OLDEST) and silently drop the OnFinish signal, hanging the save. Debouncing the
+    // auto-save trigger gives that channel time to drain between the two saves, the same way
+    // it naturally does when a user types with pauses. See upgrade-3.4-notes.md.
+    private var pendingSaveJob: Job? = null
+
     companion object {
         const val ENROLLMENT_UID_EXTRA = "ENROLLMENT_UID_EXTRA"
         const val PROGRAM_UID_EXTRA = "PROGRAM_UID_EXTRA"
@@ -71,6 +84,9 @@ class EnrollmentActivity :
         const val RQ_ENROLLMENT_GEOMETRY = 1023
         const val RQ_INCIDENT_GEOMETRY = 1024
         const val RQ_EVENT = 1025
+
+        // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
+        private const val PENDING_SAVE_DEBOUNCE_MS = 500L
 
         fun getIntent(
             context: Context,
@@ -143,10 +159,15 @@ class EnrollmentActivity :
                 dateEditionWarningHandler = dateEditionWarningHandler,
                 onFieldsLoading = { fields ->  presenter.onFieldsLoading(fields) },
                 onFieldsLoaded = { fields -> presenter.onFieldsLoaded(fields) },
+                // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
                 onFieldItemsRendered = {
                     if (pendingSave){
-                        pendingSave = false
-                        formView.onSaveClick()
+                        pendingSaveJob?.cancel()
+                        pendingSaveJob = lifecycleScope.launch {
+                            delay(PENDING_SAVE_DEBOUNCE_MS)
+                            pendingSave = false
+                            formView.onSaveClick()
+                        }
                     }
                 }
             ) {
@@ -173,6 +194,34 @@ class EnrollmentActivity :
         resultCode: Int,
         data: Intent?,
     ) {
+        // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
+        // BiometricsClient.handleRegisterResponse() already interprets non-RESULT_OK codes
+        // (e.g. SIMPRINTS_ENROLMENT_LAST_BIOMETRICS_FAILED) into RegisterLastFailure/Failure, so
+        // these two request codes must run regardless of resultCode. Gating them behind
+        // resultCode == RESULT_OK silently dropped Simprints failure responses, leaving
+        // pendingSave stuck true with no way to resolve it.
+        when (requestCode) {
+            BIOMETRICS_ENROLL_REQUEST -> {
+                if (data != null) {
+                    val result = BiometricsClientFactory.get(this).handleRegisterResponse(
+                        resultCode, data
+                    )
+
+                    presenter.handleRegisterResponse(result)
+                }
+            }
+
+            BIOMETRICS_ENROLL_LAST_REQUEST -> {
+                if (data != null) {
+                    val result = BiometricsClientFactory.get(this).handleRegisterResponse(
+                        resultCode, data
+                    )
+
+                    presenter.handleRegisterResponse(result)
+                }
+            }
+        }
+
         if (resultCode == Activity.RESULT_OK) {
             when (requestCode) {
                 RQ_INCIDENT_GEOMETRY, RQ_ENROLLMENT_GEOMETRY -> {
@@ -190,26 +239,6 @@ class EnrollmentActivity :
                 }
 
                 RQ_EVENT -> presenter.getEnrollment()?.uid()?.let { openDashboard(it) }
-
-                BIOMETRICS_ENROLL_REQUEST -> {
-                    if (data != null) {
-                        val result = BiometricsClientFactory.get(this).handleRegisterResponse(
-                            resultCode, data
-                        )
-
-                        presenter.handleRegisterResponse(result)
-                    }
-                }
-
-                BIOMETRICS_ENROLL_LAST_REQUEST -> {
-                    if (data != null) {
-                        val result = BiometricsClientFactory.get(this).handleRegisterResponse(
-                            resultCode, data
-                        )
-
-                        presenter.handleRegisterResponse(result)
-                    }
-                }
             }
         }
         super.onActivityResult(requestCode, resultCode, data)
@@ -387,6 +416,10 @@ class EnrollmentActivity :
         formView.onSaveClick()
     }
 
+    override fun submitFormIntent(intent: FormIntent) {
+        formView.submitIntent(intent)
+    }
+
     override fun showDateEditionWarning(message: String?) {
         val dialog =
             MaterialAlertDialogBuilder(this, R.style.DhisMaterialDialog)
@@ -434,7 +467,7 @@ class EnrollmentActivity :
             enrollNewVisible
         )
 
-        dialog.setOnOpenTeiDashboardListener { teiUid: String, programUid: String, enrollmentUid: String ->
+        dialog.setOnOpenTeiDashboardListener { teiUid: String, programUid: String, enrollmentUid: String? ->
             presenter.deleteAllSavedData()
             finish()
             startActivity(
@@ -496,7 +529,10 @@ class EnrollmentActivity :
     }
 
     override fun showUnableSaveBiometricsMessage() {
-        TODO("Not yet implemented")
+        Toast.makeText(
+            context, getString(R.string.unable_save_biometrics),
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     override fun showBiometricsAgeGroupNotSupported() {

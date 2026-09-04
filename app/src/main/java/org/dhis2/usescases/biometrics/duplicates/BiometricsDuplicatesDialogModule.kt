@@ -9,7 +9,8 @@ import org.dhis2.commons.date.DateLabelProvider
 import org.dhis2.commons.date.DateUtils
 import org.dhis2.commons.di.dagger.PerActivity
 import org.dhis2.commons.filters.data.FilterPresenter
-import org.dhis2.commons.network.NetworkUtils
+import org.dhis2.mobile.commons.network.NetworkStatusProvider
+import org.dhis2.mobile.commons.network.NetworkStatusProviderImpl
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.prefs.PreferenceProviderImpl
 import org.dhis2.commons.resources.ColorUtils
@@ -38,6 +39,9 @@ import org.dhis2.mobile.commons.customintents.CustomIntentRepository
 import org.dhis2.mobile.commons.customintents.CustomIntentRepositoryImpl
 import org.dhis2.mobile.commons.reporting.CrashReportController
 import org.dhis2.tracker.data.ProfilePictureProvider
+import org.dhis2.tracker.search.data.SearchTrackedEntityRepository
+import org.dhis2.tracker.search.data.SearchTrackedEntityRepositoryImpl
+import org.dhis2.tracker.search.domain.SearchTrackedEntities
 import org.dhis2.ui.ThemeManager
 import org.dhis2.usescases.events.EventInfoProvider
 import org.dhis2.usescases.searchTrackEntity.SearchRepository
@@ -63,12 +67,23 @@ class BiometricsDuplicatesDialogModule(
     fun searchSortingValueSetter(
         context: Context,
         d2: D2,
-        enrollmentUiDataHelper: EnrollmentUiDataHelper
+        enrollmentUiDataHelper: EnrollmentUiDataHelper,
+        resourceManager: ResourceManager,
     ): SearchSortingValueSetter {
         val unknownLabel = context.getString(R.string.unknownValue)
         val eventDateLabel = context.getString(R.string.most_recent_event_date)
-        val enrollmentStatusLabel = context.getString(R.string.filters_title_enrollment_status)
-        val enrollmentDateDefaultLabel = context.getString(R.string.enrollment_date)
+        val enrollmentStatusLabel = resourceManager.formatWithEnrollmentLabel(
+            initialProgram,
+            R.string.filters_title_enrollment_status,
+            1,
+            false,
+        )
+        val enrollmentDateDefaultLabel = resourceManager.formatWithEnrollmentLabel(
+            initialProgram,
+            R.string.enrollment_date_V2,
+            1,
+            false,
+        )
         val uiDateFormat = DateUtils.SIMPLE_DATE_FORMAT
         return SearchSortingValueSetter(
             d2,
@@ -91,41 +106,35 @@ class BiometricsDuplicatesDialogModule(
 
     @Provides
     fun searchRepository(
-        d2: D2, filterPresenter: FilterPresenter?,
-        resources: ResourceManager?,
-        searchSortingValueSetter: SearchSortingValueSetter?,
-        periodUtils: DhisPeriodUtils?, charts: Charts?,
-        crashReportController: CrashReportController?,
-        networkUtils: NetworkUtils?,
-        searchTEIRepository: SearchTEIRepository?,
-        themeManager: ThemeManager?,
-        metadataIconProvider: MetadataIconProvider,
+        d2: D2,
+        filterPresenter: FilterPresenter,
+        resources: ResourceManager,
+        charts: Charts,
+        crashReportController: CrashReportController,
+        networkStatusProvider: NetworkStatusProvider,
+        searchTEIRepository: SearchTEIRepository,
+        themeManager: ThemeManager,
         dateUtils: DateUtils,
         customIntentRepository: CustomIntentRepository,
-        basicPreferenceProvider: BasicPreferenceProvider
-    ): SearchRepository {
-        val profilePictureProvider = ProfilePictureProvider(d2)
-
-        return SearchRepositoryImpl(
+        dispatcherProvider: DispatcherProvider,
+        basicPreferenceProvider: BasicPreferenceProvider,
+    ): SearchRepository =
+        SearchRepositoryImpl(
             teiType,
             initialProgram,
             d2,
             filterPresenter,
             resources,
-            searchSortingValueSetter,
-            periodUtils,
             charts,
             crashReportController,
-            networkUtils,
+            networkStatusProvider,
             searchTEIRepository,
             themeManager,
-            metadataIconProvider,
-            profilePictureProvider,
             dateUtils,
             customIntentRepository,
-            basicPreferenceProvider
+            dispatcherProvider,
+            basicPreferenceProvider,
         )
-    }
 
     @Provides
     fun fieldViewModelFactory(
@@ -155,11 +164,11 @@ class BiometricsDuplicatesDialogModule(
         searchRepository: SearchRepository,
         d2: D2,
         dispatcherProvider: DispatcherProvider,
-        fieldViewModelFactory: FieldViewModelFactory,
         metadataIconProvider: MetadataIconProvider,
         colorUtils: ColorUtils,
         dateUtils: DateUtils,
-        customIntentRepository: CustomIntentRepository
+        customIntentRepository: CustomIntentRepository,
+        sortingValueSetter: SearchSortingValueSetter,
     ): SearchRepositoryKt {
         val resourceManager = ResourceManager(context, colorUtils)
         val dateLabelProvider =
@@ -170,13 +179,12 @@ class BiometricsDuplicatesDialogModule(
             searchRepository,
             d2,
             dispatcherProvider,
-            fieldViewModelFactory,
-            metadataIconProvider,
             TrackedEntityInstanceInfoProvider(
                 d2,
                 profilePictureProvider,
                 dateLabelProvider,
-                metadataIconProvider
+                metadataIconProvider,
+                sortingValueSetter,
             ),
             EventInfoProvider(
                 d2,
@@ -196,16 +204,43 @@ class BiometricsDuplicatesDialogModule(
         searchRepository: SearchRepository,
         searchRepositoryKt: SearchRepositoryKt,
         schedulerProvider: SchedulerProvider,
-        basicPreferenceProvider: BasicPreferenceProvider
+        basicPreferenceProvider: BasicPreferenceProvider,
+        searchTrackedEntities: SearchTrackedEntities,
+        dispatcherProvider: DispatcherProvider,
     ): BiometricsDuplicatesDialogPresenter {
         return BiometricsDuplicatesDialogPresenter(
             d2,
             searchRepository,
             searchRepositoryKt,
             schedulerProvider,
-            basicPreferenceProvider
+            basicPreferenceProvider,
+            searchTrackedEntities,
+            dispatcherProvider,
         )
     }
+
+    // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
+    // Mirrors SearchTEModule: the duplicates dialog runs the same search, so it needs the same
+    // use case and its repository.
+    @Provides
+    fun provideLoadSearchResultsUseCase(
+        searchTrackedEntityRepository: SearchTrackedEntityRepository,
+        customIntentRepository: CustomIntentRepository,
+    ): SearchTrackedEntities = SearchTrackedEntities(
+        searchTrackedEntityRepository,
+        customIntentRepository,
+        teiType,
+    )
+
+    @Provides
+    fun provideLoadSearchResultsRepository(
+        d2: D2,
+        filterPresenter: FilterPresenter,
+    ): SearchTrackedEntityRepository = SearchTrackedEntityRepositoryImpl(
+        d2,
+        filterPresenter,
+        ProfilePictureProvider(d2),
+    )
 
     @Provides
     fun provideListCardMapper(
@@ -225,4 +260,7 @@ class BiometricsDuplicatesDialogModule(
     fun provideCustomIntentRepository(d2: D2): CustomIntentRepository {
         return CustomIntentRepositoryImpl(d2)
     }
+
+    @Provides
+    fun provideNetworkStatusProvider(): NetworkStatusProvider = NetworkStatusProviderImpl(context)
 }

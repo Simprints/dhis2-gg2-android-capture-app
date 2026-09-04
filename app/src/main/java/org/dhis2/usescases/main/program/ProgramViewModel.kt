@@ -18,7 +18,8 @@ import org.dhis2.commons.matomo.Labels.Companion.CLICK_ON
 import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.viewmodel.DispatcherProvider
-import org.dhis2.data.service.SyncStatusController
+import org.dhis2.mobile.sync.domain.SyncStatusController
+import org.koin.core.component.KoinComponent
 import org.dhis2.usescases.biometrics.BIOMETRICS_ENABLED
 import org.dhis2.usescases.biometrics.usecases.SelectBiometricsConfig
 import timber.log.Timber
@@ -34,7 +35,9 @@ class ProgramViewModel internal constructor(
     private val syncStatusController: SyncStatusController,
     private val schedulerProvider: SchedulerProvider,
     private val selectBiometricsConfig: SelectBiometricsConfig
-) : ViewModel() {
+) : ViewModel(),
+    KoinComponent {
+
     private val _programs = MutableLiveData<List<ProgramUiModel>>()
     val programs: LiveData<List<ProgramUiModel>> = _programs
     private val refreshData = PublishProcessor.create<Unit>()
