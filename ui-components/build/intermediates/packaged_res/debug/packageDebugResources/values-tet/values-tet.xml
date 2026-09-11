@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="action_cancel">Kansela</string>
-    <string name="action_close">Taka</string>
-    <string name="cancel">Kansela</string>
-    <string name="clear">Hamós</string>
-    <string name="complete">Kompletu</string>
-    <string name="save">Rai</string>
-</resources>

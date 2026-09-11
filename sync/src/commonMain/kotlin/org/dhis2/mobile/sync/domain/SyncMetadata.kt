@@ -10,6 +10,7 @@ import org.dhis2.mobile.sync.model.SMSConfigResult
 import org.dhis2.mobile.sync.model.SyncPeriod
 
 private const val SYNC_METADATA_NAME = "SYNC_METADATA"
+private const val POST_METADATA_SYNC_ACTIONS_TAG = "POST_METADATA_SYNC_ACTIONS"
 
 class SyncMetadata(
     private val repository: SyncRepository,
@@ -84,7 +85,7 @@ class SyncMetadata(
                 ?.let { error ->
                     runCatching {
                         logDebug(
-                            SYNC_METADATA_NAME,
+                            POST_METADATA_SYNC_ACTIONS_TAG,
                             "Post metadata sync action failed: ${error.message}",
                         )
                     }
