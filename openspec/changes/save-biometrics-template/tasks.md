@@ -8,7 +8,7 @@ Commit: no code in this group — steps 1.1/1.2 are external metadata actions, 1
 
 ## 2. Attribute UID wiring
 
-- [ ] 2.1 Add the new attribute UID constant (e.g. `biometricTemplateAttributeId`) to `commonskmm/src/commonMain/kotlin/org/dhis2/mobile/commons/biometrics/attributes.kt`, following the existing `biometricAttributeId`/`nhisNumberAttributeId` pattern. Verify: `./gradlew ktlintCheck` passes and the constant compiles.
+- [x] 2.1 Add the new attribute UID constant (e.g. `biometricTemplateAttributeId`) to `commonskmm/src/commonMain/kotlin/org/dhis2/mobile/commons/biometrics/attributes.kt`, following the existing `biometricAttributeId`/`nhisNumberAttributeId` pattern. Verify: `./gradlew ktlintCheck` passes and the constant compiles. **Done**: `biometricTemplateAttributeId = "BP90qVFNazj"` added with its own `// EyeSeeTea customization - Biometrics Template Storage` comment; `commonMain` ktlint clean, `compileKotlinDesktop` succeeds.
 
 Commit: standalone — this is metadata wiring with no behavior yet, not paired with a test.
 
@@ -32,7 +32,7 @@ Commit: two commits — (4.1 + 4.2) for `EnrollmentPresenterImpl`, (4.3 + 4.4) f
 
 ## 5. Hide the attribute via program rule
 
-- [ ] 5.1 Design and create the DHIS2 program rule (metadata, external) that hides the new template attribute on `0.0 General Registration` and `1.6 Child Health`, per PM guidance to avoid a hardcoded type-check filter. Verify: opening the enrollment/TEI form in the app does not show the template field, with no corresponding hardcoded filter added to `BiometricsAttributeUiModelImpl` or similar.
+- [x] 5.1 Design and create the DHIS2 program rule (metadata, external) that hides the new template attribute on `0.0 General Registration` and `1.6 Child Health`, per PM guidance to avoid a hardcoded type-check filter. Verify: opening the enrollment/TEI form in the app does not show the template field, with no corresponding hardcoded filter added to `BiometricsAttributeUiModelImpl` or similar. **Done**: `Hide Biometrics Template in General Registration` (`cqYE1buKkxg`) and `Hide Biometrics Template in Child Health` (`W9yagzFawV1`), both `condition: "true"` + `HIDEFIELD` on `BP90qVFNazj`, created in `simprints-dev`. App-side verification (no form field shown) still to be done once 2.1 wires the UID constant.
 
 Commit: no app code — metadata-only; if any incidental code change is needed to support the rule (unexpected), it becomes its own commit.
 
