@@ -23,10 +23,10 @@ Commit: two commits — (3.1 + 3.2) for intent parsing, (3.3 + 3.4) for the writ
 
 ## 4. Wire into `onBiometricsCompleted`
 
-- [ ] 4.1 Add a behavior-level test covering `onBiometricsCompleted()` in `EnrollmentPresenterImpl` (currently uncovered beyond intent parsing) asserting the template attribute is written when `RegisterResult.Completed` carries a valid credential with a non-empty `biometricReferences`, and NOT written when the credential is invalid or `biometricReferences` is empty/null.
-- [ ] 4.2 Call `updateBiometricTemplateAttributeValue` from `EnrollmentPresenterImpl.onBiometricsCompleted()` (`EnrollmentPresenterImpl.kt`), alongside the existing GUID/NHIS calls, guarded by the same `item.hasCredential && item.scannedCredential?.type != null` condition. Verify: the test from 4.1 passes.
-- [ ] 4.3 Add the equivalent behavior-level test for `TEIDataPresenter.onBiometricsCompleted()`.
-- [ ] 4.4 Call `updateBiometricTemplateAttributeValue` from `TEIDataPresenter.onBiometricsCompleted()` (`TEIDataPresenter.kt`), mirroring 4.2. Verify: the test from 4.3 passes.
+- [x] 4.1 Add a behavior-level test covering `onBiometricsCompleted()` in `EnrollmentPresenterImpl` (currently uncovered beyond intent parsing) asserting the template attribute is written when `RegisterResult.Completed` carries a valid credential with a non-empty `biometricReferences`, and NOT written when the credential is invalid or `biometricReferences` is empty/null. **Done**: 3 tests added in `EnrollmentPresenterImplTest.kt` (written with credential+templates, not written without credential, not written with empty references), verifying `blockingSet`/`never().blockingSet` on the D2 value repository.
+- [x] 4.2 Call `updateBiometricTemplateAttributeValue` from `EnrollmentPresenterImpl.onBiometricsCompleted()` (`EnrollmentPresenterImpl.kt`), alongside the existing GUID/NHIS calls, guarded by the same `item.hasCredential && item.scannedCredential?.type != null` condition. Verify: the test from 4.1 passes. **Done**: 24/24 tests pass in `EnrollmentPresenterImplTest`.
+- [x] 4.3 Add the equivalent behavior-level test for `TEIDataPresenter.onBiometricsCompleted()`. **Done**: 3 tests added in `TeiDataPresenterTest.kt`, same shape as `EnrollmentPresenterImplTest` (written with credential+templates, not written without credential, not written with empty references).
+- [x] 4.4 Call `updateBiometricTemplateAttributeValue` from `TEIDataPresenter.onBiometricsCompleted()` (`TEIDataPresenter.kt`), mirroring 4.2. Verify: the test from 4.3 passes. **Done**: 25/25 tests pass in `TeiDataPresenterTest`. Full `app` suite: 988/988, ktlint clean.
 
 Commit: two commits — (4.1 + 4.2) for `EnrollmentPresenterImpl`, (4.3 + 4.4) for `TEIDataPresenter` — each is its own red → green pair, split per presenter per the project's per-customization task-splitting rule.
 

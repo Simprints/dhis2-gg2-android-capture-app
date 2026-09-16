@@ -39,6 +39,7 @@ import org.dhis2.data.biometrics.biometricsClient.models.VerifyResult
 
 import org.dhis2.data.biometrics.getBiometricsConfig
 import org.dhis2.data.biometrics.utils.getVerification
+import org.dhis2.data.biometrics.utils.updateBiometricTemplateAttributeValue
 import org.dhis2.data.biometrics.utils.updateNHISNumberAttributeValue
 import org.dhis2.form.data.FormValueStore
 import org.dhis2.form.data.OptionsRepository
@@ -872,6 +873,13 @@ class TEIDataPresenter(
                 d2,
                 teiUid,
                 item.scannedCredential.value
+            )
+
+            // EyeSeeTea customization - Biometrics Template Storage
+            updateBiometricTemplateAttributeValue(
+                d2,
+                teiUid,
+                item.biometricReferences,
             )
         }
     }
