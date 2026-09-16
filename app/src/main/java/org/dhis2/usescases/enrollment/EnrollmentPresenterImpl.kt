@@ -23,6 +23,7 @@ import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsRegisteredItem
 import org.dhis2.data.biometrics.getBiometricsConfigByProgram
 import org.dhis2.data.biometrics.utils.getTeiByUid
+import org.dhis2.data.biometrics.utils.updateBiometricTemplateAttributeValue
 import org.dhis2.data.biometrics.utils.updateNHISNumberAttributeValue
 import org.dhis2.data.biometrics.utils.updateVerification
 import org.dhis2.form.model.FieldUiModel
@@ -360,6 +361,13 @@ class EnrollmentPresenterImpl(
                 d2,
                 teiRepository.blockingGet()?.uid() ?: "",
                 item.scannedCredential.value
+            )
+
+            // EyeSeeTea customization - Biometrics Template Storage
+            updateBiometricTemplateAttributeValue(
+                d2,
+                teiRepository.blockingGet()?.uid() ?: "",
+                item.biometricReferences,
             )
         }
     }

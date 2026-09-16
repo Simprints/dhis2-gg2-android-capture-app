@@ -3,18 +3,14 @@ package org.dhis2.data.biometrics.utils
 import com.google.gson.Gson
 import org.dhis2.data.biometrics.biometricsClient.models.BiometricReference
 import org.dhis2.data.biometrics.biometricsClient.models.BiometricTemplate
+import org.dhis2.data.biometrics.givenTemplateAttributeValueType
 import org.dhis2.mobile.commons.biometrics.biometricTemplateAttributeId
 import org.hisp.dhis.android.core.D2
-import org.hisp.dhis.android.core.common.ValueType
-import org.hisp.dhis.android.core.trackedentity.TrackedEntityAttribute
 import org.junit.Test
 import org.mockito.Mockito
 import org.mockito.kotlin.any
-import org.mockito.kotlin.doReturn
-import org.mockito.kotlin.mock
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
-import org.mockito.kotlin.whenever
 
 class UpdateBiometricTemplateAttributeValueTest {
 
@@ -22,7 +18,7 @@ class UpdateBiometricTemplateAttributeValueTest {
 
     @Test
     fun `Should persist biometric references as json under the template attribute`() {
-        mockTemplateAttributeValueType()
+        givenTemplateAttributeValueType(d2)
 
         val biometricReferences = listOf(
             BiometricReference(
@@ -46,7 +42,7 @@ class UpdateBiometricTemplateAttributeValueTest {
 
     @Test
     fun `Should not write anything when there are no biometric references`() {
-        mockTemplateAttributeValueType()
+        givenTemplateAttributeValueType(d2)
 
         updateBiometricTemplateAttributeValue(d2, "teiUid", emptyList())
 
@@ -54,15 +50,5 @@ class UpdateBiometricTemplateAttributeValueTest {
             .value(biometricTemplateAttributeId, "teiUid")
 
         verify(valueRepository, never()).blockingSet(any())
-    }
-
-    private fun mockTemplateAttributeValueType() {
-        val attribute: TrackedEntityAttribute = mock()
-        whenever(attribute.valueType()) doReturn ValueType.LONG_TEXT
-        whenever(attribute.optionSet()) doReturn null
-
-        whenever(
-            d2.trackedEntityModule().trackedEntityAttributes().uid(biometricTemplateAttributeId).blockingGet(),
-        ) doReturn attribute
     }
 }
