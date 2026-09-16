@@ -15,6 +15,8 @@ import org.dhis2.commons.biometrics.BIOMETRICS_ENROLL_LAST_REQUEST
 import org.dhis2.commons.biometrics.BIOMETRICS_ENROLL_REQUEST
 import org.dhis2.commons.biometrics.BIOMETRICS_IDENTIFY_REQUEST
 import org.dhis2.commons.biometrics.BIOMETRICS_VERIFY_REQUEST
+import org.dhis2.data.biometrics.biometricsClient.models.BiometricReference
+import org.dhis2.data.biometrics.biometricsClient.models.BiometricTemplate
 import org.dhis2.data.biometrics.biometricsClient.models.ConfirmIdentityResult
 import org.dhis2.data.biometrics.biometricsClient.models.IdentifyResult
 import org.dhis2.data.biometrics.biometricsClient.models.RegisterResult
@@ -28,6 +30,7 @@ import org.dhis2.data.biometrics.biometricsClient.models.sid.IdentificationSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.RefusalFormSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.RegistrationSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.ScannedCredentialSID
+import org.dhis2.data.biometrics.biometricsClient.models.sid.SubjectActionsSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.VerificationSID
 import org.json.JSONObject
 import timber.log.Timber
@@ -50,6 +53,7 @@ to enable JSON formatting in data returned by Simprints ID.
 private const val SIMPRINTS_VERSION_CODE_KEY = "versionCode"
 private const val SIMPRINTS_VERSION_CODE_VALUE_INITIAL_REWORK = 20250102
 private const val SIMPRINTS_ENROLMENT_KEY = "enrolment"
+private const val SIMPRINTS_SUBJECT_ACTIONS = "subjectActions"
 
 class BiometricsClient(
     projectId: String,
@@ -202,6 +206,8 @@ class BiometricsClient(
                 Gson().fromJson(it, ScannedCredentialSID::class.java)
             }
 
+            val biometricReferences = parseBiometricReferences(data)
+
             if (registration == null) {
                 RegisterResult.Failure
             } else {
@@ -212,7 +218,8 @@ class BiometricsClient(
                         scannedCredential = if (scannedCredential == null) null else ScannedCredential(
                             scannedCredential.type,
                             scannedCredential.value
-                        )
+                        ),
+                        biometricReferences = biometricReferences,
                     )
                 )
             }
@@ -515,6 +522,29 @@ class BiometricsClient(
 
     private fun checkBiometricsCompleted(data: Intent) =
         data.getBooleanExtra(Constants.SIMPRINTS_BIOMETRICS_COMPLETE_CHECK, false)
+
+    private fun parseBiometricReferences(data: Intent): List<BiometricReference> {
+        val subjectActionsJson = data.getStringExtra(SIMPRINTS_SUBJECT_ACTIONS) ?: return emptyList()
+
+        val subjectActions: SubjectActionsSID? = try {
+            Gson().fromJson(subjectActionsJson, SubjectActionsSID::class.java)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to parse $SIMPRINTS_SUBJECT_ACTIONS")
+            null
+        }
+
+        val biometricReferencesSID = subjectActions?.events
+            ?.firstNotNullOfOrNull { it.payload?.biometricReferences }
+            ?: return emptyList()
+
+        return biometricReferencesSID.map { reference ->
+            BiometricReference(
+                type = reference.type,
+                format = reference.format,
+                templates = reference.templates.map { BiometricTemplate(it.template) },
+            )
+        }
+    }
 
     private fun getVerificationJudgementBySimprints(data: Intent): VerifyResult? {
         val existVerificationJudgement =
