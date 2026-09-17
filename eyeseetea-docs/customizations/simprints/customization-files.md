@@ -343,6 +343,38 @@ Supporting files in the same workflow:
 Technical note:
 - `lastVerificationDuration` defines how long a saved verification remains valid before the app drops it from active verification state. `lastDeclinedEnrolDuration` defines how long failed/declined registration state remains before the UI clears it automatically in enrollment and dashboard flows.
 
+### 2.14 Biometrics Template Storage
+
+Status: `active`
+
+Main implementation points:
+- `commonskmm/src/commonMain/kotlin/org/dhis2/mobile/commons/biometrics/attributes.kt` (`biometricTemplateAttributeId` constant, UID `BP90qVFNazj`)
+- `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/BiometricsClient.kt` (`parseBiometricReferences`, parsing the previously-unread `subjectActions` intent extra)
+- `app/src/main/java/org/dhis2/data/biometrics/utils/updateBiometricTemplateAttributeValue.kt`
+- `app/src/main/java/org/dhis2/usescases/enrollment/EnrollmentPresenterImpl.kt` (`onBiometricsCompleted`; `onFieldsLoading` filters `biometricTemplateAttributeId` out of the form's field list)
+- `app/src/main/java/org/dhis2/usescases/teiDashboard/dashboardfragments/teidata/TEIDataPresenter.kt` (`onBiometricsCompleted`)
+
+Supporting files in the same workflow:
+- `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/models/SimprintsRegisteredItem.kt` (`biometricReferences` field)
+- `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/models/BiometricReference.kt`
+- `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/models/sid/SubjectActionsSID.kt`
+- `app/src/test/java/org/dhis2/data/biometrics/BiometricTemplateAttributeTestFixtures.kt` (shared `givenTemplateAttributeValueType(d2)` test fixture)
+- `app/src/test/java/org/dhis2/data/biometrics/biometricsClient/BiometricsClientTest.kt`
+- `app/src/test/java/org/dhis2/data/biometrics/utils/UpdateBiometricTemplateAttributeValueTest.kt`
+- `app/src/test/java/org/dhis2/usescases/enrollment/EnrollmentPresenterImplTest.kt`
+- `app/src/test/java/org/dhis2/usescases/teiDashboard/dashboardfragments/data/TeiDataPresenterTest.kt`
+
+DHIS2 metadata (not app code, tracked here per the placement-hierarchy rule):
+- Tracked entity attribute `Biometrics Template` (UID `BP90qVFNazj`, `valueType: LONG_TEXT`), on the `Person` TET, linked as `programTrackedEntityAttribute` on `0.0 General Registration` and `1.6 Child Health`.
+- No program rule for this attribute. Two `HIDEFIELD` program rules (`cqYE1buKkxg` on General Registration, `W9yagzFawV1` on Child Health) were created and then deleted — see technical note below.
+
+Technical note:
+- Persists the face biometric template(s) returned by Simprints during enrollment to a new hidden tracked entity attribute, for future client-side analytics — see `openspec/changes/save-biometrics-template/` for the full proposal, spec, and design.
+- The template data lives in the `subjectActions` intent extra, which the app did not previously parse at all (only `enrolment` and `scannedCredential` were read). `biometricReferences` is persisted close to verbatim from the real Simprints payload shape: `{"biometricReferences": [{"type", "format", "templates": [{"template"}, ...]}]}`, dropping only the per-reference `id` (no known business value).
+- Written from the same two registration flows that already write the biometric GUID and NHIS number (`onBiometricsCompleted()` in both presenters, guarded by the same `hasCredential`/`scannedCredential` condition): plain registration and `registerLast` (biometric search → "New person" → "use last biometrics"). Confirming the identity of an existing TEI (`confirmIdentify`) is explicitly out of scope — that flow does not touch this attribute.
+- Hidden by a **code-level filter** in `EnrollmentPresenterImpl.onFieldsLoading()` (filters `biometricTemplateAttributeId` out of the field list, alongside the existing `BiometricsAttributeUiModelImpl` filter), not via a program rule and not via the hardcoded type-check used for the `Biometrics` (GUID) attribute. A `HIDEFIELD` program rule was tried first per initial PM guidance, then reverted: `RulesUtilsProviderImpl.hideField()` blanks a hidden attribute's value on every form save, which silently wiped the template written moments earlier by `updateBiometricTemplateAttributeValue` — confirmed on a real device (`blockingSetCheck result=true` immediately followed by the value's absence once the enrollment finished saving). Any `HIDEFIELD` rule on this attribute reproduces this, so a program rule is not a viable hiding mechanism here.
+- The attribute UID (`BP90qVFNazj`) currently only exists on the `simprints-dev` instance; it still needs to be shared with the client so it is created identically on their instance(s) before this ships to them.
+
 ## 3. Areas explicitly out of scope for preservation
 
 This section documents differences that are intentionally **not** modeled as

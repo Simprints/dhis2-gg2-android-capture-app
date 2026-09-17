@@ -49,15 +49,18 @@ is only written from the two registration flows above.
 `Biometrics` (the GUID attribute) is hidden from the form today via a
 hardcoded type check, not a program rule (confirmed against real Ghana
 instance metadata — none of the 22 program rules on the two relevant
-programs reference it). The PM has asked for the new template attribute to
-be hidden via a program rule instead, to avoid growing the hardcoded filter.
+programs reference it). The PM originally asked for the new template
+attribute to be hidden via a program rule instead, to avoid growing the
+hardcoded filter — this was tried and reverted; see the "Hiding mechanism"
+decision below for why.
 
 ## Goals / Non-Goals
 
 **Goals:**
 - Persist both face templates from a single enrollment into one new hidden
   TEA, using the existing NHIS-style direct-SDK write pattern.
-- Hide the new attribute via a program rule, not a hardcoded check.
+- Hide the new attribute from the form without losing the value written
+  directly to the SDK.
 - Keep the change additive: zero modification to existing GUID/NHIS write
   behavior or to any existing spec's requirements.
 
@@ -166,6 +169,45 @@ suggested at first glance (that file only reads `enrolment` and
 `scannedCredential` today), but it stays within the same file/function
 already responsible for parsing this exact intent — no new parsing
 entry point is introduced.
+
+### Hiding mechanism: code filter, not a program rule
+
+**Tried first, reverted**: an unconditional `HIDEFIELD` program rule
+(`condition: "true"`) on `BP90qVFNazj`, created on both `0.0 General
+Registration` and `1.6 Child Health` in `simprints-dev`. This is
+structurally incompatible with a directly-SDK-written attribute:
+
+- `RulesUtilsProviderImpl.hideField()`
+  (`form/src/main/java/org/dhis2/form/data/RulesUtilsProviderImpl.kt:274-284`)
+  reacts to `HIDEFIELD` by setting `valuesToChange[field] = null` for the
+  hidden attribute — this is the mechanism the rule engine uses to blank
+  out fields the user can no longer see.
+- That `null` is applied when the enrollment form is saved/completed
+  (`EnrollmentPresenterImpl.finish()` → `enrollmentFormRepository
+  .generateEvents()`), which runs **after** `onBiometricsCompleted()` has
+  already written the real template value via
+  `updateBiometricTemplateAttributeValue`.
+- Verified end-to-end on a real device: `updateBiometricTemplateAttributeValue`
+  logged `blockingSetCheck result=true` and the value was present in
+  `TrackedEntityAttributeValue` immediately after the write, but had been
+  wiped back to absent a few seconds later, once the enrollment finished
+  saving — confirmed by inspecting the local SQLite DB before/after.
+
+In short: any `HIDEFIELD` rule on this attribute — unconditional or not —
+causes the rule engine to blank it out on every form save, unconditionally
+overwriting the direct SDK write. This is not a configuration mistake to
+fix; it's a fundamental mismatch between "field hidden by rule engine" and
+"field written outside the form's data flow".
+
+**Resolved**: hide the field by code instead, in
+`EnrollmentPresenterImpl.onFieldsLoading()`
+(`app/src/main/java/org/dhis2/usescases/enrollment/EnrollmentPresenterImpl.kt:577`),
+which already filters `BiometricsAttributeUiModelImpl` out of the field
+list depending on `biometricsMode`. `BP90qVFNazj` is now filtered out by
+UID unconditionally, before the rule engine or the UI ever see it — so
+there is no `RuleEffect` to blank the value, and nothing to revert. The two
+`HIDEFIELD` program rules created in `simprints-dev` for this purpose were
+deleted.
 
 ### Attribute UID sourcing
 The UID is created by EyeSeeTea (Jorge), generated once and shared with the

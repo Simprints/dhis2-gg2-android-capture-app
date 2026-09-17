@@ -248,6 +248,27 @@ Expected result:
 
 Note (2026-09-03): this flow used to be a broader "check 2FA/login/notifications/Change Server URL/granular sync match baseline" negative check. Narrowed to just the one real customization worth a manual check — Change Server URL no longer exists anywhere in the codebase, and granular sync flavor wiring (`app/src/simprints/java/org/dhis2/utils/granularsync/GranularSyncModule.kt`) is active Simprints DI wiring documented under its own customization, not an out-of-scope area. See `customization-files.md` §3 for the corrected inventory.
 
+### 15. Biometrics Template Storage
+
+Preconditions:
+- The `Biometrics Template` tracked entity attribute (`BP90qVFNazj`) exists on the `Person` TET and is linked as `programTrackedEntityAttribute` on `0.0 General Registration` and `1.6 Child Health`.
+- The attribute is hidden by code (`EnrollmentPresenterImpl.onFieldsLoading()`), not by a program rule — a `HIDEFIELD` program rule was tried first and reverted because the rule engine blanks the field's value on every form save, wiping the value this feature writes. There is no program rule for this attribute; if one exists on the instance, it is stale and should be removed.
+- Simprints fixture/device enrollment returns a `subjectActions` extra containing at least one `FACE_REFERENCE` with two templates (the default capture count).
+
+Manual flow:
+1. Register a new TEI (no prior biometric search) and complete biometric enrollment.
+2. Inspect the `Biometrics Template` attribute value for that TEI via the API (`/api/tracker/trackedEntities/{uid}?fields=attributes`) and confirm it holds a JSON payload with `biometricReferences[0].templates` containing two entries.
+3. Complete/save the enrollment form (not just reach the point where the template is written) and re-inspect the same attribute value — confirm it is still present and unchanged, not blanked out.
+4. Perform a biometric search, choose "New person"/"New patient", and confirm "use last biometrics" (`registerLast`). Repeat steps 2-3 for the newly created TEI.
+5. Open the enrollment form and the TEI dashboard form for a TEI with a Person tracked entity type and confirm the `Biometrics Template` field is not shown as an editable or visible field in either screen.
+6. Select an existing TEI from biometric search results and confirm identity without registering a new TEI (`confirmIdentify`); confirm the `Biometrics Template` attribute value for that TEI is unchanged afterwards.
+
+Expected result:
+- Both registration flows (`register`/plain enrollment and `registerLast`) persist both captured templates in a single `Biometrics Template` attribute value, JSON-encoded as `{"biometricReferences": [{"type", "format", "templates": [{"template"}, ...]}]}`.
+- The attribute is hidden from manual data entry in both the enrollment form and the TEI dashboard form, via a code-level filter — no program rule and no hardcoded type-check filter shared with the GUID attribute are involved.
+- The written value survives completing/saving the enrollment form — it is not blanked out afterward.
+- Confirming identity on an existing TEI (`confirmIdentify`) never writes or updates the `Biometrics Template` attribute — this flow is explicitly out of scope for this customization.
+
 ## Maintenance rule
 
 When a customization survives an upgrade:

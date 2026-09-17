@@ -29,11 +29,18 @@ enrollment, not only the first or last one.
 ### Requirement: Template attribute is hidden from manual data entry
 The app SHALL hide the template attribute from the user-facing form. The
 value SHALL only ever be written programmatically, never entered or edited
-by a user.
+by a user. Hiding SHALL be done by filtering the field out in code, not via
+a program rule `HIDEFIELD` action — a `HIDEFIELD` rule causes the rule
+engine to blank the value on every form save, which would overwrite the
+value written directly to the SDK by this feature.
 
 #### Scenario: User views the enrollment or TEI form
 - **WHEN** a user opens the enrollment form or TEI data entry form for a TEI with a Person tracked entity type
 - **THEN** the template attribute is not shown as an editable or visible field
+
+#### Scenario: Template value survives completing the enrollment form
+- **WHEN** a biometric enrollment writes the template attribute for a TEI, and the user then completes/saves the enrollment form
+- **THEN** the template attribute value written during enrollment is still present afterward, unmodified
 
 ### Requirement: Template is written on registration flows that produce a biometric identity
 The app SHALL write the template attribute for a TEI whenever that TEI's
