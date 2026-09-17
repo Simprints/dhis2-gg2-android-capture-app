@@ -72,7 +72,7 @@ context: |
   Human-facing upgrade docs live in `eyeseetea-docs/upgrade/simprints/`. OpenSpec is
   the machine-checkable mirror, not a replacement.
 
-  ## Active Simprints capabilities (as of 2026-08-07)
+  ## Active Simprints capabilities (as of 2026-09-17)
 
     | Capability                                            | Spec folder                                  | Risk   | Status |
     |--------------------------------------------------------|-----------------------------------------------|--------|--------|
@@ -89,6 +89,7 @@ context: |
     | Biometric Verification Persistence                       | biometrics-verification-persistence           | medium | active |
     | Time-Based Verification And Registration Failure Windows | biometrics-time-based-windows                 | low    | active |
     | Simprints Data Exchange And Mapping                      | simprints-data-exchange-mapping               | high   | active |
+    | Biometrics Template Storage                              | biometrics-template-storage                   | medium | active |
     <!-- one row per active customization -->
 
   For the technical file-level inventory see
