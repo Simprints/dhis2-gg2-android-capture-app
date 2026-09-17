@@ -24,7 +24,7 @@ This file is not for:
 - `develop-eyeseetea` current head: `f87bec8c3` (3.4.2 Oslo + EyeSeeTea PRs #326, #328, #329, #330, #331)
 - Upgrade branch: `feature-simprints/upgrade_3.4.2`
 - Started on: `2026-09-09`
-- Status: `in_progress`
+- Status: `closed` (2026-09-17)
 
 Previous upgrade (3.4.1) closed and archived `2026-09-04` — see
 `upgrade-3.4-notes.md` (kept as historical record, not further edited except
@@ -158,7 +158,9 @@ method) was already in place and is untouched.
 
 ## Finalization
 
-- surviving customizations moved to `customization-files.md`: `no`
-- stable rules moved to `conflict-rules.md`: `no`
-- temporary notes ready to archive/remove: `no`
-- unexplained shared drift remaining: `unknown`
+- surviving customizations moved to `customization-files.md`: `yes` — all 13 confirmed, plus the 3 inventory corrections above; `PostMetadataSyncModule.kt`'s customization comment title corrected to match its spec ("Biometrics Configuration Selection Per Program Or Org Unit Group").
+- stable rules moved to `conflict-rules.md`: `n/a` — no new stable merge rule was discovered during this upgrade beyond what `conflict-rules.md` already documented from 3.4.1.
+- temporary notes ready to archive/remove: `yes` — this file is closed; kept as historical record like `upgrade-3.4-notes.md`, not further edited except for baseline-promotion status flips.
+- unexplained shared drift remaining: `none known`
+
+Closed 2026-09-17. `openspec validate --specs --strict`: 13/13 passed. `check_upgrade_docs.py --client simprints`: clean except `build/` artifact noise and the one already-documented non-biometrics comment title (`DashboardViewModel.kt`/`TEIDataFragment.kt`, tracked as an open documentation question in `customization-files.md`, not a gap introduced by this upgrade). Unit tests: 977/977. `connectedSimprintsDebugAndroidTest` remains blocked by the pre-existing Room identity-hash mismatch (root cause not found in this upgrade — the SDK `1.14.1`→`1.14.2` bump was investigated and ruled out); carried forward as a known issue in the PR, per the 3.4.1 precedent. Archived as `openspec/changes/archive/2026-09-17-upgrade-to-3-4-2/`.
