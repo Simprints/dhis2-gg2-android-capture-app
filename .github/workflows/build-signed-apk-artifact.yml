@@ -7,6 +7,9 @@ on:
     branches:
       - main
       - release/*
+      # Throwaway branch: lets this workflow run here to produce a draft
+      # release with the AAB. Remove before merging anywhere.
+      - feat/build-signed-aab-alongside-apk
 jobs:
   build-signed-apk-artifact:
     runs-on: ubuntu-latest
@@ -88,18 +91,25 @@ jobs:
           name: ${{ env.repository_name }}-${{ steps.date-time.outputs.dateTimeUtc }}utc-Release-Signed-AAB-commit-${{ steps.commit-hash.outputs.shortSha1 }}
           path: ${{ steps.aab.outputs.path }}
 
-      - name: Create GitHub release with the built APK and AAB
-        if: github.ref == 'refs/heads/main'
+      # Throwaway branch: creates a DRAFT release so the AAB can be downloaded and
+      # the release deleted afterwards. A draft does not create the git tag until
+      # it is published, and the tag is suffixed with the commit hash so it cannot
+      # collide with the already-published v<vName> release. Restore the original
+      # step (no --draft, tag "v<vName>", `if: github.ref == 'refs/heads/main'`)
+      # before merging anywhere.
+      - name: Create draft GitHub release with the built APK and AAB
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "v${{ steps.read-version.outputs.vName }}" \
+          gh release create "v${{ steps.read-version.outputs.vName }}-aab-${{ steps.commit-hash.outputs.shortSha1 }}" \
             --repo="$GITHUB_REPOSITORY" \
-            --title="v${{ steps.read-version.outputs.vName }} release" \
+            --draft \
+            --target="$GITHUB_SHA" \
+            --title="v${{ steps.read-version.outputs.vName }} AAB draft (${{ steps.commit-hash.outputs.shortSha1 }})" \
             --notes="${{ env.repository_name }}
           v${{ steps.read-version.outputs.vName }}
-          
+
           Release time: ${{ steps.date-time.outputs.dateTimeUtc }} UTC
-          Signed release" \
+          Signed draft release - AAB test build, safe to delete." \
             ${{ env.main_project_module }}/build/outputs/apk/simprints/release/dhis2-v${{ steps.read-version.outputs.vName }}.apk \
             ${{ steps.aab.outputs.path }}
