@@ -1,4 +1,4 @@
-name: Build signed APK on main branch changes and create a release
+name: Build signed APK and AAB on main branch changes and create a release
 env:
   main_project_module: app
 on:
@@ -45,8 +45,8 @@ jobs:
           fileName: 'dhis_keystore.jks'
           encodedString: ${{ secrets.KEYSTORE_BASE64 }}
 
-      - name: Build release APK
-        run: ./gradlew app:assembleSimprintsRelease
+      - name: Build release APK and AAB
+        run: ./gradlew app:assembleSimprintsRelease app:bundleSimprintsRelease
         env:
           SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
@@ -58,13 +58,37 @@ jobs:
         id: read-version
         run: echo "vName=$(grep 'vName' libs.versions.toml | awk -F' = ' '{print $2}' | tr -d '"')" >> "$GITHUB_OUTPUT"
 
+      # The APK output name is set in app/build.gradle.kts, but AGP does not apply
+      # that renaming to bundles, so normalise the AAB name here to match the APK.
+      - name: Normalise AAB file name
+        id: aab
+        run: |
+          set -euo pipefail
+          bundle_dir="${{ env.main_project_module }}/build/outputs/bundle/simprintsRelease"
+          src="$(find "$bundle_dir" -maxdepth 1 -name '*.aab' -print -quit)"
+          if [ -z "$src" ]; then
+            echo "No AAB found in $bundle_dir" >&2
+            exit 1
+          fi
+          dst="$bundle_dir/dhis2-v${{ steps.read-version.outputs.vName }}.aab"
+          if [ "$src" != "$dst" ]; then
+            mv "$src" "$dst"
+          fi
+          echo "path=$dst" >> "$GITHUB_OUTPUT"
+
       - name: Upload built APK to artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ env.repository_name }}-${{ steps.date-time.outputs.dateTimeUtc }}utc-Release-Signed-APK-commit-${{ steps.commit-hash.outputs.shortSha1 }}
           path: ${{ env.main_project_module }}/build/outputs/apk/simprints/release/dhis2-v${{ steps.read-version.outputs.vName }}.apk
 
-      - name: Create GitHub release with the built APK
+      - name: Upload built AAB to artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.repository_name }}-${{ steps.date-time.outputs.dateTimeUtc }}utc-Release-Signed-AAB-commit-${{ steps.commit-hash.outputs.shortSha1 }}
+          path: ${{ steps.aab.outputs.path }}
+
+      - name: Create GitHub release with the built APK and AAB
         if: github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -77,4 +101,5 @@ jobs:
           
           Release time: ${{ steps.date-time.outputs.dateTimeUtc }} UTC
           Signed release" \
-            ${{ env.main_project_module }}/build/outputs/apk/simprints/release/dhis2-v${{ steps.read-version.outputs.vName }}.apk
+            ${{ env.main_project_module }}/build/outputs/apk/simprints/release/dhis2-v${{ steps.read-version.outputs.vName }}.apk \
+            ${{ steps.aab.outputs.path }}
