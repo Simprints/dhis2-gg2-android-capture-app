@@ -70,7 +70,7 @@ Bring the shared `eyeseetea-docs/` structure from `develop-eyeseetea` into the c
 - `eyeseetea-docs/upgrade/template/`
 - `eyeseetea-docs/customizations/eyeseetea/customizations-eyeseetea.md`
 - `eyeseetea-docs/customizations/template/`
-- `eyeseetea-docs/templates/` — CLAUDE.md and openspec/config.yaml templates used in Phase 4 / Phase 5
+- `eyeseetea-docs/templates/` — AGENTS-CLIENT.md and openspec/config.yaml templates used in Phase 4 / Phase 5
 - `eyeseetea-docs/scripts/`
 - `.claude/` — generic Claude Code scaffolding (`commands/opsx/*`, `skills/openspec-*/`, `settings.json`). Do **not** bring `.claude/settings.local.json` (per-developer overrides, gitignored).
 
@@ -234,13 +234,17 @@ When you bring `develop-eyeseetea` into the fork (Phase 1), you inherit:
 
 These are generic and ready to use. **No action needed unless you want to extend them for your fork.**
 
-### CLAUDE.md (required)
+### AGENTS-<client>.md (required)
 
-Copy `eyeseetea-docs/templates/CLAUDE.md.template` to `CLAUDE.md` at the repository root and fill in the placeholders (`{{CLIENT_NAME}}`, `{{FLAVOR}}`, `{{APPLICATION_ID}}`, `{{CURRENT_VERSION}}`, etc.). The template already includes the EyeSeeTea-wide rules (placement hierarchy, comment convention, automerge verification, post-merge check hierarchy, automation extraction rule); your customizations table and identity are the only fork-specific parts to fill.
+Copy `eyeseetea-docs/templates/AGENTS-CLIENT.md.template` to `AGENTS-<client>.md` at the repository root (`<client>` is the client slug, e.g. `AGENTS-simprints.md`, `AGENTS-oca.md`) and fill in the placeholders (`{{CLIENT_NAME}}`, `{{FLAVOR}}`, `{{APPLICATION_ID}}`, `{{CURRENT_VERSION}}`, etc.). The template already includes the EyeSeeTea-wide rules (placement hierarchy, comment convention, automerge verification, post-merge check hierarchy, automation extraction rule); your customizations table and identity are the only fork-specific parts to fill. Never edit `AGENTS.md` itself — it is Oslo's generic, fork-agnostic agent guide, already inherited from baseline in Phase 1. Update `CLAUDE.md` at the repo root to import both, in this order:
+```
+@AGENTS.md
+@AGENTS-<client>.md
+```
 
 ### Agents (optional, on demand)
 
-Do not create agents speculatively. Wait until a repetitive pattern emerges (3+ identical task structures during the upgrade) and then extract per the **Automation extraction rule** in `CLAUDE.md`. Examples that may surface:
+Do not create agents speculatively. Wait until a repetitive pattern emerges (3+ identical task structures during the upgrade) and then extract per the **Automation extraction rule** in `AGENTS-<client>.md`. Examples that may surface:
 
 - `classify-conflicts.md` — classifies conflicted files using `conflict-rules.md`
 - `resolve-easy-conflicts.md` — resolves `accept_ours` / `accept_theirs` files automatically
@@ -252,7 +256,8 @@ Beyond the 4 OpenSpec skills already in the baseline, you may add fork-specific 
 
 ### Done when
 
-- `CLAUDE.md` exists and references the right docs
+- `AGENTS-<client>.md` exists and references the right docs
+- `CLAUDE.md` imports both `@AGENTS.md` and `@AGENTS-<client>.md`
 - a fresh Claude session can orient itself by reading `CLAUDE.md`
 
 ## Phase 6. Execute the upgrade
@@ -338,7 +343,7 @@ Start with:
 | 2. Create client docs | copies templates, fills header | can automate the copy |
 | 3. Inventory customizations | lists known customizations, confirms titles and status | analyzes diff, drafts inventory, flags unclassified diffs |
 | 4. Formalize with OpenSpec | reviews and approves specs | generates spec drafts with requirements and scenarios |
-| 5. Set up Claude tooling | reviews CLAUDE.md content | drafts CLAUDE.md and agent/skill files |
+| 5. Set up Claude tooling | reviews AGENTS-<client>.md content | drafts AGENTS-<client>.md and agent/skill files |
 | 6. Execute upgrade | reviews the upgrade proposal, reviews conflicts, confirms business decisions | drafts the upgrade proposal (`/opsx:propose`), classifies and resolves easy conflicts, drafts notes |
 | 7. Add tests | reviews test logic and coverage | generates test stubs from scenarios |
 | 8. Clean up | confirms what to remove | identifies candidates for removal |

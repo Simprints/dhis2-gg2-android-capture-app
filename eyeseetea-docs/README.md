@@ -61,7 +61,7 @@ flowchart LR
 2. Define the client identity and flavor paths.
 3. Install the OpenSpec CLI: `npm install -g @fission-ai/openspec@latest`. **Do not run `openspec init --tools claude`** — the `.claude/` scaffolding is already in baseline; running init would overwrite it. Just create empty `openspec/specs/` and `openspec/changes/` directories.
 4. Copy the templates and fill in placeholders:
-   - `templates/CLAUDE.md.template` → `CLAUDE.md` at repo root (project identity, customizations table)
+   - `templates/AGENTS-CLIENT.md.template` → `AGENTS-<client>.md` at repo root (project identity, customizations table) — `<client>` is the client slug, e.g. `AGENTS-simprints.md`, `AGENTS-oca.md`. `AGENTS.md` is Oslo's generic, fork-agnostic agent guide — never edit it with fork identity. `CLAUDE.md` stays a two-line bridge importing both: `@AGENTS.md` then `@AGENTS-<client>.md`.
    - `templates/openspec-config.yaml.template` → `openspec/config.yaml` (project context + per-artifact rules)
    - `customizations/template/customization-files-template.md` → `customizations/<client>/customization-files.md` (technical inventory)
    - `upgrade/template/upgrade-validation-checklist-template.md` → `upgrade/<client>/upgrade-validation-checklist.md` (manual QA flows)
@@ -72,7 +72,9 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    claudeTemplate[templates/CLAUDE.md.template] --> claudeMd[CLAUDE.md]
+    agentsClientTemplate[templates/AGENTS-CLIENT.md.template] --> agentsClient[AGENTS-&lt;client&gt;.md]
+    agentsOslo[AGENTS.md — Oslo generic, untouched] --> claudeMd[CLAUDE.md bridge]
+    agentsClient --> claudeMd
     openspecTemplate[templates/openspec-config.yaml.template] --> openspecConfig[openspec/config.yaml]
     clientSpecs[openspec/specs/&lt;capability&gt;/spec.md created manually]
     templateFiles[customization-files-template.md] --> clientFiles[customizations/&lt;client&gt;/customization-files.md]
@@ -273,7 +275,7 @@ flowchart TD
 
 ### Templates
 
-- `templates/CLAUDE.md.template` — project identity for the fork (placement hierarchy, comment convention, automerge verification, post-merge check hierarchy already filled in)
+- `templates/AGENTS-CLIENT.md.template` — project identity for the fork (placement hierarchy, comment convention, automerge verification, post-merge check hierarchy already filled in). Fills `AGENTS-<client>.md` at repo root (e.g. `AGENTS-simprints.md`, `AGENTS-oca.md`) — never edit Oslo's generic `AGENTS.md`. `CLAUDE.md` stays a two-line bridge: `@AGENTS.md` then `@AGENTS-<client>.md`.
 - `templates/openspec-config.yaml.template` — OpenSpec project context + per-artifact rules (proposal/specs/design/tasks)
 - `customizations/template/customization-files-template.md` — technical file inventory per customization
 - `upgrade/template/upgrade-validation-checklist-template.md` — manual QA flow per customization

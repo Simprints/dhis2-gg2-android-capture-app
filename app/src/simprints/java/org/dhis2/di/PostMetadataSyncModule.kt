@@ -1,4 +1,4 @@
-// EyeSeeTea customization - Biometrics Configuration Selection
+// EyeSeeTea customization - Biometrics Configuration Selection Per Program Or Org Unit Group
 // Simprints behavior: the biometrics configuration must be refreshed whenever metadata is
 // synced, not only at login. Baseline moved metadata sync into the KMP `:sync` module, which
 // cannot see this module, so the work is registered through the `PostMetadataSyncAction`

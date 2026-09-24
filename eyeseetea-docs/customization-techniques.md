@@ -83,16 +83,12 @@ because Oslo relocated the mapping. Expect to re-point it, not to rewrite it.
 
 ## T2. Post-metadata-sync actions — running extra sync work after a metadata sync
 
-> **Status: implemented on `feature-simprints/upgrade_3.4.1` (2026-08-08), pending
-> promotion to `develop-eyeseetea`.** See B4 in
-> `eyeseetea-docs/upgrade/simprints/upgrade-3.4-notes.md` for the full write-up.
-
 **Use when:** a client has its own configuration or data that must be refreshed
 every time the user syncs metadata — not only at login.
 
-**Needed by:** Simprints (biometrics configuration) and WIDP (notifications).
-Both previously hooked into `SyncPresenterImpl.syncMetadata()`, which Oslo
-removed in 3.4.1 when metadata sync moved to the KMP `:sync` module.
+Before 3.4.1, this was solved by hooking into `SyncPresenterImpl.syncMetadata()`
+directly. Oslo removed that entry point in 3.4.1 when metadata sync moved to the
+KMP `:sync` module, so any fork relying on it needs this mechanism instead.
 
 **Why a mechanism is required.** There is no way to hook in from outside
 `:sync`: it only depends on `:commonskmm`, so it cannot see fork code (`:app`

@@ -13,6 +13,13 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.kotlin.willAnswer
 
+/**
+ * DownloadNewVersion has a different implementation per flavor: some flavors call
+ * [VersionRepository.download] (returns [org.dhis2.usescases.main.domain.model.DownloadMethod.File]),
+ * others call [VersionRepository.getUrl] (returns [org.dhis2.usescases.main.domain.model.DownloadMethod.Url]).
+ * Both repository methods are stubbed here so this single test source, shared by every
+ * flavor, verifies the success/failure contract regardless of which one the active flavor uses.
+ */
 class DownloadNewVersionTest {
     private val versionRepository: VersionRepository = mock()
     private lateinit var downloadNewVersion: DownloadNewVersion
@@ -23,9 +30,8 @@ class DownloadNewVersionTest {
     }
 
     @Test
-    fun `should successfully download new version`() =
+    fun `should successfully resolve a new version`() =
         runTest {
-            // GIVEN
             val fakeUriPath = "fakeUriPath"
             whenever(
                 versionRepository.download(
@@ -34,10 +40,10 @@ class DownloadNewVersionTest {
                     onDownloading = any(),
                 ),
             ).thenAnswer {
-                // Simulate the callback being called upon successful download
                 val onDownloadCompletedCallback = it.getArgument<(String) -> Unit>(1)
                 onDownloadCompletedCallback.invoke(fakeUriPath)
             }
+            whenever(versionRepository.getUrl()).thenReturn(fakeUriPath)
             val context: Context = mock()
 
             with(downloadNewVersion(context)) {
@@ -49,6 +55,9 @@ class DownloadNewVersionTest {
     fun `should return failure if an exception is thrown`() =
         runTest {
             given(versionRepository.download(any(), any(), any())) willAnswer {
+                throw DomainError.DatabaseError("Test")
+            }
+            given(versionRepository.getUrl()) willAnswer {
                 throw DomainError.DatabaseError("Test")
             }
             val context: Context = mock()

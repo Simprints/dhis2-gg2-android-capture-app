@@ -37,6 +37,10 @@ actual val syncModule =
         }
 
         factory {
+            // Do not replace with factoryOf(::SyncMetadata): factoryOf uses constructor
+            // reflection and does not honour postMetadataSyncActions' default value, so a
+            // flavor with no PostMetadataSyncModule would fail to resolve this factory
+            // instead of falling back to an empty list.
             SyncMetadata(
                 repository = get(),
                 syncBackgroundJobAction = get(),
