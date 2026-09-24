@@ -331,7 +331,8 @@ class BiometricsClient(
                                 it.guid,
                                 it.confidence,
                                 it.isLinkedToCredential,
-                                it.isVerified
+                                it.isVerified,
+                                it.confidence >= confidenceScoreFilter,
                             )
                         },
                         sessionId,

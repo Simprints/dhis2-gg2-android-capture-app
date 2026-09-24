@@ -113,6 +113,8 @@ class BiometricsClientTest {
         val result = client.handleIdentifyResponse(Activity.RESULT_OK, data) as IdentifyResult.Completed
 
         assertEquals(listOf("guid2"), result.items.map { it.guid })
+        assertTrue(result.items.single().isBiometricMatch)
+        assertTrue(!result.items.single().isCredentialOnlyMatch)
     }
 
     @Test
@@ -129,6 +131,25 @@ class BiometricsClientTest {
         val result = client.handleIdentifyResponse(Activity.RESULT_OK, data) as IdentifyResult.Completed
 
         assertEquals(listOf("guid1"), result.items.map { it.guid })
+        assertTrue(!result.items.single().isBiometricMatch)
+        assertTrue(result.items.single().isCredentialOnlyMatch)
+    }
+
+    @Test
+    fun `Should mark credential linked identification above filter as biometric match`() {
+        val client = givenABiometricsClient(confidenceScoreFilter = 50)
+        val data = givenAnIntent(
+            biometricsCompleted = true,
+            sessionId = "session1",
+            identifications = listOf(
+                givenAnIdentificationSID(guid = "guid1", confidence = 90f, isLinkedToCredential = true),
+            ),
+        )
+
+        val result = client.handleIdentifyResponse(Activity.RESULT_OK, data) as IdentifyResult.Completed
+
+        assertTrue(result.items.single().isBiometricMatch)
+        assertTrue(!result.items.single().isCredentialOnlyMatch)
     }
 
     @Test

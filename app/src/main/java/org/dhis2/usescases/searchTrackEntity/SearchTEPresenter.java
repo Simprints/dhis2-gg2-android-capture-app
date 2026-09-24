@@ -422,12 +422,13 @@ public class SearchTEPresenter implements SearchTEContractsModule.Presenter {
         return isMatchByCredentials;
     }
 
+    // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
     @Override
-    public void sendBiometricsConfirmIdentity(String teiUid, String enrollmentUid, boolean isOnline, boolean isMatchByCredentials) {
+    public void sendBiometricsConfirmIdentity(String teiUid, String enrollmentUid, boolean isOnline, boolean isCredentialOnlyMatch) {
         if (sessionId != null) {
             String guid = getBiometricsAttributeValue(teiUid);
 
-            if (!isMatchByCredentials) {
+            if (!isCredentialOnlyMatch) {
                 searchRepository.updateAttributeValue(teiUid, biometricAttributeId, guid);
             }
 
