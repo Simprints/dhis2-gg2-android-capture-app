@@ -846,12 +846,12 @@ class SearchTEActivity :
                 Unit
             },
             {
-                val isMatchByCredentials =
+                val isCredentialOnlyMatch =
                     if (viewModel.sequentialSearch.value is SequentialSearch.BiometricsSearch) {
                         val simprintsItems =
                             (viewModel.sequentialSearch.value as SequentialSearch.BiometricsSearch).simprintsItems
 
-                        simprintsItems.find { it.guid == item.biometricsGuid() }?.isLinkedToCredential
+                        simprintsItems.find { it.guid == item.biometricsGuid() }?.isCredentialOnlyMatch
                             ?: false
                     } else {
                         false
@@ -861,7 +861,7 @@ class SearchTEActivity :
                     lastSelection!!.tei.uid,
                     lastSelection!!.selectedEnrollment?.uid,
                     lastSelection!!.tei.isOnline,
-                    isMatchByCredentials
+                    isCredentialOnlyMatch
                 )
                 viewModel.resetSequentialSearch()
 
@@ -979,7 +979,7 @@ class SearchTEActivity :
 
     private fun simulateNotFoundBiometricsSearch(sessionId: String?, scannedCredential: ScannedCredential?) {
         presenter.searchOnBiometrics(
-            listOf(SimprintsIdentifiedItem(BIOMETRICS_USER_NOT_FOUND, 0f, false, false)),
+            listOf(SimprintsIdentifiedItem(BIOMETRICS_USER_NOT_FOUND, 0f, false, false, false)),
             sessionId, false, scannedCredential
         )
     }

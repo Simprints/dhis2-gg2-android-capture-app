@@ -57,6 +57,27 @@ review even when their confidence would otherwise be filtered out per
 - **WHEN** a candidate is linked to a credential but its confidence is below the configured threshold
 - **THEN** it still appears in the duplicate review list
 
+### Requirement: Manual confirm identity renews verification unless the match is credential-only
+The app SHALL, when the user manually confirms an identified candidate, update
+the biometrics attribute and store a new verification per
+[[biometrics-verification-persistence]], unless the candidate is a
+credential-only match. A candidate is a credential-only match when it is linked
+to a credential and its confidence is below the configured threshold per
+[[biometrics-confidence-score-filtering]]. Being linked to a credential alone
+SHALL NOT prevent verification when the confidence meets the threshold.
+
+#### Scenario: Face match on a candidate linked to a credential
+- **WHEN** the user manually confirms a candidate that is linked to a credential and whose confidence meets the configured threshold
+- **THEN** a new verification is stored and the TEI dashboard shows it as biometrically verified
+
+#### Scenario: Face match on a candidate without a credential
+- **WHEN** the user manually confirms a candidate that is not linked to a credential and whose confidence meets the configured threshold
+- **THEN** a new verification is stored and the TEI dashboard shows it as biometrically verified
+
+#### Scenario: Credential-only match
+- **WHEN** the user manually confirms a candidate that is linked to a credential but whose confidence is below the configured threshold
+- **THEN** no new verification is stored and, unless an earlier verification is still valid, the TEI dashboard shows the verification as failed
+
 ### Requirement: Enrollment duplicates offer dashboard or registerLast
 The app SHALL, when enrollment registration returns possible duplicates, let
 the user either open an existing TEI's dashboard or continue enrollment with
