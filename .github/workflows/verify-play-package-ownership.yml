@@ -1,0 +1,183 @@
+name: Build Play package-name ownership APK (one-off)
+
+# Builds a minimal signed APK for Google Play's "Sign and upload an APK" step,
+# which proves ownership of the org.simprints.dhis2 package name by showing that
+# we hold the private key behind certificate fingerprint 3D:D1:2E:67:...:7C:3E.
+#
+# Google accepts "an empty project with the same package name that you're
+# registering, or your actual app", so this generates a stub (~650 KB) instead of
+# shipping the ~130 MB release APK. The APK is never distributed.
+#
+# The registration snippet is unique to the developer account and this repository
+# is public, so it is injected from the ADI_REGISTRATION_SNIPPET secret and never
+# committed.
+#
+# Delete this workflow and the secret once the package name is registered.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ownership-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set Up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
+      - name: Change wrapper permissions
+        run: chmod +x ./gradlew
+
+      - name: Fail early if the registration snippet is missing
+        env:
+          ADI_REGISTRATION_SNIPPET: ${{ secrets.ADI_REGISTRATION_SNIPPET }}
+        run: |
+          if [ -z "${ADI_REGISTRATION_SNIPPET:-}" ]; then
+            echo "::error::Repository secret ADI_REGISTRATION_SNIPPET is not set. Copy the snippet from the Play Console 'Sign and upload an APK' page into that secret."
+            exit 1
+          fi
+
+      - name: Generate the stub project
+        env:
+          ADI_REGISTRATION_SNIPPET: ${{ secrets.ADI_REGISTRATION_SNIPPET }}
+        run: |
+          set -euo pipefail
+
+          # Track the real app's toolchain so the stub cannot drift from it.
+          agp="$(grep -E '^gradle = ' gradle/libs.versions.toml | awk -F'"' '{print $2}')"
+          sdk="$(grep -E '^sdk = ' gradle/libs.versions.toml | awk -F'"' '{print $2}')"
+          min_sdk="$(grep -E '^minSdk = ' gradle/libs.versions.toml | awk -F'"' '{print $2}')"
+          echo "AGP $agp, compileSdk $sdk, minSdk $min_sdk"
+
+          stub="$RUNNER_TEMP/play-ownership-verification"
+          mkdir -p "$stub/app/src/main/assets"
+
+          cat > "$stub/settings.gradle.kts" <<'SETTINGS'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "play-ownership-verification"
+          include(":app")
+          SETTINGS
+
+          cat > "$stub/app/build.gradle.kts" <<BUILD
+          plugins {
+              id("com.android.application") version "$agp"
+          }
+
+          android {
+              namespace = "org.simprints.dhis2"
+              compileSdk = $sdk
+
+              defaultConfig {
+                  applicationId = "org.simprints.dhis2"
+                  minSdk = $min_sdk
+                  targetSdk = $sdk
+                  versionCode = 1
+                  versionName = "1.0"
+              }
+
+              signingConfigs {
+                  create("release") {
+                      keyAlias = System.getenv("SIGNING_KEY_ALIAS")
+                      keyPassword = System.getenv("SIGNING_KEY_PASSWORD")
+                      System.getenv("SIGNING_KEYSTORE_PATH")?.let { path ->
+                          storeFile = file(path)
+                      }
+                      storePassword = System.getenv("SIGNING_STORE_PASSWORD")
+                  }
+              }
+
+              buildTypes {
+                  getByName("release") {
+                      isMinifyEnabled = false
+                      signingConfig = signingConfigs.getByName("release")
+                  }
+              }
+          }
+          BUILD
+
+          cat > "$stub/app/src/main/AndroidManifest.xml" <<'MANIFEST'
+          <?xml version="1.0" encoding="utf-8"?>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <application android:label="DHIS2 Biometrics" />
+          </manifest>
+          MANIFEST
+
+          # printf %s, not echo: the snippet is an opaque challenge value and must
+          # be written byte for byte, with no trailing newline added.
+          printf '%s' "$ADI_REGISTRATION_SNIPPET" > "$stub/app/src/main/assets/adi-registration.properties"
+          echo "Wrote adi-registration.properties ($(wc -c < "$stub/app/src/main/assets/adi-registration.properties") bytes)"
+
+      - name: Decode keystore
+        id: decode_keystore
+        uses: timheuer/base64-to-file@v1
+        with:
+          fileName: 'dhis_keystore.jks'
+          encodedString: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: Build signed stub APK
+        run: ./gradlew -p "$RUNNER_TEMP/play-ownership-verification" :app:assembleRelease
+        env:
+          SIGNING_KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          SIGNING_KEYSTORE_PATH: ${{ steps.decode_keystore.outputs.filePath }}
+
+      # Checks the *signed* APK, which is what Play actually verifies - the common
+      # failure is inspecting an intermediate artifact instead.
+      - name: Verify the signed APK
+        id: verify
+        env:
+          ADI_REGISTRATION_SNIPPET: ${{ secrets.ADI_REGISTRATION_SNIPPET }}
+        run: |
+          set -euo pipefail
+          apk="$(find "$RUNNER_TEMP/play-ownership-verification/app/build/outputs/apk/release" -name '*.apk' -print -quit)"
+          if [ -z "$apk" ]; then
+            echo "::error::No APK produced"
+            exit 1
+          fi
+
+          if ! unzip -l "$apk" | grep -q 'assets/adi-registration.properties'; then
+            echo "::error::adi-registration.properties is missing from the signed APK"
+            exit 1
+          fi
+
+          if ! unzip -p "$apk" assets/adi-registration.properties | cmp -s - <(printf '%s' "$ADI_REGISTRATION_SNIPPET"); then
+            echo "::error::adi-registration.properties content does not match the snippet"
+            exit 1
+          fi
+
+          apksigner="$(find "$ANDROID_HOME/build-tools" -name apksigner | sort | tail -1)"
+          "$apksigner" verify --print-certs "$apk"
+          fingerprint="$("$apksigner" verify --print-certs "$apk" | awk '/certificate SHA-256 digest/ {print $NF}')"
+          expected="3dd12e67254f96edc5a4b216296151616dd031d0bb4e59f542e715e570307c3e"
+          if [ "$fingerprint" != "$expected" ]; then
+            echo "::error::Signed with $fingerprint but Play expects $expected"
+            exit 1
+          fi
+
+          size_kb=$(( $(stat -c%s "$apk") / 1024 ))
+          echo "Signed stub APK OK - ${size_kb} KB, correct asset, correct signing key"
+          echo "path=$apk" >> "$GITHUB_OUTPUT"
+
+      - name: Upload ownership APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: play-package-ownership-apk
+          path: ${{ steps.verify.outputs.path }}

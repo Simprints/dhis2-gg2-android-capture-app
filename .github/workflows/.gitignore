@@ -3,3 +3,5 @@
 # ...except these fork-specific ones
 !build-signed-apk-artifact.yml
 !sync-simprints-upstream-changes.yml
+# One-off, delete once the Play package name is registered
+!verify-play-package-ownership.yml
