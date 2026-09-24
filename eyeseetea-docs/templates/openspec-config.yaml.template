@@ -113,6 +113,9 @@ rules:
 
   tasks:
     - "Upgrade tasks follow the phase order from the strategy doc: Documentation → OpenSpec → Claude tooling → Upgrade execution → Tests and cleanup → Promote tooling to baseline."
-    - "Each task is small enough to complete in one focused session. Tasks that span multiple customizations must be split per customization."
+    - "Each task is small enough to complete in one focused session and to be committed independently (test-first: add a behavior-level test first, then the minimal implementation to make it pass, as one commit). Tasks that span multiple customizations must be split per customization."
+    - "Commit granularity MUST be explicit in tasks.md, not left implicit: a 'test' task immediately followed by an 'implement' task for the same behavior are one commit (red -> green); a standalone 'test' task with no implementation task next to it (added coverage over an already-passing implementation) is its own, separate commit. State this per task group as a short 'Commit:' note so an agent picking up tasks.md without prior conversation context can tell where commit boundaries fall without having to infer them."
+    - "Tests MUST assert on observable behavior (return values, emitted state, persisted data) rather than on which internal method/collaborator was invoked with which arguments. Do not mock the class under test's own collaborators just to verify an interaction happened — mocking is acceptable only at the true system boundary (e.g. the SDK, a repository, a platform API)."
+    - "Each behavior test states, in its name or a comment, the observable contract it verifies (e.g. \"shows an error when the biometric config sync fails\") rather than the mechanism (e.g. \"calls repository.sync()\") — a reviewer should be able to tell what broke for the user from the test name alone."
     - "Tests for client customizations are prioritized by risk: high > medium > low."
     - "Every customization-preservation task has a matching manual-validation entry in `eyeseetea-docs/upgrade/{{CLIENT_SLUG}}/upgrade-validation-checklist.md`."

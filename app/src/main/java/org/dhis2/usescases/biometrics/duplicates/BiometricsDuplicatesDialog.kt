@@ -104,7 +104,13 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
         val possibleDuplicates: List<SimprintsIdentifiedItem> =
             requireArguments().getParcelableArrayList<SimprintsItemParcelable>(POSSIBLE_DUPLICATES)
                 ?.toList()?.map {
-                SimprintsIdentifiedItem(it.guid, it.confidence, it.isLinkedToCredential, it.isVerified)
+                SimprintsIdentifiedItem(
+                    it.guid,
+                    it.confidence,
+                    it.isLinkedToCredential,
+                    it.isVerified,
+                    it.isBiometricMatch,
+                )
             } ?: emptyList()
 
 
@@ -303,7 +309,13 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
             val args = Bundle()
 
             val possibleDuplicatesParcelable = possibleDuplicates.map {
-                SimprintsItemParcelable(it.guid, it.confidence, it.isLinkedToCredential, it.isVerified)
+                SimprintsItemParcelable(
+                    it.guid,
+                    it.confidence,
+                    it.isLinkedToCredential,
+                    it.isVerified,
+                    it.isBiometricMatch,
+                )
             }
 
             args.putParcelableArrayList(
@@ -327,6 +339,7 @@ data class SimprintsItemParcelable(
     val confidence: Float,
     val isLinkedToCredential: Boolean,
     val isVerified: Boolean?,
+    val isBiometricMatch: Boolean,
 
 ) : Parcelable {
     constructor(parcel: Parcel) : this(
@@ -337,7 +350,8 @@ data class SimprintsItemParcelable(
             1.toByte() -> true
             0.toByte() -> false
             else -> null // e.g., -1 means null
-        }
+        },
+        parcel.readByte() != 0.toByte(),
     ) {
     }
 
@@ -352,6 +366,7 @@ data class SimprintsItemParcelable(
                 null -> -1
             }
         )
+        parcel.writeByte(if (isBiometricMatch) 1 else 0)
     }
 
     override fun describeContents(): Int {
