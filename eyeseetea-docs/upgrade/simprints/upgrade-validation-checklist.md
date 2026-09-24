@@ -258,7 +258,7 @@ Note (2026-09-03): this flow used to be a broader "check 2FA/login/notifications
 ### 15. Biometrics Template Storage
 
 Preconditions:
-- The `Biometrics Template` tracked entity attribute (`BP90qVFNazj`) exists on the `Person` TET and is linked as `programTrackedEntityAttribute` on `0.0 General Registration` and `1.6 Child Health`.
+- The `Biometrics Template` tracked entity attribute (`BP90qVFNazj`) exists on the instance and is linked wherever the `Biometrics` attribute is linked: the `Person` TET and every program that carries `Biometrics` (on `simprints-dev`, `0.0 General Registration` and `1.6 Child Health`). On a new instance, set it up with `eyeseetea-docs/scripts/simprints/replicate-biometrics-template.ts`: run `--mode plan`, review the programs it leaves out, then `--mode validate` and `--mode commit` (see `customization-files.md` §2.14).
 - The attribute is hidden by code (`EnrollmentPresenterImpl.onFieldsLoading()`), not by a program rule — a `HIDEFIELD` program rule was tried first and reverted because the rule engine blanks the field's value on every form save, wiping the value this feature writes. There is no program rule for this attribute; if one exists on the instance, it is stale and should be removed.
 - Simprints fixture/device enrollment returns a `subjectActions` extra containing at least one `FACE_REFERENCE` with two templates (the default capture count).
 
