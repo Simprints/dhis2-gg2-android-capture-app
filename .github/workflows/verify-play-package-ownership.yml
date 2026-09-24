@@ -16,6 +16,12 @@ name: Build Play package-name ownership APK (one-off)
 
 on:
   workflow_dispatch:
+  # GitHub only offers manual dispatch for workflows that exist on the default
+  # branch, and this one is deliberately never merged to main. A push trigger
+  # scoped to the throwaway branch is the only way to run it from here.
+  push:
+    branches:
+      - feat/build-signed-aab-alongside-apk
 
 jobs:
   build-ownership-apk:
