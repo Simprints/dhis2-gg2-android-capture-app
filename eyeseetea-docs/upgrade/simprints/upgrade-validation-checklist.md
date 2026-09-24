@@ -156,6 +156,11 @@ Manual flow:
 3. Inspect the confirmation dialog card for a candidate whose biometric attribute would otherwise be empty and confirm the biometric row still appears with its distinct icon/marker, instead of being hidden like other empty attributes.
 4. Confirm identity on one candidate, both manually and via the automatic path if available.
 5. From enrollment, trigger a duplicate outcome and choose both "open existing TEI" and `registerLast`.
+6. Using a SID version that does not auto-navigate (no `isVerified=true`, e.g. `2026.2.1+167.1`), and a TEI whose previous verification has expired (do not identify right after registering, since registration stores a still-valid verification), manually confirm identity and open the TEI dashboard for each case:
+   - Linked credential + confidence at or above the threshold.
+   - No credential + confidence at or above the threshold.
+   - Linked credential + confidence below the threshold.
+   - No credential + confidence below the threshold.
 
 Expected result:
 - Duplicate review is backed by normal DHIS2 search results, not a disconnected local list.
@@ -163,6 +168,8 @@ Expected result:
 - Credential-linked candidates remain visible even below the confidence threshold.
 - Confirm identity returns to the correct DHIS2 continuation path and resets sequential biometric search state.
 - Enrollment duplicates allow both opening the existing TEI dashboard and continuing with `registerLast`.
+- Manual confirm identity with confidence at or above the threshold shows `Biometrics verified` on the dashboard, whether or not the candidate is linked to a credential.
+- A credential-linked candidate below the threshold stays visible and shows `Verification Failed` after manual confirm; a candidate without a credential below the threshold is not shown.
 
 ### 10. Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
 
