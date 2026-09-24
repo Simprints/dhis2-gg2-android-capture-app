@@ -23,11 +23,13 @@ import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsRegisteredItem
 import org.dhis2.data.biometrics.getBiometricsConfigByProgram
 import org.dhis2.data.biometrics.utils.getTeiByUid
+import org.dhis2.data.biometrics.utils.updateBiometricTemplateAttributeValue
 import org.dhis2.data.biometrics.utils.updateNHISNumberAttributeValue
 import org.dhis2.data.biometrics.utils.updateVerification
 import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.RowAction
 import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
+import org.dhis2.mobile.commons.biometrics.biometricTemplateAttributeId
 import org.dhis2.form.ui.intent.FormIntent
 import org.dhis2.usescases.biometrics.BIOMETRICS_ENABLED
 import org.dhis2.usescases.biometrics.duplicates.LastPossibleDuplicates
@@ -361,6 +363,13 @@ class EnrollmentPresenterImpl(
                 teiRepository.blockingGet()?.uid() ?: "",
                 item.scannedCredential.value
             )
+
+            // EyeSeeTea customization - Biometrics Template Storage
+            updateBiometricTemplateAttributeValue(
+                d2,
+                teiRepository.blockingGet()?.uid() ?: "",
+                item.biometricReferences,
+            )
         }
     }
 
@@ -566,8 +575,17 @@ class EnrollmentPresenterImpl(
 
     fun onFieldsLoading(fields: List<FieldUiModel>): List<FieldUiModel> {
 
-        val finalFields = if (biometricsMode == BiometricsMode.full) fields else fields.filter {
-            it !is BiometricsAttributeUiModelImpl
+        // EyeSeeTea customization - Biometrics Template Storage
+        val fieldsWithoutBiometricTemplate = fields.filter {
+            it.uid != biometricTemplateAttributeId
+        }
+
+        val finalFields = if (biometricsMode == BiometricsMode.full) {
+            fieldsWithoutBiometricTemplate
+        } else {
+            fieldsWithoutBiometricTemplate.filter {
+                it !is BiometricsAttributeUiModelImpl
+            }
         }.toMutableList()
 
         val allMandatoryFieldsHasValue =
