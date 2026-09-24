@@ -5,4 +5,8 @@ data class SimprintsIdentifiedItem(
     val confidence: Float,
     val isLinkedToCredential: Boolean,
     val isVerified: Boolean?,
-)
+    val isBiometricMatch: Boolean,
+) {
+    val isCredentialOnlyMatch: Boolean
+        get() = isLinkedToCredential && !isBiometricMatch
+}

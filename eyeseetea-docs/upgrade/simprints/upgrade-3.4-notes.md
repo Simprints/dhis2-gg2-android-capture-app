@@ -1,5 +1,13 @@
 # Simprints upgrade 3.4 notes
 
+**Status: closed / archived.** The 3.4.1 upgrade was delivered (PR #332) and
+the OpenSpec change archived (`89837351f`,
+`openspec/changes/archive/2026-09-04-upgrade-to-3-4-1/`). This file is kept as
+the historical record of that upgrade's decisions — not edited further except
+to flip a baseline-promotion item's status once actually confirmed promoted
+(see "Improvements to promote to `develop-eyeseetea`" below). New temporary
+notes for the next upgrade belong in `upgrade-3.4.2-notes.md`.
+
 Use this file as the temporary working notes for the Simprints upgrade to 3.4.
 
 ## Purpose
@@ -25,7 +33,7 @@ This file is not for:
 - Current merge-base with upgrade branch: `d87193d003a0acccc53914f88026719df6fe8fc3`
 - Upgrade branch: `feature-simprints/upgrade_3.4.1` (renamed from `feature-simprints/upgrade_3.4`)
 - Started on: `2026-05-12`
-- Status: `in_progress`
+- Status: `closed` (delivered via PR #332, archived `2026-09-04`)
 
 Note: a first merge attempt against `develop-eyeseetea@73a7eb8f0f` (3.4) was aborted before commit, with no changes to `eyeseetea-docs/` — restarting the merge against `develop-eyeseetea@938b819597` (3.4.1) instead.
 
@@ -1137,7 +1145,16 @@ Status values: `pending` (found, not yet promoted) / `promoted` (in a baseline P
 ### B1. `CLAUDE.md.template` assumes the fork owns `CLAUDE.md` — it no longer does
 
 - **Baseline file:** `eyeseetea-docs/templates/CLAUDE.md.template`
-- **Status:** `pending`
+- **Status:** `promoted` — verified present in `develop-eyeseetea` as of
+  `f87bec8c3` (2026-08-28). Landed as PR #329 (`391c79316`, "split CLAUDE.md
+  fork identity into AGENTS-FORK.md") then corrected by PR #330
+  (`f87bec8c3`, "rename AGENTS-FORK.md to per-client AGENTS-<client>.md") —
+  the first pass used a fixed generic name (`AGENTS-FORK.md`) without
+  checking existing forks; the rename aligned it with the convention
+  Simprints had already established (`AGENTS-simprints.md`). Final template
+  path: `eyeseetea-docs/templates/AGENTS-CLIENT.md.template`. `CLAUDE.md`
+  itself is untouched upstream Oslo content plus the one-line import, exactly
+  as proposed below.
 - **Evidence:** upstream Oslo introduced a root `CLAUDE.md` in 3.4
   (`2deafc54c5`, PR #4778, author Andrés Miguel Rubio, present in
   `origin/upstream/3.4.1`) plus `AGENTS.md` (`5fd7ace101`, `638adaa548`,
@@ -1147,8 +1164,8 @@ Status values: `pending` (found, not yet promoted) / `promoted` (in a baseline P
   fork following the template overwrites the upstream file, drops its
   `@AGENTS.md` include, and guarantees a whole-file conflict on every future
   upgrade. Simprints hit exactly this in Phase 5.
-- **Fix to promote:** rewrite the template so a fork creates
-  `AGENTS-<client>.md` and adds a single `@AGENTS-<client>.md` import line to
+- **Fix promoted:** the template now has a fork create
+  `AGENTS-<client>.md` and add a single `@AGENTS-<client>.md` import line to
   the upstream `CLAUDE.md`. Verified against the Claude Code docs: a
   `CLAUDE.md` supports multiple `@file` imports, arbitrary filenames, relative
   paths, and up to four hops of nesting
@@ -1156,8 +1173,9 @@ Status values: `pending` (found, not yet promoted) / `promoted` (in a baseline P
   This follows the project's own placement hierarchy — "new file" beats
   "edit an Oslo file" — and cuts the recurring conflict from a whole file to
   one line.
-- **Also update:** `onboarding-fork-guide.md` Phase 5, which currently
-  instructs copying the template to `CLAUDE.md`.
+- **Also updated:** `onboarding-fork-guide.md` Phase 5 now references
+  `AGENTS-<client>.md` throughout instead of copying a template to
+  `CLAUDE.md`.
 
 ### B2. `customization-files-template.md` has no "Feat commits" section
 
@@ -1182,7 +1200,9 @@ Status values: `pending` (found, not yet promoted) / `promoted` (in a baseline P
 
 - **Baseline files:** `eyeseetea-docs/customization-techniques.md` (new),
   plus links from `eyeseetea-docs/README.md` and `upgrade/conflict-rules.md`
-- **Status:** `pending` — written on this branch, needs promoting
+- **Status:** `promoted` — landed together with B4 in `4e5635da5` (PR #328,
+  2026-08-27, "promote PostMetadataSyncAction extension point to baseline").
+  File confirmed present in `develop-eyeseetea`.
 - **Evidence:** `eyeseetea-docs/` documents *what* each fork customizes
   (`customization-files.md`) and *how* to resolve conflicts
   (`conflict-rules.md`), but nothing documented the **mechanisms** available for
@@ -1208,7 +1228,14 @@ Status values: `pending` (found, not yet promoted) / `promoted` (in a baseline P
   `app/src/main/.../di/KoinInitialization.kt`, the empty `postMetadataSyncModule`
   in the 4 non-Simprints flavor source sets, and the inventory entry in
   `customizations/eyeseetea/customizations-eyeseetea.md` §6.1
-- **Status:** `implemented` (2026-08-08) — ready to propose to `develop-eyeseetea`
+- **Status:** `promoted` — landed in `4e5635da5` (PR #328, 2026-08-27,
+  "promote PostMetadataSyncAction extension point to baseline"). Confirmed
+  present in `develop-eyeseetea`: contract, `:sync` wiring, and the empty
+  per-flavor registration module (including Simprints' own, which already
+  consumes it — no change needed there). **Follow-up for the 3.4.2 upgrade:**
+  confirm the contract's shape is unchanged and check whether Simprints'
+  `PostMetadataSyncModule.kt` fork-side registration still matches baseline's
+  signature as-is.
 - **Inventory note:** this is a **baseline** extension point, not a fork
   customization, so it is documented in the EyeSeeTea inventory (§6 "Extension
   points added for downstream flavors"), not in Simprints'. Simprints' §2.2 only
@@ -1384,9 +1411,12 @@ Only add rules here when a concrete Simprints merge incident reveals a reusable 
 
 ## Validation Notes
 
-- build: not started
-- targeted tests: not started
-- manual flows checked: code review only, no runtime validation yet
+- build: verified — `./gradlew assembleSimprintsDebug` succeeds
+- targeted tests: verified — 977/977 unit tests pass
+- manual flows checked: scoped to the highest-risk flows given the same-day
+  delivery deadline (core-43 server migration); remaining medium/low-risk
+  flows and out-of-scope-area checks tracked as deferred in the archived
+  change's `tasks.md` and in PR #332's Known Issues section
 
 ## Finalization
 

@@ -170,7 +170,7 @@ Supporting files in the same workflow:
 - `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/models/sid/VerificationSID.kt`
 
 Technical note:
-- `confidenceScoreFilter` is stored in the selected config and passed into `BiometricsClient`. Identification results are filtered by numeric confidence except for credential-linked matches, and verification results are only accepted as matches when their confidence meets the threshold. The filtering lives in `BiometricsClient.handleIdentifyResponse()` and `BiometricsClient.handleVerifyResponse()`, so downstream search and dashboard code consume already-normalized result models.
+- `confidenceScoreFilter` is stored in the selected config and passed into `BiometricsClient`. Identification results are filtered by numeric confidence except for credential-linked matches (each surviving `SimprintsIdentifiedItem` carries `isBiometricMatch = confidence >= confidenceScoreFilter` and the derived `isCredentialOnlyMatch = isLinkedToCredential && !isBiometricMatch`, see 2.9), and verification results are only accepted as matches when their confidence meets the threshold. The filtering lives in `BiometricsClient.handleIdentifyResponse()` and `BiometricsClient.handleVerifyResponse()`, so downstream search and dashboard code consume already-normalized result models.
 
 ### 2.7 Org Unit Derived Module Id For Simprints
 
@@ -205,10 +205,10 @@ Main implementation points:
 Supporting files in the same workflow:
 - `app/src/main/java/org/dhis2/usescases/searchTrackEntity/SearchTeiViewModelFactory.kt`
 - `app/src/main/java/org/dhis2/usescases/searchTrackEntity/listView/SearchTEList.kt`
-- `app/src/main/java/org/dhis2/usescases/searchTrackEntity/mapView/SearchTEMap.kt`
 
 Technical note:
 - `enableIdentificationForTET` is persisted in the selected config and is used only in relationship-driven search. In that context, biometric search is enabled only when the current tracked entity type UID matches the configured `enableIdentificationForTET` value.
+- **Inventory correction (2026-09-10, upgrade 3.4.2):** `SearchTEMap.kt` was removed from this list — checked its full history (`git log --all --follow`) and it never carried any biometrics/Simprints code; the only changes it ever received were two same-day package-move edits to an unrelated `launchImageDetail` import (`b354b59e8`/`d2440a186`, 2026-03-09). It was listed here without ever having customization content.
 
 ### 2.9 Biometric Duplicate Review And Confirm Identity
 
@@ -217,6 +217,7 @@ Status: `active`
 Main implementation points:
 - `app/src/main/java/org/dhis2/usescases/searchTrackEntity/SearchTEActivity.kt`
 - `app/src/main/java/org/dhis2/usescases/searchTrackEntity/SearchTEPresenter.java`
+- `app/src/main/java/org/dhis2/usescases/searchTrackEntity/SearchTEContractsModule.java` (Oslo file; `Presenter.sendBiometricsConfirmIdentity(teiUid, enrollmentUid, isOnline, isCredentialOnlyMatch)` declaration)
 - `app/src/main/java/org/dhis2/usescases/searchTrackEntity/SearchTEIViewModel.kt`
 - `app/src/main/java/org/dhis2/usescases/searchTrackEntity/SearchRepositoryImpl.java`
 - `app/src/main/java/org/dhis2/usescases/searchTrackEntity/listView/SearchTEList.kt`
@@ -234,6 +235,7 @@ Supporting files in the same workflow:
 
 Technical note:
 - Search behavior is tightly coupled to the Simprints biometric app and duplicate handling. `BiometricsClient.handleIdentifyResponse()` keeps credential-linked matches even when below the confidence threshold, and the duplicate flow can branch into confirm identity, open existing TEI dashboard, or `registerLast` for new enrollment completion. `BiometricsDuplicatesDialogPresenter` resolves duplicate candidates by issuing a normal DHIS2 search on the biometrics attribute UID with the Simprints GUID list. Several files already carry `EyeSeeTea customization` comments that point to active fork behavior.
+- **Manual confirm identity only skips verification for credential-only matches (fixed 2026-09-23):** on the manual path (`SearchTEActivity` confirm dialog → `SearchTEPresenter.sendBiometricsConfirmIdentity()`), the biometrics GUID is rewritten via `searchRepository.updateAttributeValue()` — which also stores the per-TEI verification (see 2.11) — unless the selected candidate is a credential-only match. PR #279 (`[Simprints] Fix match by credential`) originally skipped it whenever `isLinkedToCredential=true`, but Simprints also sets that flag when the face matches above the threshold, so a face match on a patient with a linked NHIS card never renewed the verification. The flag is now `isCredentialOnlyMatch` (credential linked **and** confidence below `confidenceScoreFilter`), computed in `BiometricsClient.handleIdentifyResponse()` and carried through `SimprintsItemParcelable` in `BiometricsDuplicatesDialog.kt`. The bug only surfaces when SID does not return `isVerified=true` (e.g. SID `2026.2.1+167.1`); with auto-navigation (`isVerified=true`, e.g. SID `2025.4.1+147.1`) `sendAutomaticBiometricsConfirmIdentity()` always stores the verification.
 - **Biometric search with multiple Simprints candidates bug (found and fixed 2026-09-03, upgrade 3.4.1):** `SearchRepositoryImpl.getFilteredRepository()` already carries the correct 3.3.1 behavior — it excludes the biometric attribute from the generic "collapse multiple values into one comma-joined string" logic (`!dataId.equals(biometricAttributeId)`), because a `identify` search resolves to a list of Simprints-returned candidate GUIDs, not free text where a comma could be literal. There are **three independent, non-overlapping search call paths** across `SearchTEIViewModel` and `BiometricsDuplicatesDialogPresenter`, and this bug affected two of them:
   - **List view** (`SearchTEIViewModel.loadSearchResults()`/`loadDisplayInListResults()`): calls `searchTrackedEntities.invoke(...)`, the KMP use case `SearchTrackedEntities.prepareQuery()` (`tracker/src/commonMain/.../domain/SearchTrackedEntities.kt`). **Broken.**
   - **Duplicate resolution** (`BiometricsDuplicatesDialogPresenter`, line ~95): calls the *same* `searchTrackedEntities.invoke(input)` use case, built by its own Dagger provider in `BiometricsDuplicatesDialogModule.kt` — `searchRepository` (the Java one) is injected there too, but only for `updateAttributeValue`/`downloadTei`, never for the search itself. **Broken.**
@@ -251,7 +253,6 @@ Main implementation points:
 - `app/src/main/java/org/dhis2/usescases/enrollment/EnrollmentActivity.kt`
 - `app/src/main/java/org/dhis2/usescases/enrollment/EnrollmentPresenterImpl.kt`
 - `app/src/main/java/org/dhis2/usescases/enrollment/EnrollmentView.kt`
-- `app/src/main/java/org/dhis2/data/forms/dataentry/ValueStoreImpl.kt`
 - `app/src/main/java/org/dhis2/usescases/teiDashboard/TeiDashboardMobileActivity.kt`
 - `app/src/main/java/org/dhis2/usescases/teiDashboard/dashboardfragments/teidata/TEIDataFragment.kt`
 - `app/src/main/java/org/dhis2/usescases/teiDashboard/dashboardfragments/teidata/TEIDataPresenter.kt`
@@ -267,6 +268,7 @@ Supporting files in the same workflow:
 
 Technical note:
 - Simprints extends enrollment, TEI form, dashboard, and search-card workflows with biometric status, actions, attribute handling, and registration/verification mapping. In enrollment/TEI form the active behavior is registration, duplicate handling, and `registerLast`; verification is not driven from the form flow. In TEI dashboard there are both registration and verification flows. `TEICardMapper` preserves biometrics and NHIS rows even when other empty attributes are hidden, decorates those rows with custom markers, and derives avatar initials from first-name/last-name attributes. This looks like core product behavior, not upgrade drift.
+- **Inventory correction (2026-09-10, upgrade 3.4.2):** `ValueStoreImpl.kt` was removed from this list — its only customization (`// EyeSeeetea customization no resize`, forcing `saveFileResource(value, false)` to skip image resizing) was already dead/commented-out code, removed on 2026-03-09 (`b354b59e8`, "Remove dead custom code"), restoring the standard `saveFileResource(value, valueType == ValueType.IMAGE)` call. Confirmed via full file history — not a casualty of the 3.4.2 merge.
 - `EnrollmentPresenterImpl.saveBiometricValue()` submits its `FormIntent.OnTextChange`/`OnSave` directly via `FormView.submitIntent()` (new method, `EnrollmentView.submitFormIntent()`), instead of `biometricsUiModel.onTextChange()/onSave()`. Reason: `BiometricsAttributeUiModelImpl` is a data class whose `callback: FieldUiModel.Callback?` field is not a constructor parameter, so `.copy()` (used by `onFieldsLoading`'s `.setValue().setEditable().setAgeUnderThreshold()`) drops it; the callback is only reattached when `Form.kt` actually paints that exact instance. Since baseline moved `onFieldsLoadingListener`/`onFieldsLoadedListener` from the `FormView` composable into `FormViewModel.items`' `map{}` (as part of its own upstream migration), the presenter-held `biometricsUiModel` reference can outlive that repaint and end up with `callback == null`, silently swallowing the save. Found and fixed 2026-09-02 (upgrade 3.4.1); see `upgrade-3.4-notes.md` for the full trace and the two other independent causes fixed alongside it (`onActivityResult` dropping non-`RESULT_OK` Simprints results, and Compose's `LaunchedEffect(items)` deduplication skipping `onFieldItemsRendered` on some emissions — the latter fixed via `LaunchedEffect(Unit) { viewModel.items.collect { render(it) } }`, also in `FormView.kt`).
 
 **Tech debt (not addressed 2026-09-02, deferred):** this fix works but is a workaround, not a clean design — it bypasses `FieldUiModel.Callback` entirely for the biometrics field instead of fixing why the callback goes stale, and it required adding two new methods across three files (`FormView.submitIntent`, `EnrollmentView.submitFormIntent`, `EnrollmentActivity` impl) plus a second Oslo-file change (`LaunchedEffect(Unit)` in the same `FormView.kt`) just to keep the pre-existing `pendingSave` mechanism working. Worth revisiting for a cleaner approach — e.g. having `EnrollmentPresenterImpl` react to `onFieldsLoaded` (which already fires per-emission from `FormViewModel`, unaffected by the callback/Compose timing issue) instead of holding a `biometricsUiModel` reference and depending on Compose to keep its `callback` alive. Deferred deliberately to keep the upgrade fix minimal and attributable; revisit once the upgrade is closed.
@@ -289,6 +291,7 @@ Main implementation points:
 - `app/src/main/java/org/dhis2/data/biometrics/utils/updateNHISNumberAttributeValue.kt`
 - `app/src/main/java/org/dhis2/data/biometrics/utils/GetTrackedEntityAttributeValueByAttribute.kt`
 - `app/src/main/java/org/dhis2/data/biometrics/utils/GetTeiByUid.kt`
+- `app/src/main/java/org/dhis2/usescases/main/data/HomeRepositoryImpl.kt` (Oslo file; embedded `// EyeSeeTea customization - Biometric Verification Persistence` block, see technical note)
 
 Supporting files in the same workflow:
 - `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/models/VerifyResult.kt`
@@ -298,6 +301,7 @@ Supporting files in the same workflow:
 
 Technical note:
 - This area covers the fork-specific path that sends data to Simprints, receives verification/identification results, and maps those results back into DHIS2 attributes and TEI state.
+- **Inventory addition (2026-09-10, upgrade 3.4.2):** `HomeRepositoryImpl.kt` carries an `init{}`-triggered cleanup of corrupted biometrics GUID attribute values (`deleteBiometricsAttributeValue`) — an embedded Simprints block inside a baseline-owned file, the same pattern `AGENTS-simprints.md` calls out explicitly. Confirmed present and unaffected across the 3.4.2 merge; was previously missing from this inventory.
 
 ### 2.12 Simprints Data Exchange And Mapping
 
@@ -340,6 +344,40 @@ Supporting files in the same workflow:
 
 Technical note:
 - `lastVerificationDuration` defines how long a saved verification remains valid before the app drops it from active verification state. `lastDeclinedEnrolDuration` defines how long failed/declined registration state remains before the UI clears it automatically in enrollment and dashboard flows.
+
+### 2.14 Biometrics Template Storage
+
+Status: `active`
+
+Main implementation points:
+- `commonskmm/src/commonMain/kotlin/org/dhis2/mobile/commons/biometrics/attributes.kt` (`biometricTemplateAttributeId` constant, UID `BP90qVFNazj`)
+- `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/BiometricsClient.kt` (`parseBiometricReferences`, parsing the previously-unread `subjectActions` intent extra)
+- `app/src/main/java/org/dhis2/data/biometrics/utils/updateBiometricTemplateAttributeValue.kt`
+- `app/src/main/java/org/dhis2/usescases/enrollment/EnrollmentPresenterImpl.kt` (`onBiometricsCompleted`; `onFieldsLoading` filters `biometricTemplateAttributeId` out of the form's field list)
+- `app/src/main/java/org/dhis2/usescases/teiDashboard/dashboardfragments/teidata/TEIDataPresenter.kt` (`onBiometricsCompleted`)
+
+Supporting files in the same workflow:
+- `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/models/SimprintsRegisteredItem.kt` (`biometricReferences` field)
+- `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/models/BiometricReference.kt`
+- `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/models/sid/SubjectActionsSID.kt`
+- `app/src/test/java/org/dhis2/data/biometrics/BiometricTemplateAttributeTestFixtures.kt` (shared `givenTemplateAttributeValueType(d2)` test fixture)
+- `app/src/test/java/org/dhis2/data/biometrics/biometricsClient/BiometricsClientTest.kt`
+- `app/src/test/java/org/dhis2/data/biometrics/utils/UpdateBiometricTemplateAttributeValueTest.kt`
+- `app/src/test/java/org/dhis2/usescases/enrollment/EnrollmentPresenterImplTest.kt`
+- `app/src/test/java/org/dhis2/usescases/teiDashboard/dashboardfragments/data/TeiDataPresenterTest.kt`
+- `eyeseetea-docs/scripts/simprints/replicate-biometrics-template.ts` (replicates the attribute metadata to another DHIS2 server — see technical note below)
+
+DHIS2 metadata (not app code, tracked here per the placement-hierarchy rule):
+- Tracked entity attribute `Biometrics Template` (UID `BP90qVFNazj`, `valueType: LONG_TEXT`), linked wherever the `Biometrics` (GUID) attribute `KdZcTAZfIk4` is linked: the `Person` TET and, on `simprints-dev`, the programs `0.0 General Registration` and `1.6 Child Health` as `programTrackedEntityAttribute`.
+- No program rule for this attribute. Two `HIDEFIELD` program rules (`cqYE1buKkxg` on General Registration, `W9yagzFawV1` on Child Health) were created and then deleted — see technical note below.
+
+Technical note:
+- Persists the face biometric template(s) returned by Simprints during enrollment to a new hidden tracked entity attribute, for future client-side analytics — see `openspec/changes/save-biometrics-template/` for the full proposal, spec, and design.
+- The template data lives in the `subjectActions` intent extra, which the app did not previously parse at all (only `enrolment` and `scannedCredential` were read). `biometricReferences` is persisted close to verbatim from the real Simprints payload shape: `{"biometricReferences": [{"type", "format", "templates": [{"template"}, ...]}]}`, dropping only the per-reference `id` (no known business value).
+- Written from the same two registration flows that already write the biometric GUID and NHIS number (`onBiometricsCompleted()` in both presenters, guarded by the same `hasCredential`/`scannedCredential` condition): plain registration and `registerLast` (biometric search → "New person" → "use last biometrics"). Confirming the identity of an existing TEI (`confirmIdentify`) is explicitly out of scope — that flow does not touch this attribute.
+- Hidden by a **code-level filter** in `EnrollmentPresenterImpl.onFieldsLoading()` (filters `biometricTemplateAttributeId` out of the field list, alongside the existing `BiometricsAttributeUiModelImpl` filter), not via a program rule and not via the hardcoded type-check used for the `Biometrics` (GUID) attribute. A `HIDEFIELD` program rule was tried first per initial PM guidance, then reverted: `RulesUtilsProviderImpl.hideField()` blanks a hidden attribute's value on every form save, which silently wiped the template written moments earlier by `updateBiometricTemplateAttributeValue` — confirmed on a real device (`blockingSetCheck result=true` immediately followed by the value's absence once the enrollment finished saving). Any `HIDEFIELD` rule on this attribute reproduces this, so a program rule is not a viable hiding mechanism here.
+- The attribute UID (`BP90qVFNazj`) exists on `simprints-dev` and Ghana Play (imported 2026-09-24 with the script below, linked on `Person`, `0.0 General Registration` and `1.6 Child Health`); it has to be created on every other instance, production included, before this ships to it. If the attribute is missing, enrollment still completes and the template is simply not saved.
+- Replicating the metadata to another instance: `npx tsx eyeseetea-docs/scripts/simprints/replicate-biometrics-template.ts --target <Name> --mode plan|validate|commit` (credentials from `local.properties`, `simprins<Name>Server|User|Pwd`). Only the attribute UID must match, because the app hardcodes it; program and TET UIDs are taken from the target instance. The script copies the attribute from `simprints-dev` and adds only the missing link to the target's own TETs and programs that carry `Biometrics`, so it does not overwrite the rest of their configuration (e.g. `0.0 General Registration` has different mandatory attributes on `simprints-dev` and Ghana Play). It backs up the target objects, validates before importing, and can be run again safely. Always run `plan` first and review the programs it leaves out: instances differ in which programs carry `Biometrics` (production has four), and the same program UID can mean a different program on another instance. Importing needs a superuser account.
 
 ## 3. Areas explicitly out of scope for preservation
 

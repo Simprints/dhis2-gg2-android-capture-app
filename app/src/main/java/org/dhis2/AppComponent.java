@@ -18,7 +18,6 @@ import org.dhis2.data.server.ServerModule;
 import org.dhis2.data.service.workManager.WorkManagerController;
 import org.dhis2.data.service.workManager.WorkManagerModule;
 import org.dhis2.mobile.commons.reporting.CrashReportController;
-// EyeSeeTea customization - Biometrics Configuration Selection Per Program Or Org Unit Group
 import org.dhis2.usescases.login.LoginComponent;
 import org.dhis2.usescases.splash.SplashComponent;
 import org.dhis2.usescases.splash.SplashModule;

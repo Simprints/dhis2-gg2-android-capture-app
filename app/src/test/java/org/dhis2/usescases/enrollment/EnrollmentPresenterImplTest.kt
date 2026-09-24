@@ -9,10 +9,17 @@ import org.dhis2.commons.biometrics.BiometricsPreference
 import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.schedulers.SchedulerProvider
+import org.dhis2.data.biometrics.biometricsClient.models.BiometricReference
+import org.dhis2.data.biometrics.biometricsClient.models.BiometricTemplate
+import org.dhis2.data.biometrics.biometricsClient.models.RegisterResult
+import org.dhis2.data.biometrics.biometricsClient.models.ScannedCredential
+import org.dhis2.data.biometrics.biometricsClient.models.SimprintsRegisteredItem
+import org.dhis2.data.biometrics.givenTemplateAttributeValueType
 import org.dhis2.data.schedulers.TrampolineSchedulerProvider
 import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.FieldUiModelImpl
 import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
+import org.dhis2.mobile.commons.biometrics.biometricTemplateAttributeId
 import org.dhis2.usescases.biometrics.entities.BiometricsConfig
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
@@ -410,6 +417,101 @@ class EnrollmentPresenterImplTest {
     }
 
     //EyeSeeTea Customizations
+    @Test
+    fun `Should write the biometric template attribute when register completes with credential and templates`() {
+        val teiUid = "teiUid"
+        givenAData()
+        givenATei(teiUid, State.TO_POST)
+        givenTemplateAttributeValueType(d2)
+        givenNoStoredBiometricsVerifications()
+        presenter.onFieldsLoaded(givenAFieldsWithBiometrics())
+
+        val biometricReferences = listOf(
+            BiometricReference(
+                type = "FACE_REFERENCE",
+                format = "RANK_ONE_3_1",
+                templates = listOf(BiometricTemplate("template1")),
+            ),
+        )
+
+        presenter.handleRegisterResponse(
+            RegisterResult.Completed(
+                SimprintsRegisteredItem(
+                    guid = "guid1",
+                    hasCredential = true,
+                    scannedCredential = ScannedCredential(type = "NHIS", value = "credentialValue"),
+                    biometricReferences = biometricReferences,
+                ),
+            ),
+        )
+
+        val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
+            .value(biometricTemplateAttributeId, teiUid)
+        verify(valueRepository).blockingSet(any())
+    }
+
+    @Test
+    fun `Should not write the biometric template attribute when register completes without a credential`() {
+        val teiUid = "teiUid"
+        givenAData()
+        givenATei(teiUid, State.TO_POST)
+        givenTemplateAttributeValueType(d2)
+        givenNoStoredBiometricsVerifications()
+        presenter.onFieldsLoaded(givenAFieldsWithBiometrics())
+
+        val biometricReferences = listOf(
+            BiometricReference(
+                type = "FACE_REFERENCE",
+                format = "RANK_ONE_3_1",
+                templates = listOf(BiometricTemplate("template1")),
+            ),
+        )
+
+        presenter.handleRegisterResponse(
+            RegisterResult.Completed(
+                SimprintsRegisteredItem(
+                    guid = "guid1",
+                    hasCredential = false,
+                    scannedCredential = null,
+                    biometricReferences = biometricReferences,
+                ),
+            ),
+        )
+
+        val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
+            .value(biometricTemplateAttributeId, teiUid)
+        verify(valueRepository, never()).blockingSet(any())
+    }
+
+    @Test
+    fun `Should not write the biometric template attribute when there are no biometric references`() {
+        val teiUid = "teiUid"
+        givenAData()
+        givenATei(teiUid, State.TO_POST)
+        givenTemplateAttributeValueType(d2)
+        givenNoStoredBiometricsVerifications()
+        presenter.onFieldsLoaded(givenAFieldsWithBiometrics())
+
+        presenter.handleRegisterResponse(
+            RegisterResult.Completed(
+                SimprintsRegisteredItem(
+                    guid = "guid1",
+                    hasCredential = true,
+                    scannedCredential = ScannedCredential(type = "NHIS", value = "credentialValue"),
+                    biometricReferences = emptyList(),
+                ),
+            ),
+        )
+
+        val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
+            .value(biometricTemplateAttributeId, teiUid)
+        verify(valueRepository, never()).blockingSet(any())
+    }
+
+    private fun givenNoStoredBiometricsVerifications() {
+        whenever(basicPreferenceProvider.getObjectFromJson<List<Any>>(any(), any(), any())) doReturn listOf()
+    }
+
     @Test
     fun `should_not_remove_biometrics_attribute_if_biometrics_mode_is_full`() {
         val presenter = givenABiometricsMode(BiometricsMode.full)

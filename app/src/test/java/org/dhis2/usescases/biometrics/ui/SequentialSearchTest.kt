@@ -103,7 +103,7 @@ class SequentialSearchTest {
             sessionId = sessionId,
             biometricUids = listOf(biometricUid),
             isAgeNotSupported = false,
-            simprintsItems = listOf(SimprintsIdentifiedItem(biometricUid, 99.0F, false, false)),
+            simprintsItems = listOf(SimprintsIdentifiedItem(biometricUid, 99.0F, false, false, true)),
             scannedCredential = null
         )
         return biometricsSearch
@@ -116,7 +116,7 @@ class SequentialSearchTest {
             sessionId = null,
             biometricUids = listOf(biometricUid),
             isAgeNotSupported = false,
-            simprintsItems = listOf(SimprintsIdentifiedItem(biometricUid, 99.0F, false, false)),
+            simprintsItems = listOf(SimprintsIdentifiedItem(biometricUid, 99.0F, false, false, true)),
             scannedCredential = null
         )
         return biometricsSearch

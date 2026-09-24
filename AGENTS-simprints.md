@@ -32,7 +32,7 @@ per module type.
 
 ## Customizations
 
-13 confirmed Simprints customizations. Each has an OpenSpec spec in `openspec/specs/`:
+14 confirmed Simprints customizations. Each has an OpenSpec spec in `openspec/specs/`:
 
 | # | Spec slug | Status | Risk |
 |---|-----------|--------|------|
@@ -49,6 +49,7 @@ per module type.
 | 11 | `biometrics-verification-persistence` | active | medium |
 | 12 | `biometrics-time-based-windows` | active | low |
 | 13 | `simprints-data-exchange-mapping` | active | high |
+| 14 | `biometrics-template-storage` | active | medium |
 
 Areas explicitly **not** preserved during upgrades (see section 3 of `customization-files.md`): 2FA/login changes, notifications, change server URL, granular sync flavor wiring.
 

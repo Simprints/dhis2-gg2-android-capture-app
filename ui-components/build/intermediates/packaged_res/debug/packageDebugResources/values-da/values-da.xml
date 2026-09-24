@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="action_cancel">Cancel</string>
-    <string name="action_close">Close</string>
-    <string name="cancel">Cancel</string>
-    <string name="clear">Clear</string>
-    <string name="save">Save</string>
-</resources>

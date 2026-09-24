@@ -10,7 +10,12 @@ import org.dhis2.data.biometrics.biometricsClient.models.RegisterResult
 import org.dhis2.data.biometrics.biometricsClient.models.VerifyResult
 import org.dhis2.data.biometrics.biometricsClient.models.sid.IdentificationSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.RegistrationSID
+import org.dhis2.data.biometrics.biometricsClient.models.sid.BiometricReferenceSID
+import org.dhis2.data.biometrics.biometricsClient.models.sid.BiometricTemplateSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.ScannedCredentialSID
+import org.dhis2.data.biometrics.biometricsClient.models.sid.SubjectActionEventSID
+import org.dhis2.data.biometrics.biometricsClient.models.sid.SubjectActionPayloadSID
+import org.dhis2.data.biometrics.biometricsClient.models.sid.SubjectActionsSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.VerificationSID
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -108,6 +113,8 @@ class BiometricsClientTest {
         val result = client.handleIdentifyResponse(Activity.RESULT_OK, data) as IdentifyResult.Completed
 
         assertEquals(listOf("guid2"), result.items.map { it.guid })
+        assertTrue(result.items.single().isBiometricMatch)
+        assertTrue(!result.items.single().isCredentialOnlyMatch)
     }
 
     @Test
@@ -124,6 +131,25 @@ class BiometricsClientTest {
         val result = client.handleIdentifyResponse(Activity.RESULT_OK, data) as IdentifyResult.Completed
 
         assertEquals(listOf("guid1"), result.items.map { it.guid })
+        assertTrue(!result.items.single().isBiometricMatch)
+        assertTrue(result.items.single().isCredentialOnlyMatch)
+    }
+
+    @Test
+    fun `Should mark credential linked identification above filter as biometric match`() {
+        val client = givenABiometricsClient(confidenceScoreFilter = 50)
+        val data = givenAnIntent(
+            biometricsCompleted = true,
+            sessionId = "session1",
+            identifications = listOf(
+                givenAnIdentificationSID(guid = "guid1", confidence = 90f, isLinkedToCredential = true),
+            ),
+        )
+
+        val result = client.handleIdentifyResponse(Activity.RESULT_OK, data) as IdentifyResult.Completed
+
+        assertTrue(result.items.single().isBiometricMatch)
+        assertTrue(!result.items.single().isCredentialOnlyMatch)
     }
 
     @Test
@@ -151,6 +177,58 @@ class BiometricsClientTest {
         assertEquals("guid1", result.item.guid)
         assertTrue(result.item.hasCredential)
         assertEquals("credentialValue", result.item.scannedCredential?.value)
+    }
+
+    @Test
+    fun `Should carry parsed biometric references when register response includes subject actions`() {
+        val client = givenABiometricsClient()
+        val data = givenAnIntent(
+            biometricsCompleted = true,
+            registration = givenARegistrationSID(guid = "guid1"),
+            hasCredential = true,
+            subjectActionsJson = givenASubjectActionsJson(
+                type = "FACE_REFERENCE",
+                format = "RANK_ONE_3_1",
+                templates = listOf("template1", "template2"),
+            ),
+        )
+
+        val result = client.handleRegisterResponse(Activity.RESULT_OK, data) as RegisterResult.Completed
+
+        assertEquals(1, result.item.biometricReferences.size)
+        val reference = result.item.biometricReferences.first()
+        assertEquals("FACE_REFERENCE", reference.type)
+        assertEquals("RANK_ONE_3_1", reference.format)
+        assertEquals(listOf("template1", "template2"), reference.templates.map { it.template })
+    }
+
+    @Test
+    fun `Should return empty biometric references when subject actions extra is absent`() {
+        val client = givenABiometricsClient()
+        val data = givenAnIntent(
+            biometricsCompleted = true,
+            registration = givenARegistrationSID(guid = "guid1"),
+            hasCredential = true,
+        )
+
+        val result = client.handleRegisterResponse(Activity.RESULT_OK, data) as RegisterResult.Completed
+
+        assertTrue(result.item.biometricReferences.isEmpty())
+    }
+
+    @Test
+    fun `Should return empty biometric references when subject actions extra is not valid json`() {
+        val client = givenABiometricsClient()
+        val data = givenAnIntent(
+            biometricsCompleted = true,
+            registration = givenARegistrationSID(guid = "guid1"),
+            hasCredential = true,
+            subjectActionsJson = "not valid json",
+        )
+
+        val result = client.handleRegisterResponse(Activity.RESULT_OK, data) as RegisterResult.Completed
+
+        assertTrue(result.item.biometricReferences.isEmpty())
     }
 
     @Test
@@ -301,6 +379,7 @@ class BiometricsClientTest {
         scannedCredentialSID: ScannedCredentialSID? = null,
         verification: VerificationSID? = null,
         simprintsVerificationSuccess: Boolean? = null,
+        subjectActionsJson: String? = null,
     ): Intent {
         val data: Intent = mock()
 
@@ -338,6 +417,8 @@ class BiometricsClientTest {
                 simprintsVerificationSuccess
         }
 
+        whenever(data.getStringExtra("subjectActions")) doReturn subjectActionsJson
+
         return data
     }
 
@@ -362,4 +443,27 @@ class BiometricsClientTest {
 
     private fun givenAVerificationSID(confidence: Float, confidenceBand: String): VerificationSID =
         VerificationSID(guid = "guid1", confidence = confidence, confidenceBand = confidenceBand)
+
+    private fun givenASubjectActionsJson(
+        type: String,
+        format: String,
+        templates: List<String>,
+    ): String {
+        val subjectActions = SubjectActionsSID(
+            events = listOf(
+                SubjectActionEventSID(
+                    payload = SubjectActionPayloadSID(
+                        biometricReferences = listOf(
+                            BiometricReferenceSID(
+                                type = type,
+                                format = format,
+                                templates = templates.map { BiometricTemplateSID(it) },
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        return Gson().toJson(subjectActions)
+    }
 }
