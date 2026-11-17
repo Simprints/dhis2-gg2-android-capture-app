@@ -5,50 +5,62 @@ import org.dhis2.data.biometrics.biometricsClient.models.ScannedCredential
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 import org.dhis2.mobile.commons.biometrics.biometricAttributeId
 
+@Suppress("ktlint:standard:property-naming")
 const val failedBiometricsSessionId = "NA"
 
 sealed class SequentialSearch(
     open val previousSearch: SequentialSearch?,
-    open val nextActions: List<SequentialSearchAction>
+    open val nextActions: List<SequentialSearchAction>,
 ) {
     private val sequentialSessionId: String?
-        get() = when (this) {
-            is BiometricsSearch -> {
-                this.sessionId
-            }
+        get() =
+            when (this) {
+                is BiometricsSearch -> {
+                    this.sessionId
+                }
 
-            is AttributeSearch -> {
-                (previousSearch as? BiometricsSearch)?.sessionId
+                is AttributeSearch -> {
+                    (previousSearch as? BiometricsSearch)?.sessionId
+                }
             }
-        }
 
     val finalQueryData: HashMap<String, String>
-        get() = when (this) {
-            is BiometricsSearch -> {
-                val biometricsQueryData = sequentialSessionId?.let {
-                    hashMapOf(biometricAttributeId to BIOMETRICS_SEARCH_PATTERN + sequentialSessionId + "_" + biometricUids.joinToString ( ";" ))
+        get() =
+            when (this) {
+                is BiometricsSearch -> {
+                    val biometricsQueryData =
+                        sequentialSessionId?.let {
+                            hashMapOf(
+                                biometricAttributeId to
+                                    BIOMETRICS_SEARCH_PATTERN + sequentialSessionId + "_" + biometricUids.joinToString(";"),
+                            )
+                        }
+                            ?: emptyMap()
+
+                    val attributesQueryData =
+                        (previousSearch as? AttributeSearch)?.queryData ?: emptyMap()
+
+                    HashMap(biometricsQueryData + attributesQueryData)
                 }
-                    ?: emptyMap()
 
-                val attributesQueryData =
-                    (previousSearch as? AttributeSearch)?.queryData ?: emptyMap()
+                is AttributeSearch -> {
+                    val attributesQueryData = queryData
 
-                HashMap(biometricsQueryData + attributesQueryData)
-            }
-
-            is AttributeSearch -> {
-                val attributesQueryData = queryData
-
-                val biometricsQueryData =
-                    (previousSearch as? BiometricsSearch)?.let {
-                        sequentialSessionId?.let { sessionId ->
-                            hashMapOf(biometricAttributeId to BIOMETRICS_SEARCH_PATTERN + sessionId + "_" + it.biometricUids.joinToString( ";" ))
+                    val biometricsQueryData =
+                        (previousSearch as? BiometricsSearch)?.let {
+                            sequentialSessionId?.let { sessionId ->
+                                hashMapOf(
+                                    biometricAttributeId to BIOMETRICS_SEARCH_PATTERN + sessionId + "_" +
+                                        it.biometricUids.joinToString(
+                                            ";",
+                                        ),
+                                )
+                            } ?: emptyMap()
                         } ?: emptyMap()
-                    } ?: emptyMap()
 
-                HashMap(biometricsQueryData + attributesQueryData)
+                    HashMap(biometricsQueryData + attributesQueryData)
+                }
             }
-        }
 
     data class BiometricsSearch(
         override val previousSearch: SequentialSearch?,
@@ -57,19 +69,20 @@ sealed class SequentialSearch(
         val sessionId: String?,
         val isAgeNotSupported: Boolean,
         val simprintsItems: List<SimprintsIdentifiedItem>,
-        val scannedCredential: ScannedCredential?
+        val scannedCredential: ScannedCredential?,
     ) : SequentialSearch(previousSearch, nextActions)
 
     data class AttributeSearch(
         override val previousSearch: SequentialSearch?,
         override val nextActions: List<SequentialSearchAction>,
-        val queryData: Map<String, String>
+        val queryData: Map<String, String>,
     ) : SequentialSearch(previousSearch, nextActions)
 }
 
 sealed class SequentialSearchAction {
     data object SearchWithBiometrics : SequentialSearchAction()
+
     data object SearchWithAttributes : SequentialSearchAction()
+
     data object RegisterNew : SequentialSearchAction()
 }
-

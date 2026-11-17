@@ -13,7 +13,7 @@ import timber.log.Timber
 
 fun isUnderAgeThreshold(
     basicPreferenceProvider: BasicPreferenceProvider,
-    attributeValues: List<TrackedEntityAttributeValue>
+    attributeValues: List<TrackedEntityAttributeValue>,
 ): Boolean {
     val ageInMonths =
         getAgeInMonthsByAttributes(basicPreferenceProvider, attributeValues)
@@ -24,7 +24,7 @@ fun isUnderAgeThreshold(
 
 fun containsAgeFilterAndIsUnderAgeThreshold(
     basicPreferenceProvider: BasicPreferenceProvider,
-    queryData: Map<String, List<String>?>
+    queryData: Map<String, List<String>?>,
 ): Boolean {
     val biometricsConfig = getBiometricsConfig(basicPreferenceProvider)
 
@@ -42,7 +42,7 @@ fun containsAgeFilterAndIsUnderAgeThreshold(
 
 fun getAgeInMonthsByFieldUiModel(
     basicPreferenceProvider: BasicPreferenceProvider,
-    fields: List<FieldUiModel>
+    fields: List<FieldUiModel>,
 ): Long {
     val biometricsConfig = getBiometricsConfig(basicPreferenceProvider)
 
@@ -57,7 +57,7 @@ fun getAgeInMonthsByFieldUiModel(
 
 fun getAgeInMonthsByAttributes(
     basicPreferenceProvider: BasicPreferenceProvider,
-    attributes: List<TrackedEntityAttributeValue>
+    attributes: List<TrackedEntityAttributeValue>,
 ): Long {
     val biometricsConfig = getBiometricsConfig(basicPreferenceProvider)
 
@@ -87,7 +87,7 @@ fun getAgeInMonthsByAttributes(
 @JvmName("isUnderAgeThresholdForSearchItems")
 fun isUnderAgeThreshold(
     basicPreferenceProvider: BasicPreferenceProvider,
-    attributeValues: List<TrackedEntitySearchItemAttributeDomain>
+    attributeValues: List<TrackedEntitySearchItemAttributeDomain>,
 ): Boolean {
     val ageInMonths = getAgeInMonthsBySearchItemAttributes(basicPreferenceProvider, attributeValues)
     val biometricsConfig = getBiometricsConfig(basicPreferenceProvider)
@@ -98,7 +98,7 @@ fun isUnderAgeThreshold(
 // EyeSeeTea customization - Age Threshold Controls For Biometrics
 fun getAgeInMonthsBySearchItemAttributes(
     basicPreferenceProvider: BasicPreferenceProvider,
-    attributes: List<TrackedEntitySearchItemAttributeDomain>
+    attributes: List<TrackedEntitySearchItemAttributeDomain>,
 ): Long {
     val biometricsConfig = getBiometricsConfig(basicPreferenceProvider)
 
@@ -112,17 +112,20 @@ fun getAgeInMonthsBySearchItemAttributes(
     }
 }
 
-fun calculateAgeInMonths(value: String, now: DateTime): Long {
-    return try {
-
+fun calculateAgeInMonths(
+    value: String,
+    now: DateTime,
+): Long =
+    try {
         val formatter1 = DateTimeFormat.forPattern(DateUtils.SIMPLE_DATE_FORMAT)
         val formatter2 = DateTimeFormat.forPattern(DateUtils.DATE_FORMAT_EXPRESSION)
 
-        val dateValue = try {
-            formatter1.parseDateTime(value)
-        } catch (e: Exception) {
-            formatter2.parseDateTime(value)
-        }
+        val dateValue =
+            try {
+                formatter1.parseDateTime(value)
+            } catch (e: Exception) {
+                formatter2.parseDateTime(value)
+            }
 
         val months = Days.daysBetween(dateValue, now).days.toDouble() / 30
 
@@ -133,4 +136,3 @@ fun calculateAgeInMonths(value: String, now: DateTime): Long {
     } catch (e: Exception) {
         0
     }
-}

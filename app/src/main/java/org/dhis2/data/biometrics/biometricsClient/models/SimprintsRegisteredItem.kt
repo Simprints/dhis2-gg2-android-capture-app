@@ -6,5 +6,3 @@ data class SimprintsRegisteredItem(
     val scannedCredential: ScannedCredential?,
     val biometricReferences: List<BiometricReference> = emptyList(),
 )
-
-

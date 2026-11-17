@@ -683,8 +683,7 @@ class FormView : Fragment() {
         /**
          * Sets if loading started or finished to handle loadingfeedback
          * */
-        fun onFieldsLoadedListener(callback: (fields: List<FieldUiModel>) -> Unit) =
-            apply { this.onFieldsLoadedListener = callback }
+        fun onFieldsLoadedListener(callback: (fields: List<FieldUiModel>) -> Unit) = apply { this.onFieldsLoadedListener = callback }
 
         /**
          * Sets if loading started or finished to handle loadingfeedback
@@ -697,7 +696,7 @@ class FormView : Fragment() {
          */
         fun onFocused(callback: () -> Unit) = apply { this.onFocused = callback }
 
-        fun onFieldItemsRendered(callback:(fieldsEmpty: Boolean) -> Unit) = apply { this.onFieldItemsRendered = callback }
+        fun onFieldItemsRendered(callback: (fieldsEmpty: Boolean) -> Unit) = apply { this.onFieldItemsRendered = callback }
 
         /**
          * Set a FragmentManager for instantiating the form view
@@ -755,6 +754,5 @@ class FormView : Fragment() {
 
     companion object {
         const val RECORDS = "RECORDS"
-        const val TEMP_FILE = "tempFile.png"
     }
 }

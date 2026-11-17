@@ -46,10 +46,16 @@ class EnrollmentFormRepositoryImpl(
             programUid,
         ) == EnrollmentAccess.WRITE_ACCESS
 
-    override fun isTeiInNoOtherProgram(teiUid: String, programUid: String): Boolean =
-        d2.enrollmentModule().enrollments()
-            .byTrackedEntityInstance().eq(teiUid)
-            .byProgram().neq(programUid)
+    override fun isTeiInNoOtherProgram(
+        teiUid: String,
+        programUid: String,
+    ): Boolean =
+        d2
+            .enrollmentModule()
+            .enrollments()
+            .byTrackedEntityInstance()
+            .eq(teiUid)
+            .byProgram()
+            .neq(programUid)
             .blockingCount() == 0
-
 }

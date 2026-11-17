@@ -29,8 +29,8 @@ import org.dhis2.data.biometrics.utils.updateVerification
 import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.RowAction
 import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
-import org.dhis2.mobile.commons.biometrics.biometricTemplateAttributeId
 import org.dhis2.form.ui.intent.FormIntent
+import org.dhis2.mobile.commons.biometrics.biometricTemplateAttributeId
 import org.dhis2.usescases.biometrics.BIOMETRICS_ENABLED
 import org.dhis2.usescases.biometrics.duplicates.LastPossibleDuplicates
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
@@ -81,29 +81,32 @@ class EnrollmentPresenterImpl(
     private val dateEditionWarningHandler: DateEditionWarningHandler,
     private val basicPreferenceProvider: BasicPreferenceProvider,
 ) {
-
     private var pendingSave: Boolean = false
     private val disposable = CompositeDisposable()
     private val backButtonProcessor: FlowableProcessor<Boolean> = PublishProcessor.create()
     private var hasShownIncidentDateEditionWarning = false
     private var hasShownEnrollmentDateEditionWarning = false
     private var biometricsUiModel: BiometricsAttributeUiModelImpl? = null
-    private val lastDeclinedEnrolDuration = basicPreferenceProvider.getInt(
-        BiometricsPreference.LAST_DECLINED_ENROL_DURATION, 0
-    )
+    private val lastDeclinedEnrolDuration =
+        basicPreferenceProvider.getInt(
+            BiometricsPreference.LAST_DECLINED_ENROL_DURATION,
+            0,
+        )
     private var resetBiometricsFailureAfterTimeDisposable: Disposable? = null
     private var lastPossibleDuplicates: LastPossibleDuplicates? = null
 
-    val biometricsMode = programRepository.blockingGet()
-        ?.let { getBiometricsConfigByProgram(basicPreferenceProvider, it.uid())?.biometricsMode }
-        ?: BiometricsMode.full
+    val biometricsMode =
+        programRepository
+            .blockingGet()
+            ?.let { getBiometricsConfigByProgram(basicPreferenceProvider, it.uid())?.biometricsMode }
+            ?: BiometricsMode.full
 
     fun init() {
         view.setSaveButtonVisible(false)
 
         disposable.add(
             teiRepository
-                .get()
+                .rxGet()
                 .map { tei ->
                     val attrList = mutableListOf<String>()
                     val attributesValues =
@@ -144,8 +147,8 @@ class EnrollmentPresenterImpl(
 
         disposable.add(
             programRepository
-                .get()
-                .map { it.access()?.data()?.write() }
+                .rxGet()
+                .map { it.access().data().write() }
                 .subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.ui())
                 .subscribe(
@@ -156,7 +159,7 @@ class EnrollmentPresenterImpl(
 
         disposable.add(
             enrollmentObjectRepository
-                .get()
+                .rxGet()
                 .map { it.status() }
                 .subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.ui())
@@ -227,7 +230,7 @@ class EnrollmentPresenterImpl(
                 view.displayMessage(null)
                 false
             }
-        } catch (error: D2Error) {
+        } catch (_: D2Error) {
             false
         }
 
@@ -290,8 +293,8 @@ class EnrollmentPresenterImpl(
     fun isEventScheduleOrSkipped(eventUid: String): Boolean {
         val event = eventCollectionRepository.uid(eventUid).blockingGet()
         return event?.status() == EventStatus.SCHEDULE ||
-                event?.status() == EventStatus.SKIPPED ||
-                event?.status() == EventStatus.OVERDUE
+            event?.status() == EventStatus.SKIPPED ||
+            event?.status() == EventStatus.OVERDUE
     }
 
     fun suggestedReportDateIsNotFutureDate(eventUid: String): Boolean {
@@ -313,13 +316,12 @@ class EnrollmentPresenterImpl(
             val currentDate = DateUtils.getInstance().getStartOfDay(Date())
             return minStartReportEventDate.before(currentDate) || minStartReportEventDate == currentDate
         } catch (e: Exception) {
-            Timber.d(e.message)
+            Timber.d(e)
             true
         }
     }
 
-    private fun isBiometricsAvailable(): Boolean =
-        BIOMETRICS_ENABLED && biometricsUiModel != null
+    private fun isBiometricsAvailable(): Boolean = BIOMETRICS_ENABLED && biometricsUiModel != null
 
     fun handleRegisterResponse(result: RegisterResult) {
         when (result) {
@@ -345,23 +347,22 @@ class EnrollmentPresenterImpl(
                 onBiometricsPossibleDuplicates(
                     result.items,
                     result.sessionId,
-                    enrollNewVisible = true
+                    enrollNewVisible = true,
                 )
             }
         }
     }
 
-
-    private fun onBiometricsCompleted(item: SimprintsRegisteredItem ) {
+    private fun onBiometricsCompleted(item: SimprintsRegisteredItem) {
         lastPossibleDuplicates = null
         saveBiometricValue(item.guid)
 
         // TODO: Add condition by credential type
-        if (item.hasCredential && item.scannedCredential?.type != null){
+        if (item.hasCredential && item.scannedCredential?.type != null) {
             updateNHISNumberAttributeValue(
                 d2,
                 teiRepository.blockingGet()?.uid() ?: "",
-                item.scannedCredential.value
+                item.scannedCredential.value,
             )
 
             // EyeSeeTea customization - Biometrics Template Storage
@@ -377,13 +378,14 @@ class EnrollmentPresenterImpl(
         pendingSave = false
 
         val uuid: UUID = UUID.randomUUID()
-        saveBiometricValue("${BIOMETRICS_FAILURE_PATTERN}_${uuid}")
+        saveBiometricValue("${BIOMETRICS_FAILURE_PATTERN}_$uuid")
     }
 
     fun checkIfBiometricValueValid() {
         if (BIOMETRICS_ENABLED) {
-            if (biometricsUiModel != null && biometricsUiModel!!.value != null && biometricsUiModel!!.value!!.startsWith(
-                    BIOMETRICS_FAILURE_PATTERN
+            if (biometricsUiModel != null && biometricsUiModel!!.value != null &&
+                biometricsUiModel!!.value!!.startsWith(
+                    BIOMETRICS_FAILURE_PATTERN,
                 )
             ) {
                 saveBiometricValue(null)
@@ -394,18 +396,27 @@ class EnrollmentPresenterImpl(
     private fun onBiometricsPossibleDuplicates(
         possibleDuplicates: List<SimprintsIdentifiedItem>,
         sessionId: String,
-        enrollNewVisible: Boolean = true
+        enrollNewVisible: Boolean = true,
     ) {
         val program = getProgram()!!.uid()
         val biometricsAttUid = biometricsUiModel!!.uid
         val teiUid = getEnrollment()!!.trackedEntityInstance() ?: ""
 
         val tei =
-            d2.trackedEntityModule().trackedEntityInstances().withTrackedEntityAttributeValues()
-                .uid(teiUid).blockingGet()
+            d2
+                .trackedEntityModule()
+                .trackedEntityInstances()
+                .withTrackedEntityAttributeValues()
+                .uid(teiUid)
+                .blockingGet()
 
-        val teiTypeUid = d2.trackedEntityModule().trackedEntityInstances().uid(teiUid).blockingGet()
-            ?.trackedEntityType()!!
+        val teiTypeUid =
+            d2
+                .trackedEntityModule()
+                .trackedEntityInstances()
+                .uid(teiUid)
+                .blockingGet()
+                ?.trackedEntityType()!!
 
         val orgUnit = orgUnitRepository.getByUid(getEnrollment()!!.organisationUnit() ?: "")
         val orgUnitUId = orgUnit.uid() ?: ""
@@ -414,12 +425,13 @@ class EnrollmentPresenterImpl(
         val orgUnitAsModuleId = getOrgUnitAsModuleId(orgUnitUId, d2, basicPreferenceProvider)
         val userOrgUnits = orgUnitRepository.getUserOrgUnits(getProgram()?.uid() ?: "")
 
-        val ageInMonths = tei?.trackedEntityAttributeValues()?.let {
-            getAgeInMonthsByAttributes(
-                basicPreferenceProvider,
-                it
-            )
-        }
+        val ageInMonths =
+            tei?.trackedEntityAttributeValues()?.let {
+                getAgeInMonthsByAttributes(
+                    basicPreferenceProvider,
+                    it,
+                )
+            }
 
         if (possibleDuplicates.isEmpty()) {
             view.registerLast(
@@ -429,7 +441,7 @@ class EnrollmentPresenterImpl(
                 teiUid,
                 orgUnitUId,
                 orgUnitName,
-                userOrgUnits.map { it.uid() }
+                userOrgUnits.map { it.uid() },
             )
         } else if (possibleDuplicates.size == 1 && possibleDuplicates[0].guid == biometricsUiModel!!.value) {
             view.registerLast(
@@ -439,7 +451,7 @@ class EnrollmentPresenterImpl(
                 teiUid,
                 orgUnitUId,
                 orgUnitName,
-                userOrgUnits.map { it.uid() }
+                userOrgUnits.map { it.uid() },
             )
         } else {
             val finalPossibleDuplicates =
@@ -459,7 +471,7 @@ class EnrollmentPresenterImpl(
                 teiUid,
                 orgUnitUId,
                 orgUnitName,
-                userOrgUnits.map { it.uid() }
+                userOrgUnits.map { it.uid() },
             )
         }
     }
@@ -493,9 +505,11 @@ class EnrollmentPresenterImpl(
 
     fun onFieldsLoaded(fields: List<FieldUiModel>) {
         if (BIOMETRICS_ENABLED) {
-            biometricsUiModel = fields.firstOrNull {
-                it is BiometricsAttributeUiModelImpl
-            }?.let { it as BiometricsAttributeUiModelImpl }
+            biometricsUiModel =
+                fields
+                    .firstOrNull {
+                        it is BiometricsAttributeUiModelImpl
+                    }?.let { it as BiometricsAttributeUiModelImpl }
 
             biometricsUiModel?.let {
                 showOrHideSaveButton()
@@ -520,7 +534,7 @@ class EnrollmentPresenterImpl(
                     teiUid,
                     orgUnitUId,
                     orgUnitName,
-                    userOrgUnits.map { it.uid() }
+                    userOrgUnits.map { it.uid() },
                 )
 
                 pendingSave = true
@@ -543,7 +557,7 @@ class EnrollmentPresenterImpl(
                     teiUid,
                     orgUnitUId,
                     orgUnitName,
-                    userOrgUnits.map { it.uid() }
+                    userOrgUnits.map { it.uid() },
                 )
             }
 
@@ -561,32 +575,36 @@ class EnrollmentPresenterImpl(
         }
 
         resetBiometricsFailureAfterTimeDisposable =
-            (Observable.timer(lastDeclinedEnrolDuration.toLong(), TimeUnit.MINUTES)
-                .subscribeOn(schedulerProvider.io())
-                .observeOn(schedulerProvider.ui())
-                .subscribe(
-                    {
-                        saveBiometricValue(null)
-                    }
-                ) { t: Throwable? -> Timber.e(t) })
+            (
+                Observable
+                    .timer(lastDeclinedEnrolDuration.toLong(), TimeUnit.MINUTES)
+                    .subscribeOn(schedulerProvider.io())
+                    .observeOn(schedulerProvider.ui())
+                    .subscribe(
+                        {
+                            saveBiometricValue(null)
+                        },
+                    ) { t: Throwable? -> Timber.e(t) }
+            )
 
         disposable.add(resetBiometricsFailureAfterTimeDisposable!!)
     }
 
     fun onFieldsLoading(fields: List<FieldUiModel>): List<FieldUiModel> {
-
         // EyeSeeTea customization - Biometrics Template Storage
-        val fieldsWithoutBiometricTemplate = fields.filter {
-            it.uid != biometricTemplateAttributeId
-        }
-
-        val finalFields = if (biometricsMode == BiometricsMode.full) {
-            fieldsWithoutBiometricTemplate
-        } else {
-            fieldsWithoutBiometricTemplate.filter {
-                it !is BiometricsAttributeUiModelImpl
+        val fieldsWithoutBiometricTemplate =
+            fields.filter {
+                it.uid != biometricTemplateAttributeId
             }
-        }.toMutableList()
+
+        val finalFields =
+            if (biometricsMode == BiometricsMode.full) {
+                fieldsWithoutBiometricTemplate
+            } else {
+                fieldsWithoutBiometricTemplate.filter {
+                    it !is BiometricsAttributeUiModelImpl
+                }
+            }.toMutableList()
 
         val allMandatoryFieldsHasValue =
             finalFields.count { it.mandatory && (it.value == null || it.value!!.isEmpty()) } == 0
@@ -620,4 +638,3 @@ class EnrollmentPresenterImpl(
         saveBiometricValue(null)
     }
 }
-

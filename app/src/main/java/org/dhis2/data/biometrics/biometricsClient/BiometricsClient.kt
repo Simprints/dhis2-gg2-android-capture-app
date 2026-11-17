@@ -13,7 +13,9 @@ import org.dhis2.R
 import org.dhis2.commons.biometrics.BIOMETRICS_CONFIRM_IDENTITY_REQUEST
 import org.dhis2.commons.biometrics.BIOMETRICS_ENROLL_LAST_REQUEST
 import org.dhis2.commons.biometrics.BIOMETRICS_ENROLL_REQUEST
+import org.dhis2.commons.biometrics.BIOMETRICS_FAILURE_PATTERN
 import org.dhis2.commons.biometrics.BIOMETRICS_IDENTIFY_REQUEST
+import org.dhis2.commons.biometrics.BIOMETRICS_SEARCH_PATTERN
 import org.dhis2.commons.biometrics.BIOMETRICS_VERIFY_REQUEST
 import org.dhis2.data.biometrics.biometricsClient.models.BiometricReference
 import org.dhis2.data.biometrics.biometricsClient.models.BiometricTemplate
@@ -54,14 +56,27 @@ private const val SIMPRINTS_VERSION_CODE_KEY = "versionCode"
 private const val SIMPRINTS_VERSION_CODE_VALUE_INITIAL_REWORK = 20250102
 private const val SIMPRINTS_ENROLMENT_KEY = "enrolment"
 private const val SIMPRINTS_SUBJECT_ACTIONS = "subjectActions"
+private const val SIMPRINTS_NONE_SELECTED = "none_selected"
+
+// EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
+// A biometrics search or failure placeholder left on a TEI, or a missing value, is not a
+// Simprints GUID (it is outside the Simprints spec): none of the candidates was selected.
+internal fun selectedGuidOrNone(guid: String?): String =
+    if (guid.isNullOrBlank() ||
+        guid.startsWith(BIOMETRICS_SEARCH_PATTERN) ||
+        guid.startsWith(BIOMETRICS_FAILURE_PATTERN)
+    ) {
+        SIMPRINTS_NONE_SELECTED
+    } else {
+        guid
+    }
 
 class BiometricsClient(
     projectId: String,
     user: String,
     private val confidenceScoreFilter: Int,
-    private val forkVersion: String
+    private val forkVersion: String,
 ) {
-
     init {
         Timber.d("BiometricsClient!")
         Timber.d("userId: $user")
@@ -78,7 +93,7 @@ class BiometricsClient(
         trackedEntityInstanceUId: String,
         enrollingOrgUnitId: String,
         enrollingOrgUnitName: String,
-        userOrgUnits: List<String>
+        userOrgUnits: List<String>,
     ) {
         Timber.d("Biometrics register!")
         Timber.d("moduleId: $moduleId")
@@ -104,7 +119,7 @@ class BiometricsClient(
         ageInMonths: Long?,
         enrollingOrgUnitId: String,
         enrollingOrgUnitName: String,
-        userOrgUnits: List<String>
+        userOrgUnits: List<String>,
     ) {
         Timber.d("Biometrics register!")
         Timber.d("moduleId: $moduleId")
@@ -115,7 +130,7 @@ class BiometricsClient(
                 enrollingOrgUnitId,
                 enrollingOrgUnitName,
                 userOrgUnits,
-                ageInMonths
+                ageInMonths,
             )
 
         val intent = simHelper.register(moduleId, metadata)
@@ -125,19 +140,24 @@ class BiometricsClient(
         }
     }
 
-    fun identify(activity: Activity, moduleId: String?, userOrgUnits: List<String>) {
+    fun identify(
+        activity: Activity,
+        moduleId: String?,
+        userOrgUnits: List<String>,
+    ) {
         val finalModuleId = moduleId ?: DefaultModuleId
 
         Timber.d("Biometrics identify!")
         Timber.d("moduleId: $finalModuleId")
 
-        val metadata = createMetadata(
-            trackedEntityInstanceUId = null,
-            enrollingOrgUnitId = null,
-            enrollingOrgUnitName = null,
-            userOrgUnits = userOrgUnits,
-            ageInMonths = null
-        )
+        val metadata =
+            createMetadata(
+                trackedEntityInstanceUId = null,
+                enrollingOrgUnitId = null,
+                enrollingOrgUnitName = null,
+                userOrgUnits = userOrgUnits,
+                ageInMonths = null,
+            )
 
         val intent = simHelper.identify(finalModuleId, metadata)
 
@@ -152,9 +172,8 @@ class BiometricsClient(
         ageInMonths: Long? = null,
         enrollingOrgUnitId: String,
         enrollingOrgUnitName: String,
-        userOrgUnits: List<String>
+        userOrgUnits: List<String>,
     ) {
-
         if (guid == null) {
             Timber.i("Simprints Verification - Guid is Null - Please check again!")
             return
@@ -169,7 +188,7 @@ class BiometricsClient(
                 enrollingOrgUnitId,
                 enrollingOrgUnitName,
                 userOrgUnits,
-                ageInMonths
+                ageInMonths,
             )
 
         val intent = simHelper.verify(moduleId, guid, metadata)
@@ -179,7 +198,10 @@ class BiometricsClient(
         }
     }
 
-    fun handleRegisterResponse(resultCode: Int, data: Intent): RegisterResult {
+    fun handleRegisterResponse(
+        resultCode: Int,
+        data: Intent,
+    ): RegisterResult {
         printIntent(data)
         Timber.d("Result code: $resultCode")
 
@@ -195,16 +217,18 @@ class BiometricsClient(
 
         val handleRegister = {
             val registrationJson = data.getStringExtra(SIMPRINTS_ENROLMENT_KEY)
-            val registration: RegistrationSID? = registrationJson?.let {
-                Gson().fromJson(it, RegistrationSID::class.java)
-            }
+            val registration: RegistrationSID? =
+                registrationJson?.let {
+                    Gson().fromJson(it, RegistrationSID::class.java)
+                }
 
             val hasCredential: Boolean? = data.getBooleanExtra(SIMPRINTS_HAS_CREDENTIALS, false)
 
             val scannedCredentialJson = data.getStringExtra(SIMPRINTS_SCANNED_CREDENTIAL)
-            val scannedCredential: ScannedCredentialSID? = scannedCredentialJson?.let {
-                Gson().fromJson(it, ScannedCredentialSID::class.java)
-            }
+            val scannedCredential: ScannedCredentialSID? =
+                scannedCredentialJson?.let {
+                    Gson().fromJson(it, ScannedCredentialSID::class.java)
+                }
 
             val biometricReferences = parseBiometricReferences(data)
 
@@ -215,12 +239,17 @@ class BiometricsClient(
                     SimprintsRegisteredItem(
                         guid = registration.guid,
                         hasCredential = hasCredential ?: false,
-                        scannedCredential = if (scannedCredential == null) null else ScannedCredential(
-                            scannedCredential.type,
-                            scannedCredential.value
-                        ),
+                        scannedCredential =
+                            if (scannedCredential == null) {
+                                null
+                            } else {
+                                ScannedCredential(
+                                    scannedCredential.type,
+                                    scannedCredential.value,
+                                )
+                            },
                         biometricReferences = biometricReferences,
-                    )
+                    ),
                 )
             }
         }
@@ -231,7 +260,7 @@ class BiometricsClient(
                     Timber.d("Possible duplicates: ${identifyResponse.items}")
                     RegisterResult.PossibleDuplicates(
                         identifyResponse.items,
-                        identifyResponse.sessionId
+                        identifyResponse.sessionId,
                     )
                 }
 
@@ -245,7 +274,7 @@ class BiometricsClient(
                     Timber.d("Possible duplicates but IdentifyResult is UserNotFound")
                     RegisterResult.PossibleDuplicates(
                         items,
-                        identifyResponse.sessionId
+                        identifyResponse.sessionId,
                     )
                 }
 
@@ -276,41 +305,53 @@ class BiometricsClient(
         }
     }
 
-    fun handleIdentifyResponse(resultCode: Int, data: Intent?): IdentifyResult {
+    fun handleIdentifyResponse(
+        resultCode: Int,
+        data: Intent?,
+    ): IdentifyResult {
         printIntent(data)
         Timber.d("Result code: $resultCode")
 
         if (resultCode != Activity.RESULT_OK || data == null) {
-            return if (resultCode == Constants.SIMPRINTS_AGE_GROUP_NOT_SUPPORTED)
+            return if (resultCode == Constants.SIMPRINTS_AGE_GROUP_NOT_SUPPORTED) {
                 IdentifyResult.AgeGroupNotSupported
-            else IdentifyResult.Failure
+            } else {
+                IdentifyResult.Failure
+            }
         }
 
         val biometricsCompleted = checkBiometricsCompleted(data)
 
         if (biometricsCompleted) {
-
             val identificationsJson = data.getStringExtra(Constants.SIMPRINTS_IDENTIFICATIONS)
-            val identifications: List<IdentificationSID>? = identificationsJson?.let {
-                Gson().fromJson(it, Array<IdentificationSID>::class.java)?.toList()
-            }
+            val identifications: List<IdentificationSID>? =
+                identificationsJson?.let {
+                    Gson().fromJson(it, Array<IdentificationSID>::class.java)?.toList()
+                }
 
             val refusalFormJson = data.getStringExtra(Constants.SIMPRINTS_REFUSAL_FORM)
-            val refusalForm: RefusalFormSID? = refusalFormJson?.let {
-                Gson().fromJson(it, RefusalFormSID::class.java)
-            }
+            val refusalForm: RefusalFormSID? =
+                refusalFormJson?.let {
+                    Gson().fromJson(it, RefusalFormSID::class.java)
+                }
 
             val sessionId: String = data.getStringExtra(Constants.SIMPRINTS_SESSION_ID) ?: ""
 
             val scannedCredentialJson = data.getStringExtra(SIMPRINTS_SCANNED_CREDENTIAL)
-            val scannedCredentialSID: ScannedCredentialSID? = scannedCredentialJson?.let {
-                Gson().fromJson(it, ScannedCredentialSID::class.java)
-            }
+            val scannedCredentialSID: ScannedCredentialSID? =
+                scannedCredentialJson?.let {
+                    Gson().fromJson(it, ScannedCredentialSID::class.java)
+                }
 
-            val scannedCredential = if (scannedCredentialSID == null) null else ScannedCredential(
-                scannedCredentialSID.type,
-                scannedCredentialSID.value
-            )
+            val scannedCredential =
+                if (scannedCredentialSID == null) {
+                    null
+                } else {
+                    ScannedCredential(
+                        scannedCredentialSID.type,
+                        scannedCredentialSID.value,
+                    )
+                }
 
             return if (identifications == null && refusalForm != null) {
                 IdentifyResult.BiometricsDeclined
@@ -319,7 +360,7 @@ class BiometricsClient(
             } else {
                 val finalIdentifications =
                     identifications.filter { it.confidence >= confidenceScoreFilter && !it.isLinkedToCredential } +
-                            identifications.filter { it.isLinkedToCredential }
+                        identifications.filter { it.isLinkedToCredential }
 
                 if (finalIdentifications.isEmpty()) {
                     Timber.w("Identify returns data but no match with confidence score filter")
@@ -336,7 +377,7 @@ class BiometricsClient(
                             )
                         },
                         sessionId,
-                        scannedCredential = scannedCredential
+                        scannedCredential = scannedCredential,
                     )
                 }
             }
@@ -345,26 +386,33 @@ class BiometricsClient(
         }
     }
 
-    fun handleVerifyResponse(resultCode: Int, data: Intent): VerifyResult {
+    fun handleVerifyResponse(
+        resultCode: Int,
+        data: Intent,
+    ): VerifyResult {
         Timber.d("Result code: $resultCode")
 
         if (resultCode != Activity.RESULT_OK) {
-            return if (resultCode == Constants.SIMPRINTS_AGE_GROUP_NOT_SUPPORTED)
+            return if (resultCode == Constants.SIMPRINTS_AGE_GROUP_NOT_SUPPORTED) {
                 VerifyResult.AgeGroupNotSupported
-            else VerifyResult.NoMatch
+            } else {
+                VerifyResult.NoMatch
+            }
         }
 
         val biometricsCompleted = checkBiometricsCompleted(data)
 
         return if (biometricsCompleted) {
             getVerificationJudgementBySimprints(data) ?: getVerificationJudgementByDhis2(data)
-
         } else {
             VerifyResult.Failure
         }
     }
 
-    fun handleConfirmIdentityResponse(resultCode: Int, data: Intent?): ConfirmIdentityResult {
+    fun handleConfirmIdentityResponse(
+        resultCode: Int,
+        data: Intent?,
+    ): ConfirmIdentityResult {
         Timber.d("Result code: $resultCode")
 
         if (data == null) {
@@ -374,43 +422,49 @@ class BiometricsClient(
         val hasCredential: Boolean? = data.getBooleanExtra(SIMPRINTS_HAS_CREDENTIALS, false)
 
         val scannedCredentialJson = data.getStringExtra(SIMPRINTS_SCANNED_CREDENTIAL)
-        val scannedCredential: ScannedCredentialSID? = scannedCredentialJson?.let {
-            Gson().fromJson(it, ScannedCredentialSID::class.java)
-        }
+        val scannedCredential: ScannedCredentialSID? =
+            scannedCredentialJson?.let {
+                Gson().fromJson(it, ScannedCredentialSID::class.java)
+            }
 
         return if (hasCredential == true && scannedCredential != null) {
             ConfirmIdentityResult.CompletedWithCredentials(
                 SimprintsConfirmIdentityItem(
                     hasCredential = hasCredential,
-                    scannedCredential = ScannedCredential(
-                        scannedCredential.type,
-                        scannedCredential.value
-                    )
-                )
+                    scannedCredential =
+                        ScannedCredential(
+                            scannedCredential.type,
+                            scannedCredential.value,
+                        ),
+                ),
             )
         } else {
             ConfirmIdentityResult.Completed
         }
     }
 
-
     fun confirmIdentify(
         activity: Activity,
         sessionId: String,
-        guid: String,
-        trackedEntityInstanceUId: String
+        guid: String?,
+        trackedEntityInstanceUId: String,
     ) {
         Timber.d("Biometrics confirmIdentify!")
         Timber.d("sessionId: $sessionId")
         Timber.d("guid: $guid")
         Timber.d("$SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID: $trackedEntityInstanceUId")
 
-        val metadata = Metadata().put(SIMPRINTS_FORK_VERSION, forkVersion)
-            .put(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId)
+        val metadata =
+            Metadata()
+                .put(SIMPRINTS_FORK_VERSION, forkVersion)
+                .put(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId)
 
-        val intent = simHelper.confirmIdentity(sessionId, guid).putExtra(
-            Constants.SIMPRINTS_METADATA, metadata.toString()
-        )
+        // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
+        val intent =
+            simHelper.confirmIdentity(sessionId, selectedGuidOrNone(guid)).putExtra(
+                Constants.SIMPRINTS_METADATA,
+                metadata.toString(),
+            )
 
         launchSimprintsAppFromActivity(activity, intent, BIOMETRICS_CONFIRM_IDENTITY_REQUEST)
     }
@@ -418,20 +472,25 @@ class BiometricsClient(
     fun confirmIdentify(
         fragment: Fragment,
         sessionId: String,
-        guid: String,
-        trackedEntityInstanceUId: String
+        guid: String?,
+        trackedEntityInstanceUId: String,
     ) {
         Timber.d("Biometrics confirmIdentify!")
         Timber.d("sessionId: $sessionId")
         Timber.d("guid: $guid")
         Timber.d("$SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID: $trackedEntityInstanceUId")
 
-        val metadata = Metadata().put(SIMPRINTS_FORK_VERSION, forkVersion)
-            .put(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId)
+        val metadata =
+            Metadata()
+                .put(SIMPRINTS_FORK_VERSION, forkVersion)
+                .put(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId)
 
-        val intent = simHelper.confirmIdentity(sessionId, guid).putExtra(
-            Constants.SIMPRINTS_METADATA, metadata.toString()
-        )
+        // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
+        val intent =
+            simHelper.confirmIdentity(sessionId, selectedGuidOrNone(guid)).putExtra(
+                Constants.SIMPRINTS_METADATA,
+                metadata.toString(),
+            )
 
         launchSimprintsAppFromFragment(fragment, intent, BIOMETRICS_CONFIRM_IDENTITY_REQUEST)
     }
@@ -454,40 +513,42 @@ class BiometricsClient(
         trackedEntityInstanceUId: String,
         enrollingOrgUnitId: String,
         enrollingOrgUnitName: String,
-        userOrgUnits: List<String>
+        userOrgUnits: List<String>,
     ) {
-        val intent = createRegisterLastIntent(
-            moduleId,
-            sessionId,
-            ageInMonths,
-            trackedEntityInstanceUId,
-            enrollingOrgUnitId,
-            enrollingOrgUnitName,
-            userOrgUnits
-        )
+        val intent =
+            createRegisterLastIntent(
+                moduleId,
+                sessionId,
+                ageInMonths,
+                trackedEntityInstanceUId,
+                enrollingOrgUnitId,
+                enrollingOrgUnitName,
+                userOrgUnits,
+            )
 
         launchSimprintsAppFromActivity(activity, intent, BIOMETRICS_ENROLL_LAST_REQUEST)
     }
 
     fun registerLastFromFragment(
-        fragment: Fragment, sessionId: String,
+        fragment: Fragment,
+        sessionId: String,
         moduleId: String?,
         ageInMonths: Long? = null,
         trackedEntityInstanceUId: String,
         enrollingOrgUnitId: String,
         enrollingOrgUnitName: String,
-        userOrgUnits: List<String>
+        userOrgUnits: List<String>,
     ) {
-
-        val intent = createRegisterLastIntent(
-            moduleId,
-            sessionId,
-            ageInMonths,
-            trackedEntityInstanceUId,
-            enrollingOrgUnitId,
-            enrollingOrgUnitName,
-            userOrgUnits
-        )
+        val intent =
+            createRegisterLastIntent(
+                moduleId,
+                sessionId,
+                ageInMonths,
+                trackedEntityInstanceUId,
+                enrollingOrgUnitId,
+                enrollingOrgUnitName,
+                userOrgUnits,
+            )
 
         launchSimprintsAppFromFragment(fragment, intent, BIOMETRICS_ENROLL_LAST_REQUEST)
     }
@@ -499,7 +560,7 @@ class BiometricsClient(
         trackedEntityInstanceUId: String,
         enrollingOrgUnitId: String,
         enrollingOrgUnitName: String,
-        userOrgUnits: List<String>
+        userOrgUnits: List<String>,
     ): Intent {
         val finalModuleId = moduleId ?: DefaultModuleId
 
@@ -513,7 +574,7 @@ class BiometricsClient(
                 enrollingOrgUnitId,
                 enrollingOrgUnitName,
                 userOrgUnits,
-                ageInMonths
+                ageInMonths,
             )
 
         val intent = simHelper.registerLastBiometrics(finalModuleId, sessionId, metadata)
@@ -521,22 +582,24 @@ class BiometricsClient(
         return intent
     }
 
-    private fun checkBiometricsCompleted(data: Intent) =
-        data.getBooleanExtra(Constants.SIMPRINTS_BIOMETRICS_COMPLETE_CHECK, false)
+    private fun checkBiometricsCompleted(data: Intent) = data.getBooleanExtra(Constants.SIMPRINTS_BIOMETRICS_COMPLETE_CHECK, false)
 
     private fun parseBiometricReferences(data: Intent): List<BiometricReference> {
         val subjectActionsJson = data.getStringExtra(SIMPRINTS_SUBJECT_ACTIONS) ?: return emptyList()
 
-        val subjectActions: SubjectActionsSID? = try {
-            Gson().fromJson(subjectActionsJson, SubjectActionsSID::class.java)
-        } catch (e: Exception) {
-            Timber.e(e, "Failed to parse $SIMPRINTS_SUBJECT_ACTIONS")
-            null
-        }
+        val subjectActions: SubjectActionsSID? =
+            try {
+                Gson().fromJson(subjectActionsJson, SubjectActionsSID::class.java)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to parse $SIMPRINTS_SUBJECT_ACTIONS")
+                null
+            }
 
-        val biometricReferencesSID = subjectActions?.events
-            ?.firstNotNullOfOrNull { it.payload?.biometricReferences }
-            ?: return emptyList()
+        val biometricReferencesSID =
+            subjectActions
+                ?.events
+                ?.firstNotNullOfOrNull { it.payload?.biometricReferences }
+                ?: return emptyList()
 
         return biometricReferencesSID.map { reference ->
             BiometricReference(
@@ -567,17 +630,19 @@ class BiometricsClient(
 
     private fun getVerificationJudgementByDhis2(data: Intent): VerifyResult {
         val verificationJson = data.getStringExtra(Constants.SIMPRINTS_VERIFICATION)
-        val verification: VerificationSID? = verificationJson?.let {
-            Gson().fromJson(it, VerificationSID::class.java)
-        }
-        val confidenceBand = verification?.let {
-            runCatching {
-                ConfidenceBandSID.valueOf(verification.confidenceBand)
-            }.getOrElse {
-                Timber.e("Verify returns data with unsupported confidence band: ${verification.confidenceBand}")
-                null
+        val verification: VerificationSID? =
+            verificationJson?.let {
+                Gson().fromJson(it, VerificationSID::class.java)
             }
-        }
+        val confidenceBand =
+            verification?.let {
+                runCatching {
+                    ConfidenceBandSID.valueOf(verification.confidenceBand)
+                }.getOrElse {
+                    Timber.e("Verify returns data with unsupported confidence band: ${verification.confidenceBand}")
+                    null
+                }
+            }
 
         return if (confidenceBand != null) {
             when (confidenceBand) {
@@ -600,7 +665,7 @@ class BiometricsClient(
     private fun launchSimprintsAppFromActivity(
         activity: Activity,
         intent: Intent,
-        requestCode: Int
+        requestCode: Int,
     ) {
         try {
             activity.startActivityForResult(intent.addJsonSupportToSimprintsResponse(), requestCode)
@@ -612,17 +677,18 @@ class BiometricsClient(
     private fun launchSimprintsAppFromFragment(
         fragment: Fragment,
         intent: Intent,
-        requestCode: Int
+        requestCode: Int,
     ) {
         try {
             fragment.startActivityForResult(intent.addJsonSupportToSimprintsResponse(), requestCode)
         } catch (ex: ActivityNotFoundException) {
             fragment.context?.let {
-                Toast.makeText(
-                    it,
-                    R.string.biometrics_download_app,
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast
+                    .makeText(
+                        it,
+                        R.string.biometrics_download_app,
+                        Toast.LENGTH_SHORT,
+                    ).show()
             }
         }
     }
@@ -636,40 +702,43 @@ class BiometricsClient(
         enrollingOrgUnitName: String?,
         userOrgUnits: List<String>,
         ageInMonths: Long?,
-
-        ): Metadata {
-
+    ): Metadata {
         val metadata = Metadata().put(SIMPRINTS_FORK_VERSION, forkVersion)
 
-        val metadataWithTei = if (trackedEntityInstanceUId != null) {
-            metadata.put(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId)
-        } else {
-            metadata
-        }
+        val metadataWithTei =
+            if (trackedEntityInstanceUId != null) {
+                metadata.put(SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID, trackedEntityInstanceUId)
+            } else {
+                metadata
+            }
 
-        val metadataWithOrgUnitId = if (enrollingOrgUnitId != null) {
-            metadataWithTei.put(SIMPRINTS_ENROLLING_ORG_UNIT_ID, enrollingOrgUnitId)
-        } else {
-            metadataWithTei
-        }
+        val metadataWithOrgUnitId =
+            if (enrollingOrgUnitId != null) {
+                metadataWithTei.put(SIMPRINTS_ENROLLING_ORG_UNIT_ID, enrollingOrgUnitId)
+            } else {
+                metadataWithTei
+            }
 
-        val metadataWithOrgUnitName = if (enrollingOrgUnitName != null) {
-            metadataWithOrgUnitId.put(SIMPRINTS_ENROLLING_ORG_UNIT_NAME, enrollingOrgUnitName)
-        } else {
-            metadataWithOrgUnitId
-        }
+        val metadataWithOrgUnitName =
+            if (enrollingOrgUnitName != null) {
+                metadataWithOrgUnitId.put(SIMPRINTS_ENROLLING_ORG_UNIT_NAME, enrollingOrgUnitName)
+            } else {
+                metadataWithOrgUnitId
+            }
 
-        val metadataWithUserOrgUnits = if (userOrgUnits.isNotEmpty()) {
-            metadataWithOrgUnitName.put(SIMPRINTS_USER_UNITS, userOrgUnits.joinToString(","))
-        } else {
-            metadataWithOrgUnitName
-        }
+        val metadataWithUserOrgUnits =
+            if (userOrgUnits.isNotEmpty()) {
+                metadataWithOrgUnitName.put(SIMPRINTS_USER_UNITS, userOrgUnits.joinToString(","))
+            } else {
+                metadataWithOrgUnitName
+            }
 
-        val metadataWithAge = if (ageInMonths != null) {
-            metadataWithUserOrgUnits.put(SIMPRINTS_SUBJECT_AGE, ageInMonths)
-        } else {
-            metadataWithUserOrgUnits
-        }
+        val metadataWithAge =
+            if (ageInMonths != null) {
+                metadataWithUserOrgUnits.put(SIMPRINTS_SUBJECT_AGE, ageInMonths)
+            } else {
+                metadataWithUserOrgUnits
+            }
 
         printMetadata(metadataWithAge)
 
@@ -680,23 +749,23 @@ class BiometricsClient(
         Timber.d("metadata: $metadata")
     }
 
-
     private fun printIntent(intent: Intent?) {
         if (intent == null) {
             Timber.d("Intent is null")
             return
         }
         try {
-            val json = JSONObject().apply {
-                put("action", intent.action ?: JSONObject.NULL)
-                put("data", intent.data?.toString() ?: JSONObject.NULL)
-                put("package", intent.`package` ?: JSONObject.NULL)
-                val extrasJson = JSONObject()
-                intent.extras?.keySet()?.forEach { key ->
-                    extrasJson.put(key, intent.extras?.get(key)?.toString() ?: JSONObject.NULL)
+            val json =
+                JSONObject().apply {
+                    put("action", intent.action ?: JSONObject.NULL)
+                    put("data", intent.data?.toString() ?: JSONObject.NULL)
+                    put("package", intent.`package` ?: JSONObject.NULL)
+                    val extrasJson = JSONObject()
+                    intent.extras?.keySet()?.forEach { key ->
+                        extrasJson.put(key, intent.extras?.get(key)?.toString() ?: JSONObject.NULL)
+                    }
+                    put("extras", extrasJson)
                 }
-                put("extras", extrasJson)
-            }
             Timber.d("Register response Intent (JSON): %s", json.toString(2))
         } catch (e: Exception) {
             Timber.w(e, "Could not serialize Intent to JSON")
@@ -704,6 +773,7 @@ class BiometricsClient(
     }
 
     companion object {
+        @Suppress("ktlint:standard:property-naming")
         const val DefaultModuleId = "NA"
 
         const val SIMPRINTS_TRACKED_ENTITY_INSTANCE_ID = "trackedEntityInstanceId"

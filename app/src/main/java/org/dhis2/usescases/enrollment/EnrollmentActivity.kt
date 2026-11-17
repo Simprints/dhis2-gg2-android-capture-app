@@ -157,19 +157,20 @@ class EnrollmentActivity :
                     ),
                 locationProvider = locationProvider,
                 dateEditionWarningHandler = dateEditionWarningHandler,
-                onFieldsLoading = { fields ->  presenter.onFieldsLoading(fields) },
+                onFieldsLoading = { fields -> presenter.onFieldsLoading(fields) },
                 onFieldsLoaded = { fields -> presenter.onFieldsLoaded(fields) },
                 // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
                 onFieldItemsRendered = {
-                    if (pendingSave){
+                    if (pendingSave) {
                         pendingSaveJob?.cancel()
-                        pendingSaveJob = lifecycleScope.launch {
-                            delay(PENDING_SAVE_DEBOUNCE_MS)
-                            pendingSave = false
-                            formView.onSaveClick()
-                        }
+                        pendingSaveJob =
+                            lifecycleScope.launch {
+                                delay(PENDING_SAVE_DEBOUNCE_MS)
+                                pendingSave = false
+                                formView.onSaveClick()
+                            }
                     }
-                }
+                },
             ) {
                 presenter.checkIfBiometricValueValid()
                 presenter.finish(enrollmentMode)
@@ -203,9 +204,11 @@ class EnrollmentActivity :
         when (requestCode) {
             BIOMETRICS_ENROLL_REQUEST -> {
                 if (data != null) {
-                    val result = BiometricsClientFactory.get(this).handleRegisterResponse(
-                        resultCode, data
-                    )
+                    val result =
+                        BiometricsClientFactory.get(this).handleRegisterResponse(
+                            resultCode,
+                            data,
+                        )
 
                     presenter.handleRegisterResponse(result)
                 }
@@ -213,9 +216,11 @@ class EnrollmentActivity :
 
             BIOMETRICS_ENROLL_LAST_REQUEST -> {
                 if (data != null) {
-                    val result = BiometricsClientFactory.get(this).handleRegisterResponse(
-                        resultCode, data
-                    )
+                    val result =
+                        BiometricsClientFactory.get(this).handleRegisterResponse(
+                            resultCode,
+                            data,
+                        )
 
                     presenter.handleRegisterResponse(result)
                 }
@@ -434,7 +439,7 @@ class EnrollmentActivity :
         trackedEntityInstanceId: String,
         enrollingOrgUnitId: String,
         enrollingOrgUnitName: String,
-        userOrgUnits: List<String>
+        userOrgUnits: List<String>,
     ) {
         BiometricsClientFactory.get(this).register(
             this,
@@ -443,12 +448,13 @@ class EnrollmentActivity :
             trackedEntityInstanceId,
             enrollingOrgUnitId,
             enrollingOrgUnitName,
-            userOrgUnits
+            userOrgUnits,
         )
     }
 
     override fun showPossibleDuplicatesDialog(
-        possibleDuplicates: List<SimprintsIdentifiedItem>, sessionId: String,
+        possibleDuplicates: List<SimprintsIdentifiedItem>,
+        sessionId: String,
         programUid: String,
         trackedEntityTypeUid: String,
         biometricsAttributeUid: String,
@@ -458,14 +464,17 @@ class EnrollmentActivity :
         trackedEntityInstanceUId: String,
         enrollingOrgUnitId: String,
         enrollingOrgUnitName: String,
-        userOrgUnits: List<String>
+        userOrgUnits: List<String>,
     ) {
-        val dialog = BiometricsDuplicatesDialog.newInstance(
-            possibleDuplicates, sessionId, programUid,
-            trackedEntityTypeUid,
-            biometricsAttributeUid,
-            enrollNewVisible
-        )
+        val dialog =
+            BiometricsDuplicatesDialog.newInstance(
+                possibleDuplicates,
+                sessionId,
+                programUid,
+                trackedEntityTypeUid,
+                biometricsAttributeUid,
+                enrollNewVisible,
+            )
 
         dialog.setOnOpenTeiDashboardListener { teiUid: String, programUid: String, enrollmentUid: String? ->
             presenter.deleteAllSavedData()
@@ -476,8 +485,8 @@ class EnrollmentActivity :
                     teiUid,
                     programUid,
                     enrollmentUid,
-                    sessionId
-                )
+                    sessionId,
+                ),
             )
         }
 
@@ -490,7 +499,8 @@ class EnrollmentActivity :
                 trackedEntityInstanceUId,
                 enrollingOrgUnitId,
                 enrollingOrgUnitName,
-                userOrgUnits)
+                userOrgUnits,
+            )
         }
 
         dialog.setOnEnrollWithoutBiometricsListener {
@@ -500,19 +510,22 @@ class EnrollmentActivity :
         if (!supportFragmentManager.isStateSaved) {
             dialog.show(supportFragmentManager, BiometricsDuplicatesDialog.TAG)
         } else {
-            supportFragmentManager.beginTransaction()
+            supportFragmentManager
+                .beginTransaction()
                 .add(dialog, BiometricsDuplicatesDialog.TAG)
                 .commitAllowingStateLoss()
         }
     }
 
-    override fun registerLast(sessionId: String,
-                              moduleId: String,
-                              ageInMonths: Long?,
-                              trackedEntityInstanceUId: String,
-                              enrollingOrgUnitId: String,
-                              enrollingOrgUnitName: String,
-                              userOrgUnits: List<String>) {
+    override fun registerLast(
+        sessionId: String,
+        moduleId: String,
+        ageInMonths: Long?,
+        trackedEntityInstanceUId: String,
+        enrollingOrgUnitId: String,
+        enrollingOrgUnitName: String,
+        userOrgUnits: List<String>,
+    ) {
         BiometricsClientFactory.get(this).registerLast(
             this,
             sessionId,
@@ -521,7 +534,8 @@ class EnrollmentActivity :
             trackedEntityInstanceUId,
             enrollingOrgUnitId,
             enrollingOrgUnitName,
-            userOrgUnits)
+            userOrgUnits,
+        )
     }
 
     override fun markAsPendingSave() {
@@ -529,16 +543,20 @@ class EnrollmentActivity :
     }
 
     override fun showUnableSaveBiometricsMessage() {
-        Toast.makeText(
-            context, getString(R.string.unable_save_biometrics),
-            Toast.LENGTH_SHORT
-        ).show()
+        Toast
+            .makeText(
+                context,
+                getString(R.string.unable_save_biometrics),
+                Toast.LENGTH_SHORT,
+            ).show()
     }
 
     override fun showBiometricsAgeGroupNotSupported() {
-        Toast.makeText(
-            context, getString(R.string.age_group_not_supported),
-            Toast.LENGTH_SHORT
-        ).show()
+        Toast
+            .makeText(
+                context,
+                getString(R.string.age_group_not_supported),
+                Toast.LENGTH_SHORT,
+            ).show()
     }
 }

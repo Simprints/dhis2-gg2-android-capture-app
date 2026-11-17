@@ -6,13 +6,16 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import org.dhis2.mobile.commons.providers.BASIC_SHARE_PREFS
 
-class BasicPreferenceProviderImpl(private val context: Context) : BasicPreferenceProvider {
-
+class BasicPreferenceProviderImpl(
+    private val context: Context,
+) : BasicPreferenceProvider {
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences(BASIC_SHARE_PREFS, Context.MODE_PRIVATE)
 
-
-    override fun setValue(key: String, value: Any?) {
+    override fun setValue(
+        key: String,
+        value: Any?,
+    ) {
         value?.let {
             when (it) {
                 is String -> {
@@ -50,45 +53,57 @@ class BasicPreferenceProviderImpl(private val context: Context) : BasicPreferenc
         }
     }
 
-    override fun getString(key: String, default: String?): String? {
-        return sharedPreferences.getString(key, default)
-    }
+    override fun getString(
+        key: String,
+        default: String?,
+    ): String? = sharedPreferences.getString(key, default)
 
-    override fun getBoolean(key: String, default: Boolean): Boolean {
-        return sharedPreferences.getBoolean(key, default)
-    }
+    override fun getBoolean(
+        key: String,
+        default: Boolean,
+    ): Boolean = sharedPreferences.getBoolean(key, default)
 
-    override fun getInt(key: String, default: Int): Int {
-        return sharedPreferences.getInt(key, default)
-    }
+    override fun getInt(
+        key: String,
+        default: Int,
+    ): Int = sharedPreferences.getInt(key, default)
 
-    override fun getLong(key: String, default: Long): Long? {
-        return sharedPreferences.getLong(key, default)
-    }
+    override fun getLong(
+        key: String,
+        default: Long,
+    ): Long? = sharedPreferences.getLong(key, default)
 
-    override fun getFloat(key: String, default: Float): Float? {
-        return sharedPreferences.getFloat(key, default)
-    }
+    override fun getFloat(
+        key: String,
+        default: Float,
+    ): Float? = sharedPreferences.getFloat(key, default)
 
-    override fun getSet(key: String, default: Set<String>): Set<String>? {
-        return sharedPreferences.getStringSet(key, default)
-    }
+    override fun getSet(
+        key: String,
+        default: Set<String>,
+    ): Set<String>? = sharedPreferences.getStringSet(key, default)
 
-    override fun contains(vararg keys: String): Boolean {
-        return keys.all {
+    override fun contains(vararg keys: String): Boolean =
+        keys.all {
             sharedPreferences.contains(it)
         }
-    }
 
     override fun clear() {
         sharedPreferences.edit().clear().apply()
     }
 
-    override fun <T> saveAsJson(key: String, objectToSave: T) {
+    override fun <T> saveAsJson(
+        key: String,
+        objectToSave: T,
+    ) {
         setValue(key, Gson().toJson(objectToSave))
     }
 
-    override fun <T> getObjectFromJson(key: String, typeToken: TypeToken<T>, default: T): T {
+    override fun <T> getObjectFromJson(
+        key: String,
+        typeToken: TypeToken<T>,
+        default: T,
+    ): T {
         val mapTypeToken = typeToken.type
         return if (getString(key, null) == null) {
             default

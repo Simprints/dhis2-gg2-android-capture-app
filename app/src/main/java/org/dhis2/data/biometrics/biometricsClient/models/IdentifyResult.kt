@@ -1,17 +1,20 @@
 package org.dhis2.data.biometrics.biometricsClient.models
 
-
 sealed class IdentifyResult {
     data class Completed(
         val items: List<SimprintsIdentifiedItem>,
         val sessionId: String,
-        val scannedCredential: ScannedCredential?
+        val scannedCredential: ScannedCredential?,
     ) : IdentifyResult()
 
     data object BiometricsDeclined : IdentifyResult()
-    data class UserNotFound(val sessionId: String,
-                            val scannedCredential: ScannedCredential?) : IdentifyResult()
-    data object Failure : IdentifyResult()
-    data object AgeGroupNotSupported : IdentifyResult()
 
+    data class UserNotFound(
+        val sessionId: String,
+        val scannedCredential: ScannedCredential?,
+    ) : IdentifyResult()
+
+    data object Failure : IdentifyResult()
+
+    data object AgeGroupNotSupported : IdentifyResult()
 }

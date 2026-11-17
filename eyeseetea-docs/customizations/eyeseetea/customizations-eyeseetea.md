@@ -1,6 +1,6 @@
 # EyeSeeTea customizations (base flavor)
 
-Differences of the **eyeseetea flavor** compared to **Oslo 3.4.0**.
+Differences of the **eyeseetea flavor** compared to **Oslo 3.5.0**.
 
 ## 1. Build and configuration
 
@@ -11,7 +11,6 @@ The **eyeseetea** flavor is added.
 | Location | What |
 |----------|------|
 | `app/build.gradle.kts` | Block `productFlavors { create("eyeseetea") { applicationId = "com.eyeseetea.dhis2", dimension = "default", versionCode, versionName } }`. |
-| `login/build.gradle.kts` | Same flavor in the login module |
 | `app/src/eyeseetea/` | Flavor resources (strings, google-services.json, etc.) |
 | `app/src/eyeseeteaDebug/`, `app/src/eyeseeteaRelease/` | Debug/release variants |
 
@@ -24,14 +23,12 @@ Oslo uses the official SDK coordinates. Here the EyeSeeTea fork is used via JitP
 | Location | What |
 |----------|------|
 | `settings.gradle.kts` | DIFFERS. Logic for `dhis2.useLocalSdk` / `dhis2.sdkPath`, `includeBuild` for local SDK, module substitution for `com.github.EyeSeeTea:dhis2-android-sdk`. |
-| `gradle/libs.versions.toml` | SDK coordinates and version (`com.github.EyeSeeTea:dhis2-android-sdk`, `1.14.0-eyeseetea-fork-1`), plus EyeSeeTea app version name (`3.4.0-eyeseetea-fork-1`). |
+| `gradle/libs.versions.toml` | SDK coordinates and version (`com.github.EyeSeeTea:dhis2-android-sdk`, `1.15.0-eyeseetea-fork-1`), plus EyeSeeTea app version name (`3.5.0-eyeseetea-fork-1`). |
 | `gradle.properties` | DIFFERS. `dhis2.useLocalSdk`, `dhis2.sdkPath` (if applicable). |
-| `EyeSeeTea.md` (root) | EyeSeeTea SDK documentation |
 
 ### 1.3 Other build files that differ
 
 - `app/build.gradle.kts`: eyeseetea flavor block
-- `login/build.gradle.kts`: eyeseetea flavor block
 
 ## 2. Branding
 
@@ -46,12 +43,11 @@ The **eyeseetea** flavor sets app name and logo to «EyeSeeTea».
 
 ## 3. 2FA and authentication compatibility
 
-The EyeSeeTea baseline keeps compatibility with SDK login methods and error handling that include 2FA-related codes. Oslo 3.4.0 does not include these branches in the same way.
+The EyeSeeTea baseline keeps compatibility with SDK login methods and error handling that include 2FA-related codes. Oslo 3.5.0 does not include these branches in the same way.
 
 - **DomainErrorMapper.kt**: the 7 2FA codes (`INCORRECT_TWO_FACTOR_CODE`, `INCORRECT_TWO_FACTOR_CODE_TOTP`, `EMAIL_TWO_FACTOR_CODE_SENT`, `INCORRECT_TWO_FACTOR_CODE_EMAIL`, `TWO_FACTOR_MANY_SEND_ATTEMPTS`, `SMS_TWO_FACTOR_CODE_SENT`, `INCORRECT_TWO_FACTOR_CODE_SMS`) are mapped to **AuthenticationError**.
 - **D2ErrorMessageProviderImpl.kt**: those 7 codes have a branch in the `when` that returns **defaultError()**.
 - **LoginRepositoryImpl.kt**: `blockingLogIn(username, password, serverUrl, null)` uses the SDK overload that accepts a fourth parameter for the 2FA code.
-- **UserManagerImpl.java**: `logIn(username, password, serverUrl, null)` uses the SDK overload that accepts a fourth parameter for the 2FA code.
 
 ## 4. Only in this repository (not in Oslo)
 
@@ -64,7 +60,6 @@ Patches for Oslo regressions that affect all forks. Each entry documents the tic
 | Fix | Ticket | Introduced | File | Retire when |
 |-----|--------|------------|------|-------------|
 | TEI search blank value filter | ANDROAPP-6844 | 3.3.0 | `SearchTEIViewModel.kt` — `updateQuery()` | Oslo fixes the empty-value guard in `updateQuery()` |
-| "Mark as complete?" dialog always shown for completed events | ANDROAPP-7666 | 3.3.1 | `FormViewModel.kt` — `showDataEntryResultDialogDeprecated()`, `EventStatus.COMPLETED` branch | Oslo returns `FormActions.OnFinish` for completed events with no issues |
 
 ## 5.1 Post-metadata-sync actions extension point
 

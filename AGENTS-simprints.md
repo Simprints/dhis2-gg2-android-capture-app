@@ -5,7 +5,7 @@ This file holds the fork-specific guidance; the shared project guidance lives in
 `AGENTS.md` (maintained upstream by Oslo). Both are imported from `CLAUDE.md`.
 
 - **Flavor:** `simprints` (app ID: `org.simprints.dhis2`)
-- **Current version:** `3.4.1-simprints-fork-1`
+- **Current version:** `3.5.0-simprints-fork-1`
 - **Upstream:** dhis2/dhis2-android-capture-app
 - **Baseline branch:** `develop-eyeseetea` (shared EyeSeeTea baseline, never client-specific)
 - **SDK fork:** `com.github.EyeSeeTea:dhis2-android-sdk` (EyeSeeTea patches on top of the DHIS2 Android SDK, consumed via JitPack/composite-build substitution)
@@ -26,6 +26,8 @@ Key source sets:
 ./gradlew testSimprintsDebugUnitTest      # run Simprints-specific unit tests
 ./gradlew ktlintCheck                     # code style
 ```
+
+Tests under `app/src/test` run once per flavor, and CI runs the `dhis2` flavor (`testDhis2DebugUnitTest`) next to the fork flavor. `BIOMETRICS_ENABLED` is true only in `simprints`, so a test of a biometrics customization must `assumeTrue(BIOMETRICS_ENABLED)` or it fails in `dhis2`. Run `./gradlew testDhis2DebugUnitTest` as well as `testSimprintsDebugUnitTest` before pushing.
 
 See `AGENTS.md` for the full build/lint command set and Gradle task naming rules
 per module type.
@@ -81,13 +83,13 @@ Use `// EyeSeeTea fix - [description] (Oslo [ticket], introduced [version])` ins
 - `openspec/config.yaml` — project context and OpenSpec rules
 - `eyeseetea-docs/customizations/simprints/customization-files.md` — technical file inventory
 - `eyeseetea-docs/customizations/simprints/refactors-pending.md` — deferred simplification/testing work; review at each upgrade
-- `eyeseetea-docs/upgrade/simprints/upgrade-3.4-notes.md` — upgrade progress and status
+- `eyeseetea-docs/upgrade/simprints/upgrade-3.5.0-notes.md` — upgrade progress and status
 - `eyeseetea-docs/upgrade/simprints/upgrade-validation-checklist.md` — manual validation flows
 - `eyeseetea-docs/upgrade/conflict-rules.md` — merge conflict resolution rules
 
 ## Upgrade context
 
-Upgrading from `3.3.1-simprints-fork-1` to `3.4.1`. Progress and conflict decisions are tracked in `eyeseetea-docs/upgrade/simprints/upgrade-3.4-notes.md`, and the plan lives in `openspec/changes/upgrade-to-3-4-1/`. Always use **two-dot diff** (`git diff develop-eyeseetea..HEAD`) to compare against baseline — three-dot misses deletions from the baseline side.
+Upgraded from `3.4.2-simprints-fork-1` to `3.5.0-simprints-fork-1` (SDK `1.15.0-eyeseetea-fork-1`), merging the `develop-eyeseetea` baseline. Progress and conflict decisions are tracked in `eyeseetea-docs/upgrade/simprints/upgrade-3.5.0-notes.md`, and the plan lives in `openspec/changes/archive/2026-11-13-upgrade-to-3-5-0/`. Always use **two-dot diff** (`git diff develop-eyeseetea..HEAD`) to compare against baseline — three-dot misses deletions from the baseline side.
 
 ## Automation extraction rule
 

@@ -1,5 +1,6 @@
 package org.dhis2.usescases.biometrics.duplicates
 
+import androidx.paging.filter
 import androidx.paging.map
 import io.reactivex.disposables.CompositeDisposable
 import kotlinx.coroutines.CoroutineScope
@@ -15,6 +16,7 @@ import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 import org.dhis2.tracker.search.domain.SearchTrackedEntities
 import org.dhis2.tracker.search.model.QueryData
 import org.dhis2.tracker.search.model.SearchTrackedEntitiesInput
+import org.dhis2.tracker.search.model.TrackedEntitySearchPagingItem
 import org.dhis2.usescases.searchTrackEntity.SearchRepository
 import org.dhis2.usescases.searchTrackEntity.SearchRepositoryKt
 import org.dhis2.utils.NetworkUtils
@@ -55,7 +57,7 @@ class BiometricsDuplicatesDialogPresenter(
         biometricsSessionId: String,
         programUid: String,
         trackedEntityTypeUid: String,
-        biometricsAttributeUid: String
+        biometricsAttributeUid: String,
     ) {
         this.view = view
         this.possibleDuplicates = possibleDuplicates
@@ -96,12 +98,20 @@ class BiometricsDuplicatesDialogPresenter(
 
                 view.setLiveData(
                     results.map { pagingData ->
-                        pagingData.map { item ->
-                            searchRepositoryKt.mapTrackedEntitySearchItemResultToSearchTeiModel(
-                                item,
-                                FilterManager.getInstance().sortingItem,
-                            )
-                        }
+                        // Rows that failed to load are logged and dropped: the dialog adapter only
+                        // renders TEI cards and has no error row like SearchTeiLiveAdapter does.
+                        pagingData
+                            .filter { item ->
+                                if (item is TrackedEntitySearchPagingItem.Error) {
+                                    Timber.e(item.error, "Failed to load a biometric duplicate candidate")
+                                }
+                                item is TrackedEntitySearchPagingItem.Item
+                            }.map { item ->
+                                searchRepositoryKt.mapTrackedEntitySearchItemResultToSearchTeiModel(
+                                    (item as TrackedEntitySearchPagingItem.Item).result,
+                                    FilterManager.getInstance().sortingItem,
+                                )
+                            }
                     },
                 )
             } catch (e: Exception) {
@@ -116,7 +126,11 @@ class BiometricsDuplicatesDialogPresenter(
         scope.cancel()
     }
 
-    fun onTEIClick(teiUid: String, enrollmentUid: String?, isOnline: Boolean) {
+    fun onTEIClick(
+        teiUid: String,
+        enrollmentUid: String?,
+        isOnline: Boolean,
+    ) {
         if (!identityConfirmed) {
             identityConfirmed = true
 
@@ -133,10 +147,15 @@ class BiometricsDuplicatesDialogPresenter(
     private fun sendBiometricsConfirmIdentity(
         teiUid: String,
         enrollmentUid: String?,
-        isOnline: Boolean
+        isOnline: Boolean,
     ) {
-        val tei = d2.trackedEntityModule().trackedEntityInstances()
-            .withTrackedEntityAttributeValues().uid(teiUid).blockingGet()?:return
+        val tei =
+            d2
+                .trackedEntityModule()
+                .trackedEntityInstances()
+                .withTrackedEntityAttributeValues()
+                .uid(teiUid)
+                .blockingGet() ?: return
 
         val guid: String = getBiometricsValueFromTEI(tei) ?: ""
 
@@ -162,32 +181,48 @@ class BiometricsDuplicatesDialogPresenter(
         return guid
     }
 
-    private fun openDashboard(teiUid: String, enrollmentUid: String?) {
+    private fun openDashboard(
+        teiUid: String,
+        enrollmentUid: String?,
+    ) {
         view.openDashboard(
             teiUid,
             programUid,
-            enrollmentUid
+            enrollmentUid,
         )
     }
 
-    private fun downloadTei(teiUid: String?, enrollmentUid: String?) {
+    private fun downloadTei(
+        teiUid: String?,
+        enrollmentUid: String?,
+    ) {
         disposable.add(
-            searchRepository.downloadTei(teiUid)
+            searchRepository
+                .downloadTei(teiUid)
                 .subscribeOn(schedulerProvider.io())
                 .observeOn(schedulerProvider.ui())
                 .subscribe(
-                    { view.downloadProgress() }, { Timber.d(it) },
+                    { view.downloadProgress() },
+                    { Timber.d(it) },
                     {
-                        if (d2.trackedEntityModule().trackedEntityInstances().uid(teiUid)
+                        if (d2
+                                .trackedEntityModule()
+                                .trackedEntityInstances()
+                                .uid(teiUid)
                                 .blockingExists()
                         ) {
                             openDashboard(teiUid!!, enrollmentUid!!)
                         } else {
-                            val trackedEntityType = d2.trackedEntityModule().trackedEntityTypes()
-                                .uid(trackedEntityTypeUid).blockingGet()
+                            val trackedEntityType =
+                                d2
+                                    .trackedEntityModule()
+                                    .trackedEntityTypes()
+                                    .uid(trackedEntityTypeUid)
+                                    .blockingGet()
                             view.couldNotDownload(trackedEntityType?.displayName()!!)
                         }
-                    })
+                    },
+                ),
         )
     }
 

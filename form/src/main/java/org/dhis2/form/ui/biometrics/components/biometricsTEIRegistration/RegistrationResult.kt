@@ -35,7 +35,6 @@ internal fun RegistrationResult(
     resultColor: String?,
     showRetake: Boolean,
 ) {
-
     val background = getColor(enabled, resultColor)
 
     Row(
@@ -45,9 +44,10 @@ internal fun RegistrationResult(
 
         Button(
             modifier = modifier,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = if (background is BiometricsBackground.Solid) background.value else Color.Transparent
-            ),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor = if (background is BiometricsBackground.Solid) background.value else Color.Transparent,
+                ),
             contentPadding = PaddingValues(),
             onClick = {
                 if (!showRetake) {
@@ -57,18 +57,19 @@ internal fun RegistrationResult(
             enabled = enabled,
             shape = RoundedCornerShape(4.dp),
         ) {
-            val boxModifier = when (background) {
-                is BiometricsBackground.Gradient -> Modifier
-                    .background(background.value)
-                    .then(modifier)
-                is BiometricsBackground.Solid -> Modifier
-            }
+            val boxModifier =
+                when (background) {
+                    is BiometricsBackground.Gradient ->
+                        Modifier
+                            .background(background.value)
+                            .then(modifier)
+                    is BiometricsBackground.Solid -> Modifier
+                }
 
             Box(
                 modifier = boxModifier,
                 contentAlignment = Alignment.Center,
-
-                ) {
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(text = stringResource(resultText), color = Color.White)
@@ -80,53 +81,64 @@ internal fun RegistrationResult(
             Spacer(modifier = Modifier.width(16.dp))
 
             Button(
-                modifier = Modifier.width(200.dp)
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(
-                        android.graphics.Color.parseColor(
-                            "#4d4d4d"
-                        )
-                    )
-                ),
+                modifier =
+                    Modifier
+                        .width(200.dp)
+                        .height(50.dp),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor =
+                            Color(
+                                android.graphics.Color.parseColor(
+                                    "#4d4d4d",
+                                ),
+                            ),
+                    ),
                 contentPadding = PaddingValues(),
                 onClick = onBiometricsClick,
                 enabled = enabled,
-
-                ) {
+            ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         painter = painterResource(R.drawable.ic_bio_retry),
                         contentDescription = stringResource(R.string.biometrics_retake),
                         tint = Color.Unspecified,
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(text = stringResource(R.string.biometrics_retake), color = Color.White)
                 }
-
             }
         }
     }
 }
 
-private fun getColor(enabled: Boolean, resultColor: String?): BiometricsBackground {
-    return if (enabled) {
+private fun getColor(
+    enabled: Boolean,
+    resultColor: String?,
+): BiometricsBackground =
+    if (enabled) {
         if (resultColor.isNullOrEmpty()) {
             BiometricsBackground.Gradient(gradientButtonColor)
         } else {
-            BiometricsBackground.Solid(Color(
-                android.graphics.Color.parseColor(
-                    resultColor
-                )
-            ))
+            BiometricsBackground.Solid(
+                Color(
+                    android.graphics.Color.parseColor(
+                        resultColor,
+                    ),
+                ),
+            )
         }
     } else {
         BiometricsBackground.Solid(SurfaceColor.DisabledSurface)
     }
-}
 
-sealed class BiometricsBackground{
-    data class Gradient (val value: Brush): BiometricsBackground()
-    data class Solid(val value: Color): BiometricsBackground()
+sealed class BiometricsBackground {
+    data class Gradient(
+        val value: Brush,
+    ) : BiometricsBackground()
+
+    data class Solid(
+        val value: Color,
+    ) : BiometricsBackground()
 }

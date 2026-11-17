@@ -24,12 +24,11 @@ import org.hisp.dhis.mobile.ui.designsystem.theme.Spacing
 class BiometricsDuplicatesDialogAdapter(
     private val cardMapper: TEICardMapper,
     private val colorUtils: ColorUtils,
-    private val onClickListener: (SearchTeiModel) -> Unit
+    private val onClickListener: (SearchTeiModel) -> Unit,
 ) : PagingDataAdapter<SearchTeiModel, BiometricsDuplicatesDialogHolder>(SearchAdapterDiffCallback()) {
-
     override fun onCreateViewHolder(
         parent: ViewGroup,
-        viewType: Int
+        viewType: Int,
     ): BiometricsDuplicatesDialogHolder {
         val inflater = LayoutInflater.from(parent.context)
         val binding: ItemSearchTrackedEntityBinding =
@@ -37,28 +36,33 @@ class BiometricsDuplicatesDialogAdapter(
         return BiometricsDuplicatesDialogHolder(binding, colorUtils)
     }
 
-    override fun onBindViewHolder(holder: BiometricsDuplicatesDialogHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: BiometricsDuplicatesDialogHolder,
+        position: Int,
+    ) {
         getItem(position)?.let {
             val materialCardView =
                 holder.itemView.findViewById<MaterialCardView>(R.id.cardView)
             materialCardView.visibility = View.GONE
             val composeView = holder.itemView.findViewById<ComposeView>(R.id.composeView)
             composeView.setContent {
-                val card = cardMapper.map(
-                    searchTEIModel = it,
-                    onSyncIconClick = null,
-                    onCardClick = {
-                        onClickListener(getItem(position)!!)
-                    },
-                    onImageClick = {},
-                )
+                val card =
+                    cardMapper.map(
+                        searchTEIModel = it,
+                        onSyncIconClick = null,
+                        onCardClick = {
+                            onClickListener(getItem(position)!!)
+                        },
+                        onImageClick = {},
+                    )
                 Column(
-                    modifier = Modifier
-                        .padding(
-                            start = Spacing.Spacing8,
-                            end = Spacing.Spacing8,
-                            bottom = Spacing.Spacing4,
-                        ),
+                    modifier =
+                        Modifier
+                            .padding(
+                                start = Spacing.Spacing8,
+                                end = Spacing.Spacing8,
+                                bottom = Spacing.Spacing4,
+                            ),
                 ) {
                     if (position == 0) {
                         Spacer(modifier = Modifier.size(Spacing.Spacing8))
@@ -84,7 +88,7 @@ class BiometricsDuplicatesDialogAdapter(
                 getItem(holder.absoluteAdapterPosition)?.toggleAttributeList()
                 notifyItemChanged(holder.absoluteAdapterPosition)
             }) { _: String? ->
-                //path?.let { onImageClick(path) }
+                // path?.let { onImageClick(path) }
             }
         }
     }

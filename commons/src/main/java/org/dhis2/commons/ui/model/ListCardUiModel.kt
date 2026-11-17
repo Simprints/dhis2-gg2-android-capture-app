@@ -13,7 +13,6 @@ data class ListCardUiModel(
     val expandLabelText: String,
     val shrinkLabelText: String,
     val onCardCLick: () -> Unit,
-
-    //EyeSeeTea customization
+    // EyeSeeTea customization
     val subTitle: String? = null,
 )

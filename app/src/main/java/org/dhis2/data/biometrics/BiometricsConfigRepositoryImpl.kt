@@ -16,148 +16,157 @@ import timber.log.Timber
 class BiometricsConfigRepositoryImpl(
     private val d2: D2,
     private val preferenceProvider: BasicPreferenceProvider,
-    private val biometricsConfigApi: BiometricsConfigApi
+    private val biometricsConfigApi: BiometricsConfigApi,
 ) : BiometricsConfigRepository {
+    override fun sync(): Flow<Unit> =
+        flow {
+            try {
+                val configOptionsDTO = biometricsConfigApi.getData()
 
-    override fun sync(): Flow<Unit> = flow {
-        try {
-            val configOptionsDTO = biometricsConfigApi.getData()
+                val configOptions = configOptionsDTO.map { mapBiometricsConfig(it) }
 
-            val configOptions = configOptionsDTO.map { mapBiometricsConfig(it) }
+                preferenceProvider.saveAsJson(BiometricsPreference.CONFIGURATIONS, configOptions)
+                Timber.d("BiometricsConfig synced!")
+                Timber.d("BiometricsConfig: $configOptions")
 
-            preferenceProvider.saveAsJson(BiometricsPreference.CONFIGURATIONS, configOptions)
-            Timber.d("BiometricsConfig synced!")
-            Timber.d("BiometricsConfig: $configOptions")
+                val userOrgUnitGroups =
+                    d2
+                        .organisationUnitModule()
+                        .organisationUnits()
+                        .byOrganisationUnitScope(OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
+                        .withOrganisationUnitGroups()
+                        .blockingGet()
+                        .flatMap { ou ->
+                            if (ou.organisationUnitGroups() != null) {
+                                ou
+                                    .organisationUnitGroups()!!
+                                    .map { ouGroup -> ouGroup.uid() }
+                            } else {
+                                listOf()
+                            }
+                        }.distinct()
 
-            val userOrgUnitGroups =
-                d2.organisationUnitModule().organisationUnits()
-                    .byOrganisationUnitScope(OrganisationUnit.Scope.SCOPE_DATA_CAPTURE)
-                    .withOrganisationUnitGroups()
-                    .blockingGet().flatMap { ou ->
-                        if (ou.organisationUnitGroups() != null) ou.organisationUnitGroups()!!
-                            .map { ouGroup -> ouGroup.uid() }
-                        else listOf()
-                    }.distinct()
+                preferenceProvider.saveAsJson(
+                    BiometricsPreference.USER_ORG_UNIT_GROUPS,
+                    userOrgUnitGroups,
+                )
 
-            preferenceProvider.saveAsJson(
-                BiometricsPreference.USER_ORG_UNIT_GROUPS,
-                userOrgUnitGroups
+                emit(Unit)
+            } catch (e: Exception) {
+                Timber.e(e)
+            }
+        }
+
+    override fun getUserOrgUnitGroups(): Flow<List<String>> =
+        flow {
+            val listStringType = object : TypeToken<List<String>>() {}
+
+            emit(
+                preferenceProvider.getObjectFromJson(
+                    BiometricsPreference.USER_ORG_UNIT_GROUPS,
+                    listStringType,
+                    listOf(),
+                ),
             )
+        }
+
+    override fun getBiometricsConfigs(): Flow<List<BiometricsConfig>> =
+        flow {
+            val biometricsConfigType = object : TypeToken<List<BiometricsConfig>>() {}
+
+            emit(
+                preferenceProvider.getObjectFromJson(
+                    BiometricsPreference.CONFIGURATIONS,
+                    biometricsConfigType,
+                    listOf(),
+                ),
+            )
+        }
+
+    override fun saveSelectedConfig(config: BiometricsConfig): Flow<Unit> =
+        flow {
+            preferenceProvider.setValue(BiometricsPreference.ORG_UNIT_GROUP, config.orgUnitGroup)
+
+            preferenceProvider.setValue(BiometricsPreference.PROGRAM, config.program)
+
+            preferenceProvider.setValue(BiometricsPreference.PROJECT_ID, config.projectId)
+
+            preferenceProvider.setValue(
+                BiometricsPreference.CONFIDENCE_SCORE_FILTER,
+                config.confidenceScoreFilter ?: 0,
+            )
+
+            val icon =
+                BiometricsIcon
+                    .values()
+                    .firstOrNull { it.name == config.icon?.uppercase() }
+                    ?.name
+                    ?: BiometricsIcon.FINGERPRINT.name
+
+            preferenceProvider.setValue(BiometricsPreference.ICON, icon)
+            preferenceProvider.setValue(
+                BiometricsPreference.LAST_VERIFICATION_DURATION,
+                config.lastVerificationDuration ?: 0,
+            )
+            preferenceProvider.setValue(
+                BiometricsPreference.LAST_DECLINED_ENROL_DURATION,
+                config.lastDeclinedEnrolDuration ?: 0,
+            )
+
+            val orgUnitLevelAsModuleId = getOrgUnitLevelAsModuleId(config)
+
+            preferenceProvider.setValue(
+                BiometricsPreference.ORG_UNIT_LEVEL_AS_MODULE_ID,
+                orgUnitLevelAsModuleId,
+            )
+
+            preferenceProvider.setValue(
+                BiometricsPreference.AGE_THRESHOLD_MONTHS,
+                config.ageThresholdMonths,
+            )
+
+            preferenceProvider.setValue(
+                BiometricsPreference.DATE_OF_BIRTH_ATTRIBUTE,
+                config.dateOfBirthAttribute,
+            )
+
+            preferenceProvider.setValue(
+                BiometricsPreference.BIOMETRICS_MODE,
+                config.biometricsMode.name,
+            )
+
+            preferenceProvider.setValue(
+                BiometricsPreference.ENABLE_IDENTIFICATION_FOR_TET,
+                config.enableIdentificationForTET,
+            )
+
+            Timber.d("downloadBiometricsConfig!")
+            Timber.d("orgUnitGroup: ${config.orgUnitGroup}")
+            Timber.d("program: ${config.program}")
+            Timber.d("projectId: ${config.projectId}")
+            Timber.d("confidenceScoreFilter: ${config.confidenceScoreFilter}")
+            Timber.d("icon: $icon")
+            Timber.d("lastVerificationDuration: ${config.lastVerificationDuration}")
+            Timber.d("lastDeclinedEnrolDuration: ${config.lastDeclinedEnrolDuration}")
+            Timber.d("orgUnitLevelAsModuleId: $orgUnitLevelAsModuleId")
+            Timber.d("ageThresholdMonths: ${config.ageThresholdMonths}")
+            Timber.d("dateOfBirthAttribute: ${config.dateOfBirthAttribute}")
+            Timber.d("biometricsMode: ${config.biometricsMode.name}")
+            Timber.d("enableIdentificationForTET: ${config.enableIdentificationForTET}")
 
             emit(Unit)
-        } catch (e: Exception) {
-            Timber.e(e)
         }
-    }
 
-    override fun getUserOrgUnitGroups(): Flow<List<String>> = flow {
-        val listStringType = object : TypeToken<List<String>>() {}
-
-        emit(
-            preferenceProvider.getObjectFromJson(
-                BiometricsPreference.USER_ORG_UNIT_GROUPS,
-                listStringType,
-                listOf()
-            )
-        )
-    }
-
-    override fun getBiometricsConfigs(): Flow<List<BiometricsConfig>> = flow {
-        val biometricsConfigType = object : TypeToken<List<BiometricsConfig>>() {}
-
-        emit(
-            preferenceProvider.getObjectFromJson(
-                BiometricsPreference.CONFIGURATIONS,
-                biometricsConfigType,
-                listOf()
-            )
-        )
-    }
-
-    override fun saveSelectedConfig(config: BiometricsConfig) : Flow<Unit> = flow {
-        preferenceProvider.setValue(BiometricsPreference.ORG_UNIT_GROUP, config.orgUnitGroup)
-
-        preferenceProvider.setValue(BiometricsPreference.PROGRAM, config.program)
-
-        preferenceProvider.setValue(BiometricsPreference.PROJECT_ID, config.projectId)
-
-        preferenceProvider.setValue(
-            BiometricsPreference.CONFIDENCE_SCORE_FILTER,
-            config.confidenceScoreFilter ?: 0
-        )
-
-        val icon =
-            BiometricsIcon.values()
-                .firstOrNull { it.name == config.icon?.uppercase() }?.name
-                ?: BiometricsIcon.FINGERPRINT.name
-
-        preferenceProvider.setValue(BiometricsPreference.ICON, icon)
-        preferenceProvider.setValue(
-            BiometricsPreference.LAST_VERIFICATION_DURATION,
-            config.lastVerificationDuration ?: 0
-        )
-        preferenceProvider.setValue(
-            BiometricsPreference.LAST_DECLINED_ENROL_DURATION,
-            config.lastDeclinedEnrolDuration ?: 0
-        )
-
-        val orgUnitLevelAsModuleId = getOrgUnitLevelAsModuleId(config)
-
-        preferenceProvider.setValue(
-            BiometricsPreference.ORG_UNIT_LEVEL_AS_MODULE_ID,
-            orgUnitLevelAsModuleId
-        )
-
-        preferenceProvider.setValue(
-            BiometricsPreference.AGE_THRESHOLD_MONTHS,
-            config.ageThresholdMonths
-        )
-
-        preferenceProvider.setValue(
-            BiometricsPreference.DATE_OF_BIRTH_ATTRIBUTE,
-            config.dateOfBirthAttribute
-        )
-
-        preferenceProvider.setValue(
-            BiometricsPreference.BIOMETRICS_MODE,
-            config.biometricsMode.name
-        )
-
-        preferenceProvider.setValue(
-            BiometricsPreference.ENABLE_IDENTIFICATION_FOR_TET,
-            config.enableIdentificationForTET
-        )
-
-        Timber.d("downloadBiometricsConfig!")
-        Timber.d("orgUnitGroup: ${config.orgUnitGroup}")
-        Timber.d("program: ${config.program}")
-        Timber.d("projectId: ${config.projectId}")
-        Timber.d("confidenceScoreFilter: ${config.confidenceScoreFilter}")
-        Timber.d("icon: $icon")
-        Timber.d("lastVerificationDuration: ${config.lastVerificationDuration}")
-        Timber.d("lastDeclinedEnrolDuration: ${config.lastDeclinedEnrolDuration}")
-        Timber.d("orgUnitLevelAsModuleId: $orgUnitLevelAsModuleId")
-        Timber.d("ageThresholdMonths: ${config.ageThresholdMonths}")
-        Timber.d("dateOfBirthAttribute: ${config.dateOfBirthAttribute}")
-        Timber.d("biometricsMode: ${config.biometricsMode.name}")
-        Timber.d("enableIdentificationForTET: ${config.enableIdentificationForTET}")
-
-        emit(Unit)
-    }
-
-    private fun getOrgUnitLevelAsModuleId(config: BiometricsConfig): Int {
-        return if (config.orgUnitLevelAsModuleId == null || config.orgUnitLevelAsModuleId > 0) {
+    private fun getOrgUnitLevelAsModuleId(config: BiometricsConfig): Int =
+        if (config.orgUnitLevelAsModuleId == null || config.orgUnitLevelAsModuleId > 0) {
             Timber.d("Invalid orgUnitLevelAsModuleId assigned, using default value 0")
             0
         } else {
             config.orgUnitLevelAsModuleId
         }
-    }
 
-    private fun mapBiometricsConfig(
-        dto: BiometricsConfigDTO
-    ): BiometricsConfig {
-        return BiometricsConfig(
+    private fun mapBiometricsConfig(dto: BiometricsConfigDTO): BiometricsConfig =
+        BiometricsConfig(
             orgUnitGroup = dto.orgUnitGroup,
             program = dto.program,
             projectId = dto.projectId,
@@ -169,7 +178,6 @@ class BiometricsConfigRepositoryImpl(
             ageThresholdMonths = dto.ageThresholdMonths,
             dateOfBirthAttribute = dto.dateOfBirthAttribute,
             biometricsMode = BiometricsMode.valueOf(dto.biometricsMode.name.lowercase()),
-            enableIdentificationForTET = dto.enableIdentificationForTET
+            enableIdentificationForTET = dto.enableIdentificationForTET,
         )
-    }
 }

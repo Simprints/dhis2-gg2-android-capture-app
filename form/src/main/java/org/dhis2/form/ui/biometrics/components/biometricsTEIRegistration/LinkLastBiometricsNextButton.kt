@@ -32,35 +32,37 @@ internal fun LinkLastBiometricsNextButton(
 
     Button(
         modifier = modifier,
-        colors = ButtonDefaults.buttonColors(
-            containerColor = backgroundColor
-        ), contentPadding = PaddingValues(),
+        colors =
+            ButtonDefaults.buttonColors(
+                containerColor = backgroundColor,
+            ),
+        contentPadding = PaddingValues(),
         onClick = onClick,
         shape = RoundedCornerShape(4.dp),
-        enabled = enabled
+        enabled = enabled,
     ) {
-        val boxModifier = when (background) {
-            is BiometricsBackground.Gradient -> Modifier
-                .background(background.value)
-                .then(modifier)
+        val boxModifier =
+            when (background) {
+                is BiometricsBackground.Gradient ->
+                    Modifier
+                        .background(background.value)
+                        .then(modifier)
 
-            is BiometricsBackground.Solid -> Modifier
-        }
+                is BiometricsBackground.Solid -> Modifier
+            }
 
         Box(
             modifier = boxModifier,
             contentAlignment = Alignment.Center,
-
-            ) {
+        ) {
             Text(text = stringResource(R.string.next), color = Color.White)
         }
     }
 }
 
-private fun getColor(enabled: Boolean): BiometricsBackground {
-    return if (enabled) {
+private fun getColor(enabled: Boolean): BiometricsBackground =
+    if (enabled) {
         BiometricsBackground.Gradient(gradientButtonColor)
     } else {
         BiometricsBackground.Solid(SurfaceColor.DisabledSurface)
     }
-}

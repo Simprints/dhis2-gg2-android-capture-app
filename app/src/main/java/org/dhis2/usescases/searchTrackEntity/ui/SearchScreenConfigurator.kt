@@ -95,7 +95,7 @@ class SearchScreenConfigurator(
 
         constraintSet.setGuidelinePercent(
             R.id.backdropGuideDiv,
-            ratio
+            ratio,
         )
         TransitionManager.beginDelayedTransition(binding.backdropLayout)
         constraintSet.applyTo(binding.backdropLayout)

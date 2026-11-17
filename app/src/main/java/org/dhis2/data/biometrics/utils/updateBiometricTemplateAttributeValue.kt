@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename")
+
 package org.dhis2.data.biometrics.utils
 
 import com.google.gson.Gson
@@ -19,8 +21,11 @@ fun updateBiometricTemplateAttributeValue(
 
     val value = Gson().toJson(BiometricReferencesValue(biometricReferences))
 
-    val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
-        .value(biometricTemplateAttributeId, teiUid)
+    val valueRepository =
+        d2
+            .trackedEntityModule()
+            .trackedEntityAttributeValues()
+            .value(biometricTemplateAttributeId, teiUid)
 
     valueRepository.blockingSetCheck(d2, biometricTemplateAttributeId, value)
 }

@@ -22,12 +22,11 @@ fun getBiometricsConfig(preferenceProvider: BasicPreferenceProvider): Biometrics
     val ageThresholdMonths =
         preferenceProvider.getInt(BiometricsPreference.AGE_THRESHOLD_MONTHS, 0)
     val dateOfBirthAttribute =
-        preferenceProvider.getString(BiometricsPreference.DATE_OF_BIRTH_ATTRIBUTE, "") ?:""
+        preferenceProvider.getString(BiometricsPreference.DATE_OF_BIRTH_ATTRIBUTE, "") ?: ""
 
     val biometricsMode =
         preferenceProvider.getString(BiometricsPreference.BIOMETRICS_MODE, BiometricsMode.full.name)
             ?: BiometricsMode.full.name
-
 
     val enableIdentificationForTET =
         preferenceProvider.getString(BiometricsPreference.ENABLE_IDENTIFICATION_FOR_TET, null)
@@ -44,18 +43,22 @@ fun getBiometricsConfig(preferenceProvider: BasicPreferenceProvider): Biometrics
         ageThresholdMonths,
         dateOfBirthAttribute,
         BiometricsMode.valueOf(biometricsMode),
-        enableIdentificationForTET
+        enableIdentificationForTET,
     )
 }
 
-fun getBiometricsConfigByProgram(preferenceProvider: BasicPreferenceProvider, programUid:String): BiometricsConfig? {
+fun getBiometricsConfigByProgram(
+    preferenceProvider: BasicPreferenceProvider,
+    programUid: String,
+): BiometricsConfig? {
     val biometricsConfigType = object : TypeToken<List<BiometricsConfig>>() {}
 
-    val configs =  preferenceProvider.getObjectFromJson(
-        BiometricsPreference.CONFIGURATIONS,
-        biometricsConfigType,
-        listOf()
-    )
+    val configs =
+        preferenceProvider.getObjectFromJson(
+            BiometricsPreference.CONFIGURATIONS,
+            biometricsConfigType,
+            listOf(),
+        )
 
     return configs.find { it.program == programUid }
 }

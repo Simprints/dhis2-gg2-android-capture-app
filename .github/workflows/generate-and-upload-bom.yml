@@ -10,11 +10,11 @@ jobs:
     name: Create and Upload SBOM
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
       - name: Set up JDK 17
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v6
         with:
           java-version: 17
           distribution: zulu
@@ -25,11 +25,22 @@ jobs:
         run: ./gradlew cyclonedxBom
       - name: Upload SBOM to DependencyTrack
         env:
-          DEPENDENCY_TRACK_API: 'https://dt.security.dhis2.org/api/v1/bom'
+          DT_API_URL: ${{ vars.DEPENDENCYTRACK_URL }}
+          DT_API_KEY: ${{ secrets.DEPENDENCYTRACK_APIKEY }}
+          PROJECT_NAME: ${{ github.event.repository.name }}
+          PROJECT_VERSION: ${{ github.ref_name }}
         run: |
-          curl -X POST "$DEPENDENCY_TRACK_API" \
+          response=$(curl -sS -X POST "$DT_API_URL" \
               --fail-with-body \
-              -H "Content-Type: multipart/form-data" \
-              -H "X-Api-Key: ${{ secrets.DEPENDENCYTRACK_APIKEY }}" \
-              -F "project=5d9c948b-3968-4f47-867f-3b7f04ba9fb6" \
-              -F "bom=@build/reports/bom.json"
+              -H "X-Api-Key: $DT_API_KEY" \
+              -F "autoCreate=true" \
+              -F "projectName=$PROJECT_NAME" \
+              -F "projectVersion=$PROJECT_VERSION" \
+              -F "bom=@build/reports/cyclonedx/bom.json")
+
+          token=$(printf '%s' "$response" | jq -r '.token // empty')
+          if [ -z "$token" ]; then
+            echo "::error::DependencyTrack returned no processing token: $response"
+            exit 1
+          fi
+          echo "Queued $PROJECT_NAME/$PROJECT_VERSION (token $token)"

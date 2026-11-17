@@ -14,6 +14,10 @@ fun givenTemplateAttributeValueType(d2: D2) {
     whenever(attribute.optionSet()) doReturn null
 
     whenever(
-        d2.trackedEntityModule().trackedEntityAttributes().uid(biometricTemplateAttributeId).blockingGet(),
+        d2
+            .trackedEntityModule()
+            .trackedEntityAttributes()
+            .uid(biometricTemplateAttributeId)
+            .blockingGet(),
     ) doReturn attribute
 }

@@ -8,21 +8,24 @@ import org.dhis2.usescases.biometrics.repositories.BiometricsConfigRepository
 import timber.log.Timber
 import java.util.Locale
 
-class SelectBiometricsConfig(private val biometricsConfigRepository: BiometricsConfigRepository) {
-    operator fun invoke(program: String): Flow<Unit> = flow {
-        val configOptions = biometricsConfigRepository.getBiometricsConfigs().first()
-        val userOrgUnitGroups = biometricsConfigRepository.getUserOrgUnitGroups().first()
-        val config = getSelectedConfig(configOptions, program, userOrgUnitGroups)
+class SelectBiometricsConfig(
+    private val biometricsConfigRepository: BiometricsConfigRepository,
+) {
+    operator fun invoke(program: String): Flow<Unit> =
+        flow {
+            val configOptions = biometricsConfigRepository.getBiometricsConfigs().first()
+            val userOrgUnitGroups = biometricsConfigRepository.getUserOrgUnitGroups().first()
+            val config = getSelectedConfig(configOptions, program, userOrgUnitGroups)
 
-        biometricsConfigRepository.saveSelectedConfig(config).collect {
-            emit(Unit)
+            biometricsConfigRepository.saveSelectedConfig(config).collect {
+                emit(Unit)
+            }
         }
-    }
 
     private fun getSelectedConfig(
         configOptions: List<BiometricsConfig>,
         program: String,
-        userOrgUnitGroups: List<String>
+        userOrgUnitGroups: List<String>,
     ): BiometricsConfig {
         val defaultConfig =
             getDefaultConfig(configOptions)
@@ -35,9 +38,12 @@ class SelectBiometricsConfig(private val biometricsConfigRepository: BiometricsC
         val configByUserOrgUnitGroup =
             configOptions.find { userOrgUnitGroupsInConfig.isNotEmpty() && it.orgUnitGroup == userOrgUnitGroupsInConfig[0] }
 
-        return configByProgram ?: if (userOrgUnitGroupsInConfig.size != 1) defaultConfig else
+        return configByProgram ?: if (userOrgUnitGroupsInConfig.size != 1) {
+            defaultConfig
+        } else {
             configByUserOrgUnitGroup
                 ?: defaultConfig
+        }
     }
 
     private fun getDefaultConfig(configOptions: List<BiometricsConfig>): BiometricsConfig {
