@@ -13,6 +13,7 @@ import org.dhis2.tracker.search.domain.FetchOptionSetOptions
 import org.dhis2.tracker.search.domain.FetchSearchParameters
 import org.dhis2.tracker.search.domain.SearchTrackedEntities
 
+@Suppress("UNCHECKED_CAST")
 class SearchTeiViewModelFactory(
     val presenter: SearchTEContractsModule.Presenter,
     private val searchRepository: SearchRepository,

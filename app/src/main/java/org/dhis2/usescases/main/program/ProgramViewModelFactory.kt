@@ -2,14 +2,15 @@ package org.dhis2.usescases.main.program
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import org.dhis2.commons.featureconfig.data.FeatureConfigRepository
 import org.dhis2.commons.filters.FilterManager
 import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.dhis2.mobile.commons.featureconfig.data.FeatureConfigRepository
 import org.dhis2.mobile.sync.domain.SyncStatusController
 import org.dhis2.usescases.biometrics.usecases.SelectBiometricsConfig
 
+@Suppress("UNCHECKED_CAST")
 class ProgramViewModelFactory(
     private val view: ProgramView,
     private val programRepository: ProgramRepository,
@@ -19,7 +20,7 @@ class ProgramViewModelFactory(
     private val filterManager: FilterManager,
     private val syncStatusController: SyncStatusController,
     private val schedulerProvider: SchedulerProvider,
-    private val selectBiometricsConfig: SelectBiometricsConfig
+    private val selectBiometricsConfig: SelectBiometricsConfig,
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T =
         ProgramViewModel(
@@ -31,6 +32,6 @@ class ProgramViewModelFactory(
             filterManager,
             syncStatusController,
             schedulerProvider,
-            selectBiometricsConfig
+            selectBiometricsConfig,
         ) as T
 }

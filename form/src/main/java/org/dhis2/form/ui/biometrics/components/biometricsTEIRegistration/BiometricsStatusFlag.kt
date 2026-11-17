@@ -18,42 +18,39 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
-//TODO: Evaluate move this to a common module
+// TODO: Evaluate move this to a common module
 // is a copy of TeiDashboardBioStatus
 @Composable
 fun BiometricsStatusFlag(
     text: String,
-    backgroundColor: String
+    backgroundColor: String,
 ) {
-
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(start = 0.dp)
+        modifier = Modifier.padding(start = 0.dp),
     ) {
         Row(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.background(Color(android.graphics.Color.parseColor(backgroundColor)))
-                .height(40.dp)
-                .padding(start = 16.dp)
-
+            modifier =
+                Modifier
+                    .background(Color(android.graphics.Color.parseColor(backgroundColor)))
+                    .height(40.dp)
+                    .padding(start = 16.dp),
         ) {
             Text(
                 text.uppercase(),
                 color = Color.White,
-                modifier = Modifier.padding(end = 42.dp)
+                modifier = Modifier.padding(end = 42.dp),
             )
-
         }
         Icon(
             imageVector = Icons.Filled.ArrowLeft,
             contentDescription = "Arrow",
             tint = Color.White,
-            modifier = Modifier.size(80.dp).offset(x = (-46.5).dp, y = (0).dp)
+            modifier = Modifier.size(80.dp).offset(x = (-46.5).dp, y = (0).dp),
         )
     }
-
-
 }
 
 @Preview
@@ -61,7 +58,6 @@ fun BiometricsStatusFlag(
 fun BiometricsStatusFlagPreview() {
     BiometricsStatusFlag(
         text = "Biometrics",
-        backgroundColor = "#4d4d4d"
+        backgroundColor = "#4d4d4d",
     )
 }
-

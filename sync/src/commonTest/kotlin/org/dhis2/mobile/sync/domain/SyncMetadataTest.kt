@@ -2,6 +2,8 @@ package org.dhis2.mobile.sync.domain
 
 import kotlinx.coroutines.runBlocking
 import org.dhis2.mobile.commons.domain.PostMetadataSyncAction
+import org.dhis2.mobile.commons.error.DomainError
+import org.dhis2.mobile.commons.session.SessionRenewalNotifier
 import org.dhis2.mobile.sync.data.SyncBackgroundJobAction
 import org.dhis2.mobile.sync.data.SyncRepository
 import org.dhis2.mobile.sync.model.SMSConfigResult
@@ -20,11 +22,13 @@ import kotlin.test.assertTrue
 class SyncMetadataTest {
     private val repository: SyncRepository = mock()
     private val syncBackgroundJobAction: SyncBackgroundJobAction = mock()
+    private val sessionRenewalNotifier: SessionRenewalNotifier = mock()
 
     private val syncMetadata =
         SyncMetadata(
             repository,
             syncBackgroundJobAction,
+            sessionRenewalNotifier,
         )
 
     @Test
@@ -134,6 +138,51 @@ class SyncMetadataTest {
             assert(result.exceptionOrNull() == exception)
         }
 
+    @Test
+    fun `Should request a session renewal when metadata cannot be synced with an expired session`() =
+        runBlocking {
+            // GIVEN - the tokens can no longer be refreshed, so the metadata call never lands
+            val error = DomainError.SessionRenewalRequiredError("Your session has expired")
+            whenever(repository.isServerAvailable(any())) doReturn true
+            whenever(repository.currentMetadataSyncPeriod()) doReturn SyncPeriod.Manual
+            whenever(repository.currentDataSyncPeriod()) doReturn SyncPeriod.Manual
+            whenever(repository.syncMetadata(any())) doReturn Result.failure(error)
+
+            val result = syncMetadata.invoke { }
+
+            // THEN - the failure is reported as before and the user is asked to log in again
+            assertEquals(error, result.exceptionOrNull())
+            verify(sessionRenewalNotifier).notifyIfRequired(error)
+        }
+
+    @Test
+    fun `Should not request a session renewal when metadata syncs`() =
+        runBlocking {
+            whenever(repository.isServerAvailable(any())) doReturn true
+            whenever(repository.currentMetadataSyncPeriod()) doReturn SyncPeriod.Manual
+            whenever(repository.currentDataSyncPeriod()) doReturn SyncPeriod.Manual
+            whenever(repository.syncMetadata(any())) doReturn Result.success(Unit)
+
+            syncMetadata.invoke { }
+
+            verify(sessionRenewalNotifier, never()).notifyRenewalRequired()
+        }
+
+    @Test
+    fun `Should request a session renewal when the server check reports an expired session`() =
+        runBlocking {
+            // GIVEN - the ping itself fails because the tokens are gone
+            val error = DomainError.SessionRenewalRequiredError("Your session has expired")
+            whenever(repository.isServerAvailable(any())).thenAnswer { throw error }
+
+            // WHEN
+            val result = syncMetadata.invoke { }
+
+            // THEN - the use case reports it instead of letting it escape into the worker
+            assertEquals(error, result.exceptionOrNull())
+            verify(sessionRenewalNotifier).notifyIfRequired(error)
+        }
+
     private suspend fun stubSync(syncResult: Result<Unit> = Result.success(Unit)) {
         whenever(repository.isServerAvailable(any())) doReturn true
         whenever(repository.currentMetadataSyncPeriod()) doReturn SyncPeriod.Manual
@@ -146,6 +195,7 @@ class SyncMetadataTest {
         SyncMetadata(
             repository,
             syncBackgroundJobAction,
+            sessionRenewalNotifier,
             actions.toList(),
         )
 

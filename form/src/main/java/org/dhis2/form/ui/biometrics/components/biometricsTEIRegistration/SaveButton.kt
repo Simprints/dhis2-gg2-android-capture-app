@@ -16,28 +16,36 @@ import org.dhis2.commons.biometrics.defaultButtonColor
 
 @Composable
 internal fun SaveButton(
-    text:String,
+    text: String,
     enabled: Boolean,
     onClick: (() -> Unit),
 ) {
-    val color = if (enabled) Color(
-        android.graphics.Color.parseColor(
-            defaultButtonColor
-        )
-    ) else Color.LightGray
+    val color =
+        if (enabled) {
+            Color(
+                android.graphics.Color.parseColor(
+                    defaultButtonColor,
+                ),
+            )
+        } else {
+            Color.LightGray
+        }
 
     OutlinedButton(
         onClick = onClick,
         enabled = enabled,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(50.dp)
-            .padding(1.dp)
-            .border(
-                1.dp, color, shape = MaterialTheme.shapes.small,
-            ),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .height(50.dp)
+                .padding(1.dp)
+                .border(
+                    1.dp,
+                    color,
+                    shape = MaterialTheme.shapes.small,
+                ),
         shape = RoundedCornerShape(4.dp),
-        ) {
+    ) {
         Text(text, color = color)
     }
 }

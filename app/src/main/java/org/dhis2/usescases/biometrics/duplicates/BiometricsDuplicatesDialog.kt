@@ -50,8 +50,9 @@ import org.dhis2.utils.LastSelection
 import org.hisp.dhis.android.core.arch.call.D2Progress
 import javax.inject.Inject
 
-class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogView {
-
+class BiometricsDuplicatesDialog :
+    DialogFragment(),
+    BiometricsDuplicatesDialogView {
     private var onEnrollNewListener: ((sessionId: String) -> Unit)? = null
     private var onOpenTeiDashboardListener: ((String, String, String?) -> Unit)? = null
     private var onEnrollWithoutBiometricsListener: (() -> Unit)? = null
@@ -79,7 +80,7 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
         dialog.window!!.setBackgroundDrawableResource(android.R.color.transparent)
         create(
             requireArguments().getString(TRACKED_ENTITY_TYPE_UID)!!,
-            requireArguments().getString(PROGRAM_UID)!!
+            requireArguments().getString(PROGRAM_UID)!!,
         )
 
         dialog.setCanceledOnTouchOutside(false)
@@ -91,28 +92,29 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
-        binding = DataBindingUtil.inflate(
-            inflater,
-            R.layout.dialog_biometrics_duplicates,
-            container,
-            false
-        )
-
+        binding =
+            DataBindingUtil.inflate(
+                inflater,
+                R.layout.dialog_biometrics_duplicates,
+                container,
+                false,
+            )
 
         val possibleDuplicates: List<SimprintsIdentifiedItem> =
-            requireArguments().getParcelableArrayList<SimprintsItemParcelable>(POSSIBLE_DUPLICATES)
-                ?.toList()?.map {
-                SimprintsIdentifiedItem(
-                    it.guid,
-                    it.confidence,
-                    it.isLinkedToCredential,
-                    it.isVerified,
-                    it.isBiometricMatch,
-                )
-            } ?: emptyList()
-
+            requireArguments()
+                .getParcelableArrayList<SimprintsItemParcelable>(POSSIBLE_DUPLICATES)
+                ?.toList()
+                ?.map {
+                    SimprintsIdentifiedItem(
+                        it.guid,
+                        it.confidence,
+                        it.isLinkedToCredential,
+                        it.isVerified,
+                        it.isBiometricMatch,
+                    )
+                } ?: emptyList()
 
         val biometricsSessionId = requireArguments().getString(BIOMETRICS_SESSION_ID)!!
         val programUid = requireArguments().getString(PROGRAM_UID)!!
@@ -125,7 +127,7 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
                 presenter.onTEIClick(
                     searchTeiModel.tei.uid,
                     searchTeiModel.selectedEnrollment?.uid,
-                    searchTeiModel.tei.isOnline
+                    searchTeiModel.tei.isOnline,
                 )
             }
 
@@ -137,7 +139,7 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
             biometricsSessionId,
             programUid,
             trackedEntityTypeUid,
-            biometricsAttributeUid
+            biometricsAttributeUid,
         )
 
         configureButtons(binding.buttonsContainer, enrollNewVisible)
@@ -168,11 +170,18 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
         }
     }
 
-    override fun openDashboard(teiUid: String, programUid: String, enrollmentUid: String?) {
+    override fun openDashboard(
+        teiUid: String,
+        programUid: String,
+        enrollmentUid: String?,
+    ) {
         onOpenTeiDashboardListener?.invoke(teiUid, programUid, enrollmentUid)
     }
 
-    override fun show(manager: FragmentManager, tag: String?) {
+    override fun show(
+        manager: FragmentManager,
+        tag: String?,
+    ) {
         isDialogShown = true
         super.show(manager, tag)
     }
@@ -190,22 +199,23 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
         super.onStop()
     }
 
-    override fun downloadProgress(): Consumer<D2Progress> {
-        return Consumer {
-            Snackbar.make(
-                binding.root,
-                getString(R.string.downloading),
-                Snackbar.LENGTH_SHORT
-            ).show()
+    override fun downloadProgress(): Consumer<D2Progress> =
+        Consumer {
+            Snackbar
+                .make(
+                    binding.root,
+                    getString(R.string.downloading),
+                    Snackbar.LENGTH_SHORT,
+                ).show()
         }
-    }
 
     override fun couldNotDownload(typeName: String) {
-        Toast.makeText(
-            context,
-            getString(R.string.download_tei_error, typeName),
-            Toast.LENGTH_SHORT
-        ).show()
+        Toast
+            .makeText(
+                context,
+                getString(R.string.download_tei_error, typeName),
+                Toast.LENGTH_SHORT,
+            ).show()
     }
 
     override fun enrollNew(biometricsSessionId: String) {
@@ -223,20 +233,25 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
         guid: String,
         teiUid: String,
         enrollmentUid: String?,
-        isOnline: Boolean
+        isOnline: Boolean,
     ) {
         lastSelection = LastSelection(teiUid, enrollmentUid, isOnline)
 
         context?.let { get(it).confirmIdentify(this, sessionId, guid, teiUid) }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?,
+    ) {
         when (requestCode) {
             BIOMETRICS_CONFIRM_IDENTITY_REQUEST -> {
                 if (lastSelection != null) {
                     presenter.onTEIClick(
-                        lastSelection!!.teiUid, lastSelection!!.enrollmentUid,
-                        lastSelection!!.isOnline
+                        lastSelection!!.teiUid,
+                        lastSelection!!.enrollmentUid,
+                        lastSelection!!.isOnline,
                     )
                     lastSelection = null
                 }
@@ -257,7 +272,10 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
         this.onEnrollWithoutBiometricsListener = onEnrollWithoutBiometricsListener
     }
 
-    private fun create(teiType: String, program: String) {
+    private fun create(
+        teiType: String,
+        program: String,
+    ) {
         app()
             .userComponent()!!
             .plus(BiometricsDuplicatesDialogModule(requireContext(), teiType, program))
@@ -265,7 +283,10 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
     }
 
     @ExperimentalAnimationApi
-    private fun configureButtons(buttonsContainer: ComposeView, enrollNewVisible: Boolean) {
+    private fun configureButtons(
+        buttonsContainer: ComposeView,
+        enrollNewVisible: Boolean,
+    ) {
         buttonsContainer.apply {
             setViewCompositionStrategy(
                 ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed,
@@ -278,12 +299,11 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
                     },
                     enrolNewBiometrics = {
                         presenter.enrollNewClick()
-                    }
+                    },
                 )
             }
         }
     }
-
 
     companion object {
         private const val POSSIBLE_DUPLICATES = "POSSIBLE_DUPLICATES"
@@ -302,25 +322,26 @@ class BiometricsDuplicatesDialog : DialogFragment(), BiometricsDuplicatesDialogV
             programUid: String,
             trackedEntityTypeUid: String,
             biometricsAttributeUid: String,
-            enrollNewVisible: Boolean
+            enrollNewVisible: Boolean,
         ): BiometricsDuplicatesDialog {
             val fragment = BiometricsDuplicatesDialog()
 
             val args = Bundle()
 
-            val possibleDuplicatesParcelable = possibleDuplicates.map {
-                SimprintsItemParcelable(
-                    it.guid,
-                    it.confidence,
-                    it.isLinkedToCredential,
-                    it.isVerified,
-                    it.isBiometricMatch,
-                )
-            }
+            val possibleDuplicatesParcelable =
+                possibleDuplicates.map {
+                    SimprintsItemParcelable(
+                        it.guid,
+                        it.confidence,
+                        it.isLinkedToCredential,
+                        it.isVerified,
+                        it.isBiometricMatch,
+                    )
+                }
 
             args.putParcelableArrayList(
                 POSSIBLE_DUPLICATES,
-                ArrayList(possibleDuplicatesParcelable)
+                ArrayList(possibleDuplicatesParcelable),
             )
             args.putString(BIOMETRICS_SESSION_ID, sessionId)
             args.putString(PROGRAM_UID, programUid)
@@ -340,7 +361,6 @@ data class SimprintsItemParcelable(
     val isLinkedToCredential: Boolean,
     val isVerified: Boolean?,
     val isBiometricMatch: Boolean,
-
 ) : Parcelable {
     constructor(parcel: Parcel) : this(
         parcel.readString() ?: "",
@@ -355,7 +375,10 @@ data class SimprintsItemParcelable(
     ) {
     }
 
-    override fun writeToParcel(parcel: Parcel, flags: Int) {
+    override fun writeToParcel(
+        parcel: Parcel,
+        flags: Int,
+    ) {
         parcel.writeString(guid)
         parcel.writeFloat(confidence)
         parcel.writeByte(if (isLinkedToCredential) 1 else 0)
@@ -364,44 +387,38 @@ data class SimprintsItemParcelable(
                 true -> 1
                 false -> 0
                 null -> -1
-            }
+            },
         )
         parcel.writeByte(if (isBiometricMatch) 1 else 0)
     }
 
-    override fun describeContents(): Int {
-        return 0
-    }
+    override fun describeContents(): Int = 0
 
     companion object CREATOR : Parcelable.Creator<SimprintsItemParcelable> {
-        override fun createFromParcel(parcel: Parcel): SimprintsItemParcelable {
-            return SimprintsItemParcelable(parcel)
-        }
+        override fun createFromParcel(parcel: Parcel): SimprintsItemParcelable = SimprintsItemParcelable(parcel)
 
-        override fun newArray(size: Int): Array<SimprintsItemParcelable?> {
-            return arrayOfNulls(size)
-        }
+        override fun newArray(size: Int): Array<SimprintsItemParcelable?> = arrayOfNulls(size)
     }
-
 }
-
 
 inline fun <reified T : Parcelable> Intent.extractParcelableArrayListExtra(key: String): List<T>? =
     when {
-        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU -> getParcelableArrayListExtra(
-            key,
-            T::class.java
-        )
+        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
+            getParcelableArrayListExtra(
+                key,
+                T::class.java,
+            )
 
-        else -> @Suppress("DEPRECATION") getParcelableArrayListExtra(key)
+        else ->
+            @Suppress("DEPRECATION")
+            getParcelableArrayListExtra(key)
     }
-
 
 @Composable
 fun DialogActions(
     enrollNewVisible: Boolean,
     enrolWithoutBiometrics: () -> Unit = { },
-    enrolNewBiometrics: () -> Unit = { }
+    enrolNewBiometrics: () -> Unit = { },
 ) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
@@ -409,7 +426,7 @@ fun DialogActions(
         TealBorderButton(
             textId = R.string.biometrics_enroll_without_biometrics,
             modifier = Modifier.weight(1f),
-            onClick = enrolWithoutBiometrics
+            onClick = enrolWithoutBiometrics,
         )
 
         if (enrollNewVisible) {
@@ -418,11 +435,10 @@ fun DialogActions(
             TealGradientButton(
                 textId = R.string.biometrics_enroll_new,
                 modifier = Modifier.weight(1f),
-                onClick = enrolNewBiometrics
+                onClick = enrolNewBiometrics,
             )
         }
     }
-
 }
 
 @Preview(name = "NEXUS_5X_new", device = Devices.NEXUS_5)
@@ -432,7 +448,8 @@ fun DialogActionsPreview() {
     DialogActions(
         enrollNewVisible = true,
         enrolWithoutBiometrics = {},
-        enrolNewBiometrics = {})
+        enrolNewBiometrics = {},
+    )
 }
 
 @Preview(name = "NEXUS_5X_no_new", device = Devices.NEXUS_5)
@@ -442,5 +459,6 @@ fun DialogActionsWithoutNewPreview() {
     DialogActions(
         enrollNewVisible = false,
         enrolWithoutBiometrics = {},
-        enrolNewBiometrics = {})
+        enrolNewBiometrics = {},
+    )
 }

@@ -48,6 +48,24 @@ information back to Simprints as needed.
 - **WHEN** confirm identity is resolved automatically without manual user selection
 - **THEN** the app passes the resulting TEI/session information back to Simprints
 
+### Requirement: Confirm identity never sends a value that is not a Simprints GUID
+When the candidate TEI holds no valid Simprints GUID, the app SHALL confirm identity
+to Simprints with `none_selected` instead of the stored value. A biometrics search
+placeholder (`BIOMETRICS_SEARCH_` prefix), a biometrics failure placeholder, or a
+missing or blank value is not a GUID and is outside the Simprints specification.
+
+#### Scenario: Candidate TEI holds a search or failure placeholder
+- **WHEN** confirm identity is sent for a TEI whose biometrics attribute holds a search or failure placeholder
+- **THEN** the app confirms identity to Simprints with `none_selected`
+
+#### Scenario: Candidate TEI has no biometrics value
+- **WHEN** confirm identity is sent for a TEI whose biometrics attribute is missing or blank
+- **THEN** the app confirms identity to Simprints with `none_selected`
+
+#### Scenario: Candidate TEI holds a real GUID
+- **WHEN** confirm identity is sent for a TEI whose biometrics attribute holds a Simprints GUID
+- **THEN** the app confirms identity to Simprints with that GUID
+
 ### Requirement: Credential-linked matches survive duplicate review
 The app SHALL keep credential-linked candidate matches visible in duplicate
 review even when their confidence would otherwise be filtered out per

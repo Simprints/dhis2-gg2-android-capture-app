@@ -33,8 +33,6 @@ class TEIDataContracts {
             eventCreationType: EventCreationType,
         )
 
-        fun displayNoAccessToEventSnackbar(enrollmentOrgUnit: String)
-
         fun showDialogCloseProgram()
 
         fun areEventsCompleted(): Consumer<Single<Boolean>>
@@ -83,7 +81,7 @@ class TEIDataContracts {
             programUid: String,
         )
 
-        //Eyeseetea
+        // Eyeseetea
         fun launchBiometricsVerification(
             guid: String,
             orgUnitUid: String,
@@ -91,20 +89,22 @@ class TEIDataContracts {
             ageInMonths: Long,
             enrollingOrgUnitId: String,
             enrollingOrgUnitName: String,
-            userOrgUnits: List<String>
+            userOrgUnits: List<String>,
         )
 
         fun refreshCard()
+
         fun registerBiometrics(
             orgUnit: String,
             trackedEntityInstance: String,
             ageInMonths: Long,
             enrollingOrgUnitId: String,
             enrollingOrgUnitName: String,
-            userOrgUnits: List<String>
+            userOrgUnits: List<String>,
         )
 
         fun showBiometricsAgeGroupNotSupported()
+
         fun registerLast(
             sessionId: String,
             moduleId: String,
@@ -112,19 +112,22 @@ class TEIDataContracts {
             trackedEntityInstanceUId: String,
             enrollingOrgUnitId: String,
             enrollingOrgUnitName: String,
-            userOrgUnits: List<String>
+            userOrgUnits: List<String>,
         )
 
         fun showPossibleDuplicatesDialog(
-            possibleDuplicates: List<SimprintsIdentifiedItem>, sessionId: String, programUid: String,
-            trackedEntityTypeUid: String, biometricsAttributeUid: String,
+            possibleDuplicates: List<SimprintsIdentifiedItem>,
+            sessionId: String,
+            programUid: String,
+            trackedEntityTypeUid: String,
+            biometricsAttributeUid: String,
             enrollNewVisible: Boolean,
             moduleId: String,
             ageInMonths: Long?,
             trackedEntityInstanceUId: String,
             enrollingOrgUnitId: String,
             enrollingOrgUnitName: String,
-            userOrgUnits: List<String>
+            userOrgUnits: List<String>,
         )
 
         fun showUnableSaveBiometricsMessage()

@@ -8,8 +8,8 @@ import io.reactivex.processors.PublishProcessor
 import org.dhis2.commons.data.EntryMode
 import org.dhis2.commons.di.dagger.PerActivity
 import org.dhis2.commons.matomo.MatomoAnalyticsController
-import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.prefs.BasicPreferenceProvider
+import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.resources.DhisPeriodUtils
 import org.dhis2.commons.resources.EventResourcesProvider
 import org.dhis2.commons.resources.MetadataIconProvider
@@ -180,14 +180,12 @@ class EnrollmentModule(
             eventCollectionRepository,
             teiAttributesProvider,
             dateEditionWarningHandler,
-            basicPreferenceProvider
+            basicPreferenceProvider,
         )
 
     @Provides
     @PerActivity
-    fun provideOrgUnitRepository(d2: D2): OrgUnitRepository {
-        return OrgUnitD2Repository(d2)
-    }
+    fun provideOrgUnitRepository(d2: D2): OrgUnitRepository = OrgUnitD2Repository(d2)
 
     @Provides
     @PerActivity

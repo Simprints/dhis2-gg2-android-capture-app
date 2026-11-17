@@ -20,32 +20,43 @@ import androidx.compose.ui.unit.dp
 import org.dhis2.commons.biometrics.gradientButtonColor
 
 @Composable
-fun TeiDashboardBioButton(
-    model: BioButtonModel
-) {
+fun TeiDashboardBioButton(model: BioButtonModel) {
     Column(
         modifier = Modifier.fillMaxWidth().padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-
         val modifier = Modifier.fillMaxWidth().height(40.dp)
 
         Button(
             modifier = modifier,
-            colors = ButtonDefaults.buttonColors(containerColor = if (model.backgroundColor != null) Color(android.graphics.Color.parseColor(model.backgroundColor)) else Color.Transparent),
+            colors =
+                ButtonDefaults.buttonColors(
+                    containerColor =
+                        if (model.backgroundColor !=
+                            null
+                        ) {
+                            Color(android.graphics.Color.parseColor(model.backgroundColor))
+                        } else {
+                            Color.Transparent
+                        },
+                ),
             contentPadding = PaddingValues(),
             onClick = model.onActionClick,
             shape = RoundedCornerShape(4.dp),
         ) {
-            val boxModifier = if (model.backgroundColor == null) Modifier
-                .background(gradientButtonColor)
-                .then(modifier) else Modifier
+            val boxModifier =
+                if (model.backgroundColor == null) {
+                    Modifier
+                        .background(gradientButtonColor)
+                        .then(modifier)
+                } else {
+                    Modifier
+                }
 
             Box(
                 modifier = boxModifier,
                 contentAlignment = Alignment.Center,
-
-                ){
+            ) {
                 Text(text = model.text, color = Color.White)
             }
         }
@@ -55,9 +66,12 @@ fun TeiDashboardBioButton(
 @Preview
 @Composable
 fun TeiDashboardBioButtonPreview() {
-    TeiDashboardBioButton(model = BioButtonModel(
-        text = "Biometrics",
-        backgroundColor = null,
-        onActionClick = {})
+    TeiDashboardBioButton(
+        model =
+            BioButtonModel(
+                text = "Biometrics",
+                backgroundColor = null,
+                onActionClick = {},
+            ),
     )
 }

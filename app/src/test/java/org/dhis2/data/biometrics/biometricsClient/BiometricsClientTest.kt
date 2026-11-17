@@ -4,14 +4,16 @@ import android.app.Activity
 import android.content.Intent
 import com.google.gson.Gson
 import com.simprints.libsimprints.Constants
+import org.dhis2.commons.biometrics.BIOMETRICS_FAILURE_PATTERN
+import org.dhis2.commons.biometrics.BIOMETRICS_SEARCH_PATTERN
 import org.dhis2.data.biometrics.biometricsClient.models.ConfirmIdentityResult
 import org.dhis2.data.biometrics.biometricsClient.models.IdentifyResult
 import org.dhis2.data.biometrics.biometricsClient.models.RegisterResult
 import org.dhis2.data.biometrics.biometricsClient.models.VerifyResult
-import org.dhis2.data.biometrics.biometricsClient.models.sid.IdentificationSID
-import org.dhis2.data.biometrics.biometricsClient.models.sid.RegistrationSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.BiometricReferenceSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.BiometricTemplateSID
+import org.dhis2.data.biometrics.biometricsClient.models.sid.IdentificationSID
+import org.dhis2.data.biometrics.biometricsClient.models.sid.RegistrationSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.ScannedCredentialSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.SubjectActionEventSID
 import org.dhis2.data.biometrics.biometricsClient.models.sid.SubjectActionPayloadSID
@@ -71,11 +73,12 @@ class BiometricsClientTest {
     @Test
     fun `Should carry scanned credential when identify returns no identifications`() {
         val client = givenABiometricsClient()
-        val data = givenAnIntent(
-            biometricsCompleted = true,
-            sessionId = "session1",
-            scannedCredentialSID = givenAScannedCredentialSID(type = "NHIS", value = "credentialValue"),
-        )
+        val data =
+            givenAnIntent(
+                biometricsCompleted = true,
+                sessionId = "session1",
+                scannedCredentialSID = givenAScannedCredentialSID(type = "NHIS", value = "credentialValue"),
+            )
 
         val result = client.handleIdentifyResponse(Activity.RESULT_OK, data) as IdentifyResult.UserNotFound
 
@@ -85,13 +88,15 @@ class BiometricsClientTest {
     @Test
     fun `Should return user not found when all identifications are below confidence score filter`() {
         val client = givenABiometricsClient(confidenceScoreFilter = 50)
-        val data = givenAnIntent(
-            biometricsCompleted = true,
-            sessionId = "session1",
-            identifications = listOf(
-                givenAnIdentificationSID(guid = "guid1", confidence = 10f),
-            ),
-        )
+        val data =
+            givenAnIntent(
+                biometricsCompleted = true,
+                sessionId = "session1",
+                identifications =
+                    listOf(
+                        givenAnIdentificationSID(guid = "guid1", confidence = 10f),
+                    ),
+            )
 
         val result = client.handleIdentifyResponse(Activity.RESULT_OK, data)
 
@@ -101,14 +106,16 @@ class BiometricsClientTest {
     @Test
     fun `Should keep identifications at or above the confidence score filter`() {
         val client = givenABiometricsClient(confidenceScoreFilter = 50)
-        val data = givenAnIntent(
-            biometricsCompleted = true,
-            sessionId = "session1",
-            identifications = listOf(
-                givenAnIdentificationSID(guid = "guid1", confidence = 10f),
-                givenAnIdentificationSID(guid = "guid2", confidence = 90f),
-            ),
-        )
+        val data =
+            givenAnIntent(
+                biometricsCompleted = true,
+                sessionId = "session1",
+                identifications =
+                    listOf(
+                        givenAnIdentificationSID(guid = "guid1", confidence = 10f),
+                        givenAnIdentificationSID(guid = "guid2", confidence = 90f),
+                    ),
+            )
 
         val result = client.handleIdentifyResponse(Activity.RESULT_OK, data) as IdentifyResult.Completed
 
@@ -120,13 +127,15 @@ class BiometricsClientTest {
     @Test
     fun `Should keep credential linked identifications even below the confidence score filter`() {
         val client = givenABiometricsClient(confidenceScoreFilter = 50)
-        val data = givenAnIntent(
-            biometricsCompleted = true,
-            sessionId = "session1",
-            identifications = listOf(
-                givenAnIdentificationSID(guid = "guid1", confidence = 10f, isLinkedToCredential = true),
-            ),
-        )
+        val data =
+            givenAnIntent(
+                biometricsCompleted = true,
+                sessionId = "session1",
+                identifications =
+                    listOf(
+                        givenAnIdentificationSID(guid = "guid1", confidence = 10f, isLinkedToCredential = true),
+                    ),
+            )
 
         val result = client.handleIdentifyResponse(Activity.RESULT_OK, data) as IdentifyResult.Completed
 
@@ -138,13 +147,15 @@ class BiometricsClientTest {
     @Test
     fun `Should mark credential linked identification above filter as biometric match`() {
         val client = givenABiometricsClient(confidenceScoreFilter = 50)
-        val data = givenAnIntent(
-            biometricsCompleted = true,
-            sessionId = "session1",
-            identifications = listOf(
-                givenAnIdentificationSID(guid = "guid1", confidence = 90f, isLinkedToCredential = true),
-            ),
-        )
+        val data =
+            givenAnIntent(
+                biometricsCompleted = true,
+                sessionId = "session1",
+                identifications =
+                    listOf(
+                        givenAnIdentificationSID(guid = "guid1", confidence = 90f, isLinkedToCredential = true),
+                    ),
+            )
 
         val result = client.handleIdentifyResponse(Activity.RESULT_OK, data) as IdentifyResult.Completed
 
@@ -165,12 +176,13 @@ class BiometricsClientTest {
     @Test
     fun `Should return completed with scanned credential when register returns a registration`() {
         val client = givenABiometricsClient()
-        val data = givenAnIntent(
-            biometricsCompleted = true,
-            registration = givenARegistrationSID(guid = "guid1"),
-            hasCredential = true,
-            scannedCredentialSID = givenAScannedCredentialSID(type = "NHIS", value = "credentialValue"),
-        )
+        val data =
+            givenAnIntent(
+                biometricsCompleted = true,
+                registration = givenARegistrationSID(guid = "guid1"),
+                hasCredential = true,
+                scannedCredentialSID = givenAScannedCredentialSID(type = "NHIS", value = "credentialValue"),
+            )
 
         val result = client.handleRegisterResponse(Activity.RESULT_OK, data) as RegisterResult.Completed
 
@@ -182,16 +194,18 @@ class BiometricsClientTest {
     @Test
     fun `Should carry parsed biometric references when register response includes subject actions`() {
         val client = givenABiometricsClient()
-        val data = givenAnIntent(
-            biometricsCompleted = true,
-            registration = givenARegistrationSID(guid = "guid1"),
-            hasCredential = true,
-            subjectActionsJson = givenASubjectActionsJson(
-                type = "FACE_REFERENCE",
-                format = "RANK_ONE_3_1",
-                templates = listOf("template1", "template2"),
-            ),
-        )
+        val data =
+            givenAnIntent(
+                biometricsCompleted = true,
+                registration = givenARegistrationSID(guid = "guid1"),
+                hasCredential = true,
+                subjectActionsJson =
+                    givenASubjectActionsJson(
+                        type = "FACE_REFERENCE",
+                        format = "RANK_ONE_3_1",
+                        templates = listOf("template1", "template2"),
+                    ),
+            )
 
         val result = client.handleRegisterResponse(Activity.RESULT_OK, data) as RegisterResult.Completed
 
@@ -205,11 +219,12 @@ class BiometricsClientTest {
     @Test
     fun `Should return empty biometric references when subject actions extra is absent`() {
         val client = givenABiometricsClient()
-        val data = givenAnIntent(
-            biometricsCompleted = true,
-            registration = givenARegistrationSID(guid = "guid1"),
-            hasCredential = true,
-        )
+        val data =
+            givenAnIntent(
+                biometricsCompleted = true,
+                registration = givenARegistrationSID(guid = "guid1"),
+                hasCredential = true,
+            )
 
         val result = client.handleRegisterResponse(Activity.RESULT_OK, data) as RegisterResult.Completed
 
@@ -219,12 +234,13 @@ class BiometricsClientTest {
     @Test
     fun `Should return empty biometric references when subject actions extra is not valid json`() {
         val client = givenABiometricsClient()
-        val data = givenAnIntent(
-            biometricsCompleted = true,
-            registration = givenARegistrationSID(guid = "guid1"),
-            hasCredential = true,
-            subjectActionsJson = "not valid json",
-        )
+        val data =
+            givenAnIntent(
+                biometricsCompleted = true,
+                registration = givenARegistrationSID(guid = "guid1"),
+                hasCredential = true,
+                subjectActionsJson = "not valid json",
+            )
 
         val result = client.handleRegisterResponse(Activity.RESULT_OK, data) as RegisterResult.Completed
 
@@ -236,10 +252,11 @@ class BiometricsClientTest {
         val client = givenABiometricsClient()
         val data = givenAnIntent()
 
-        val result = client.handleRegisterResponse(
-            Constants.SIMPRINTS_ENROLMENT_LAST_BIOMETRICS_FAILED,
-            data,
-        )
+        val result =
+            client.handleRegisterResponse(
+                Constants.SIMPRINTS_ENROLMENT_LAST_BIOMETRICS_FAILED,
+                data,
+            )
 
         assertEquals(RegisterResult.RegisterLastFailure, result)
     }
@@ -247,11 +264,12 @@ class BiometricsClientTest {
     @Test
     fun `Should return possible duplicates when register returns identifications`() {
         val client = givenABiometricsClient()
-        val data = givenAnIntent(
-            biometricsCompleted = true,
-            sessionId = "session1",
-            identifications = listOf(givenAnIdentificationSID(guid = "guid1", confidence = 100f)),
-        )
+        val data =
+            givenAnIntent(
+                biometricsCompleted = true,
+                sessionId = "session1",
+                identifications = listOf(givenAnIdentificationSID(guid = "guid1", confidence = 100f)),
+            )
 
         val result = client.handleRegisterResponse(Activity.RESULT_OK, data) as RegisterResult.PossibleDuplicates
 
@@ -292,10 +310,11 @@ class BiometricsClientTest {
     @Test
     fun `Should return match when dhis2 verification confidence is at or above the filter for a matched band`() {
         val client = givenABiometricsClient(confidenceScoreFilter = 50)
-        val data = givenAnIntent(
-            biometricsCompleted = true,
-            verification = givenAVerificationSID(confidence = 90f, confidenceBand = "HIGH"),
-        )
+        val data =
+            givenAnIntent(
+                biometricsCompleted = true,
+                verification = givenAVerificationSID(confidence = 90f, confidenceBand = "HIGH"),
+            )
 
         val result = client.handleVerifyResponse(Activity.RESULT_OK, data)
 
@@ -305,10 +324,11 @@ class BiometricsClientTest {
     @Test
     fun `Should return no match when dhis2 verification confidence is below the filter for a matched band`() {
         val client = givenABiometricsClient(confidenceScoreFilter = 50)
-        val data = givenAnIntent(
-            biometricsCompleted = true,
-            verification = givenAVerificationSID(confidence = 10f, confidenceBand = "HIGH"),
-        )
+        val data =
+            givenAnIntent(
+                biometricsCompleted = true,
+                verification = givenAVerificationSID(confidence = 10f, confidenceBand = "HIGH"),
+            )
 
         val result = client.handleVerifyResponse(Activity.RESULT_OK, data)
 
@@ -318,10 +338,11 @@ class BiometricsClientTest {
     @Test
     fun `Should return no match when dhis2 verification confidence band is none`() {
         val client = givenABiometricsClient(confidenceScoreFilter = 0)
-        val data = givenAnIntent(
-            biometricsCompleted = true,
-            verification = givenAVerificationSID(confidence = 100f, confidenceBand = "NONE"),
-        )
+        val data =
+            givenAnIntent(
+                biometricsCompleted = true,
+                verification = givenAVerificationSID(confidence = 100f, confidenceBand = "NONE"),
+            )
 
         val result = client.handleVerifyResponse(Activity.RESULT_OK, data)
 
@@ -341,10 +362,11 @@ class BiometricsClientTest {
     @Test
     fun `Should return completed with credentials when confirm identity response has a scanned credential`() {
         val client = givenABiometricsClient()
-        val data = givenAnIntent(
-            hasCredential = true,
-            scannedCredentialSID = givenAScannedCredentialSID(type = "NHIS", value = "credentialValue"),
-        )
+        val data =
+            givenAnIntent(
+                hasCredential = true,
+                scannedCredentialSID = givenAScannedCredentialSID(type = "NHIS", value = "credentialValue"),
+            )
 
         val result =
             client.handleConfirmIdentityResponse(Activity.RESULT_OK, data) as ConfirmIdentityResult.CompletedWithCredentials
@@ -359,6 +381,28 @@ class BiometricsClientTest {
         val result = client.handleConfirmIdentityResponse(Activity.RESULT_OK, null)
 
         assertEquals(ConfirmIdentityResult.Completed, result)
+    }
+
+    @Test
+    fun `Should confirm identity with the guid when it is a real Simprints guid`() {
+        assertEquals("0d2b3f9e-1c4a-4e6b-9a7d-3f5e8b1c2d4a", selectedGuidOrNone("0d2b3f9e-1c4a-4e6b-9a7d-3f5e8b1c2d4a"))
+    }
+
+    @Test
+    fun `Should confirm identity with none selected when the guid is a biometrics search placeholder`() {
+        assertEquals("none_selected", selectedGuidOrNone("${BIOMETRICS_SEARCH_PATTERN}sessionId_guid1;guid2"))
+    }
+
+    @Test
+    fun `Should confirm identity with none selected when the guid is a biometrics failure placeholder`() {
+        assertEquals("none_selected", selectedGuidOrNone("${BIOMETRICS_FAILURE_PATTERN}_3f1c2d4a"))
+    }
+
+    @Test
+    fun `Should confirm identity with none selected when there is no guid`() {
+        assertEquals("none_selected", selectedGuidOrNone(null))
+        assertEquals("none_selected", selectedGuidOrNone(""))
+        assertEquals("none_selected", selectedGuidOrNone("  "))
     }
 
     private fun givenABiometricsClient(confidenceScoreFilter: Int = 0) =
@@ -435,35 +479,42 @@ class BiometricsClientTest {
             isVerified = false,
         )
 
-    private fun givenARegistrationSID(guid: String): RegistrationSID =
-        RegistrationSID(guid = guid)
+    private fun givenARegistrationSID(guid: String): RegistrationSID = RegistrationSID(guid = guid)
 
-    private fun givenAScannedCredentialSID(type: String, value: String): ScannedCredentialSID =
-        ScannedCredentialSID(type = type, value = value)
+    private fun givenAScannedCredentialSID(
+        type: String,
+        value: String,
+    ): ScannedCredentialSID = ScannedCredentialSID(type = type, value = value)
 
-    private fun givenAVerificationSID(confidence: Float, confidenceBand: String): VerificationSID =
-        VerificationSID(guid = "guid1", confidence = confidence, confidenceBand = confidenceBand)
+    private fun givenAVerificationSID(
+        confidence: Float,
+        confidenceBand: String,
+    ): VerificationSID = VerificationSID(guid = "guid1", confidence = confidence, confidenceBand = confidenceBand)
 
     private fun givenASubjectActionsJson(
         type: String,
         format: String,
         templates: List<String>,
     ): String {
-        val subjectActions = SubjectActionsSID(
-            events = listOf(
-                SubjectActionEventSID(
-                    payload = SubjectActionPayloadSID(
-                        biometricReferences = listOf(
-                            BiometricReferenceSID(
-                                type = type,
-                                format = format,
-                                templates = templates.map { BiometricTemplateSID(it) },
-                            ),
+        val subjectActions =
+            SubjectActionsSID(
+                events =
+                    listOf(
+                        SubjectActionEventSID(
+                            payload =
+                                SubjectActionPayloadSID(
+                                    biometricReferences =
+                                        listOf(
+                                            BiometricReferenceSID(
+                                                type = type,
+                                                format = format,
+                                                templates = templates.map { BiometricTemplateSID(it) },
+                                            ),
+                                        ),
+                                ),
                         ),
                     ),
-                ),
-            ),
-        )
+            )
         return Gson().toJson(subjectActions)
     }
 }

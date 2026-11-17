@@ -27,9 +27,9 @@ data class BiometricsAttributeUiModelImpl(
     override val periodSelector: PeriodSelector?,
     override val editable: Boolean = true,
     val ageUnderThreshold: Boolean = false,
-    override var customIntent: CustomIntentModel?
-) : FieldUiModel, BiometricsTEIRegistrationUIModel {
-
+    override var customIntent: CustomIntentModel?,
+) : FieldUiModel,
+    BiometricsTEIRegistrationUIModel {
     private var callback: FieldUiModel.Callback? = null
 
     fun isSelected(): Boolean = false
@@ -68,8 +68,8 @@ data class BiometricsAttributeUiModelImpl(
         callback?.intent(
             OnFocus(
                 uid,
-                value
-            )
+                value,
+            ),
         )
     }
 
@@ -98,15 +98,15 @@ data class BiometricsAttributeUiModelImpl(
     }
 
     override fun setValue(value: String?) = this.copy(value = value)
-    override fun setSelectableDates(selectableDates: SelectableDates?): FieldUiModel {
-        return this.copy(selectableDates = selectableDates)
-    }
+
+    override fun setSelectableDates(selectableDates: SelectableDates?): FieldUiModel = this.copy(selectableDates = selectableDates)
 
     override fun setIsLoadingData(isLoadingData: Boolean) = this.copy()
 
     override fun setDisplayName(displayName: String?) = this.copy()
 
     override fun setKeyBoardActionDone() = this.copy()
+
     override fun setOptionSetConfiguration(optionSetConfiguration: OptionSetConfiguration): FieldUiModel {
         TODO("Not yet implemented")
     }
@@ -131,14 +131,14 @@ data class BiometricsAttributeUiModelImpl(
     // because we need listen in enrollmentPresenterImpl to register biometrics
 
     private var biometricListener: (() -> Unit)? = null
-    private var saveTEIListener: ((removeBiometrics:Boolean) -> Unit)? = null
+    private var saveTEIListener: ((removeBiometrics: Boolean) -> Unit)? = null
     private var registerLastAndSave: ((String) -> Unit)? = null
 
     override fun onBiometricsClick() {
         biometricListener?.invoke()
     }
 
-    override fun onSaveTEI(removeBiometrics:Boolean) {
+    override fun onSaveTEI(removeBiometrics: Boolean) {
         saveTEIListener?.invoke(removeBiometrics)
     }
 
@@ -150,7 +150,7 @@ data class BiometricsAttributeUiModelImpl(
         this.biometricListener = listener
     }
 
-    fun setSaveTEI(listener: (removeBiometrics:Boolean) -> Unit) {
+    fun setSaveTEI(listener: (removeBiometrics: Boolean) -> Unit) {
         this.saveTEIListener = listener
     }
 
@@ -159,10 +159,11 @@ data class BiometricsAttributeUiModelImpl(
     }
 
     fun onTextChange(value: CharSequence?) {
-        val text = when {
-            value?.isEmpty() == true -> null
-            else -> value?.toString()
-        }
+        val text =
+            when {
+                value?.isEmpty() == true -> null
+                else -> value?.toString()
+            }
         callback?.intent(FormIntent.OnTextChange(uid, text, valueType))
     }
 }

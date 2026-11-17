@@ -6,7 +6,7 @@ enum class LegacyInteractionID {
     ON_SYNC_CLICK,
     ON_ENROLL,
     ON_TEI_CLICK,
-    ON_SEARCH_TEI_MODEL_CLICK
+    ON_SEARCH_TEI_MODEL_CLICK,
 }
 
 sealed class LegacyInteraction(
@@ -40,6 +40,7 @@ sealed class LegacyInteraction(
 
     // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
     // Alternative interaction to the official to pass the SearchTeiModel
-    data class OnSearchTeiModelClick(val item: SearchTeiModel) :
-        LegacyInteraction(LegacyInteractionID.ON_SEARCH_TEI_MODEL_CLICK)
+    data class OnSearchTeiModelClick(
+        val item: SearchTeiModel,
+    ) : LegacyInteraction(LegacyInteractionID.ON_SEARCH_TEI_MODEL_CLICK)
 }

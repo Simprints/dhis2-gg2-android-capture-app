@@ -191,7 +191,7 @@ class SearchTEIViewModelTest {
         assertTrue(screenState is SearchList)
 
         // by default biometrics mode is full, then searchform is hidden
-        //assertTrue((screenState as SearchList).searchForm.isOpened)
+        // assertTrue((screenState as SearchList).searchForm.isOpened)
     }
 
     @Test
@@ -520,7 +520,7 @@ class SearchTEIViewModelTest {
         viewModel.onDataLoaded(2)
         viewModel.dataResult.value?.apply {
             assertTrue(isNotEmpty())
-            //assertTrue(size == 1)
+            // assertTrue(size == 1)
             // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
             // Simprints behavior: size includes sequential search message
             assertTrue(size == 2)
@@ -547,7 +547,7 @@ class SearchTEIViewModelTest {
 
             // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
             // Simprints behavior: avoid show search outside
-            //assertTrue(size == 1)
+            // assertTrue(size == 1)
             assertTrue(size == 2)
             assertTrue(first().type == SearchResultType.SEARCH_OUTSIDE)
         }
@@ -564,7 +564,7 @@ class SearchTEIViewModelTest {
         viewModel.onDataLoaded(1)
         viewModel.dataResult.value?.apply {
             assertTrue(isNotEmpty())
-            //assertTrue(size == 1)
+            // assertTrue(size == 1)
             // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
             // Simprints behavior: size includes sequential search message
             assertTrue(size == 2)
@@ -580,7 +580,7 @@ class SearchTEIViewModelTest {
         viewModel.onDataLoaded(1, 1)
         viewModel.dataResult.value?.apply {
             assertTrue(isNotEmpty())
-            //assertTrue(size == 1)
+            // assertTrue(size == 1)
             // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
             // Simprints behavior: size includes sequential search message
             assertTrue(size == 2)
@@ -625,7 +625,7 @@ class SearchTEIViewModelTest {
         viewModel.onDataLoaded(1, 1)
         viewModel.dataResult.value?.apply {
             assertTrue(isNotEmpty())
-            //assertTrue(size == 1)
+            // assertTrue(size == 1)
             // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
             // Simprints behavior: size includes sequential search message
             assertTrue(size == 2)

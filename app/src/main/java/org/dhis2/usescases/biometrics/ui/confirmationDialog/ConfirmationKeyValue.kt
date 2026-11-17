@@ -31,9 +31,7 @@ import org.hisp.dhis.mobile.ui.designsystem.theme.Spacing
 import org.hisp.dhis.mobile.ui.designsystem.theme.SurfaceColor
 
 @Composable
-private fun ConfirmationKeyValue(
-    additionalInfoItem: AdditionalInfoItem,
-) {
+private fun ConfirmationKeyValue(additionalInfoItem: AdditionalInfoItem) {
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
         val maxKeyWidth = maxWidth / 2 - Spacing.Spacing16
 
@@ -55,8 +53,9 @@ private fun ConfirmationKeyValue(
             }
 
             Row(
-                modifier = Modifier
-                    .clip(shape = RoundedCornerShape(Radius.XS)),
+                modifier =
+                    Modifier
+                        .clip(shape = RoundedCornerShape(Radius.XS)),
             ) {
                 if (additionalInfoItem.icon != null) {
                     Box(
@@ -71,7 +70,6 @@ private fun ConfirmationKeyValue(
                     if (additionalInfoItem.action != null) SurfaceColor.Primary else valueColor
                 ConfirmationListCardValue(text = additionalInfoItem.value, color = valueColor)
             }
-
         }
     }
 }
@@ -81,9 +79,7 @@ private fun ConfirmationKeyValue(
  *  used to paint a list of AdditionalInfoItems
  */
 @Composable
-fun ConfirmationKeyValueList(
-    itemList: List<AdditionalInfoItem>,
-) {
+fun ConfirmationKeyValueList(itemList: List<AdditionalInfoItem>) {
     Column {
         itemList.forEach { item ->
             ConfirmationKeyValue(item)
@@ -107,10 +103,11 @@ fun ConfirmationListCardKey(
         modifier = modifier,
         onTextLayout = { textLayoutResult ->
             if (textLayoutResult.hasVisualOverflow) {
-                val lineIndex = textLayoutResult.getLineEnd(
-                    lineIndex = 0,
-                    visibleEnd = true,
-                )
+                val lineIndex =
+                    textLayoutResult.getLineEnd(
+                        lineIndex = 0,
+                        visibleEnd = true,
+                    )
                 modifiedText = modifiedText.substring(0, lineIndex).trimEnd() + "...:"
             }
         },

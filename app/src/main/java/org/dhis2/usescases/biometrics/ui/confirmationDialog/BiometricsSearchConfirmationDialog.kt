@@ -37,7 +37,6 @@ import androidx.compose.ui.unit.dp
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
 import org.dhis2.R
-import org.dhis2.bindings.app
 import org.dhis2.commons.biometrics.gradientButtonColor
 import org.dhis2.commons.ui.model.ListCardUiModel
 import org.dhis2.usescases.searchTrackEntity.SearchTeiModel
@@ -47,11 +46,11 @@ const val BIOMETRICS_SEARCH_CONFIRMATION_DIALOG_TAG: String =
     "BIOMETRICS_SEARCH_CONFIRMATION_DIALOG_TAG"
 
 class BiometricsSearchConfirmationDialog(
-    private val item: SearchTeiModel, private val cardMapper: TEICardMapper,
+    private val item: SearchTeiModel,
+    private val cardMapper: TEICardMapper,
     private val cancelCallback: () -> Unit,
     private val confirmCallback: () -> Unit,
 ) : DialogFragment() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setStyle(STYLE_NORMAL, R.style.BiometricsConfirmationDialog)
@@ -72,11 +71,12 @@ class BiometricsSearchConfirmationDialog(
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
-        val card = cardMapper.mapForConfirmationDialog(
-            searchTEIModel = item,
-        )
+        val card =
+            cardMapper.mapForConfirmationDialog(
+                searchTEIModel = item,
+            )
 
         return ComposeView(requireContext()).apply {
             setContent {
@@ -98,8 +98,10 @@ class BiometricsSearchConfirmationDialog(
         dismissAllowingStateLoss()
     }
 
-
-    override fun show(manager: FragmentManager, tag: String?) {
+    override fun show(
+        manager: FragmentManager,
+        tag: String?,
+    ) {
         if (manager.findFragmentByTag(tag) == null) {
             manager.beginTransaction().add(this, tag).commitAllowingStateLoss()
         }
@@ -110,7 +112,7 @@ class BiometricsSearchConfirmationDialog(
 private fun ConfirmContent(
     card: ListCardUiModel,
     cancelAction: () -> Unit,
-    confirmAction: () -> Unit
+    confirmAction: () -> Unit,
 ) {
     Surface(color = Color.White, modifier = Modifier.wrapContentSize()) {
         Column(horizontalAlignment = Alignment.Start, modifier = Modifier.padding(16.dp)) {
@@ -118,14 +120,15 @@ private fun ConfirmContent(
                 stringResource(R.string.biometrics_confirm_patient_identity),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 16.dp)
+                modifier = Modifier.padding(bottom = 16.dp),
             )
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .background(color = Color(0xFFfafafa))
-                    .border(1.dp, Color.Gray)
-                    .padding(16.dp)
+                modifier =
+                    Modifier
+                        .background(color = Color(0xFFfafafa))
+                        .border(1.dp, Color.Gray)
+                        .padding(16.dp),
             ) {
                 /*ListCard(
                     listAvatar = card.avatar,
@@ -144,39 +147,40 @@ private fun ConfirmContent(
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
             ) {
                 TextButton(
-                    onClick = cancelAction
+                    onClick = cancelAction,
                 ) {
                     Text(
                         stringResource(R.string.go_back),
                         color = Color(0xFF0782c8),
-                        style = TextStyle(
-                            fontWeight = FontWeight.Bold,
-
-                            )
+                        style =
+                            TextStyle(
+                                fontWeight = FontWeight.Bold,
+                            ),
                     )
                 }
 
-                val modifier = Modifier
-                    .width(100.dp)
-                    .height(36.dp)
+                val modifier =
+                    Modifier
+                        .width(100.dp)
+                        .height(36.dp)
 
                 Button(
                     modifier = modifier,
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
                     contentPadding = PaddingValues(),
-                    onClick = confirmAction
+                    onClick = confirmAction,
                 ) {
                     Box(
-                        modifier = Modifier
-                            .background(gradientButtonColor)
-                            .then(modifier),
+                        modifier =
+                            Modifier
+                                .background(gradientButtonColor)
+                                .then(modifier),
                         contentAlignment = Alignment.Center,
-
-                        ) {
-                        Row() {
+                    ) {
+                        Row {
                             Text(stringResource(R.string.confirm), color = Color.White)
                         }
                     }
@@ -207,5 +211,3 @@ private fun TEIContent(item: ListCardUiModel) {
         ConfirmationKeyValueList(itemList)
     }
 }
-
-

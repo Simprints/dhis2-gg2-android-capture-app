@@ -56,6 +56,6 @@ interface FieldViewModelFactory {
     fun createBiometrics(
         id: String,
         value: String,
-        programStageSection: String? = null
+        programStageSection: String? = null,
     ): FieldUiModel
 }

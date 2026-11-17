@@ -214,9 +214,9 @@ class FieldViewModelFactoryImpl(
     override fun createBiometrics(
         id: String,
         value: String,
-        programStageSection: String?
-    ): FieldUiModel {
-        return BiometricsAttributeUiModelImpl(
+        programStageSection: String?,
+    ): FieldUiModel =
+        BiometricsAttributeUiModelImpl(
             id,
             value,
             programStageSection,
@@ -225,7 +225,6 @@ class FieldViewModelFactoryImpl(
             null,
             null,
             null,
-            customIntent = null
+            customIntent = null,
         )
-    }
 }

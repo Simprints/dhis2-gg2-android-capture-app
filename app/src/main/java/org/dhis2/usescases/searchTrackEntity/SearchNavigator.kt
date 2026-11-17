@@ -75,7 +75,7 @@ class SearchNavigator(
                 teiUid,
                 if (enrollmentUid != null) programUid else null,
                 enrollmentUid,
-                sessionId
+                sessionId,
             ),
         )
     }

@@ -9,7 +9,6 @@ import org.junit.Assert
 import org.junit.Test
 
 class SequentialSearchTest {
-
     private val sessionId = "1111-1111"
     private val biometricUid = "1234-5678"
     private val firstName = "John"
@@ -74,7 +73,7 @@ class SequentialSearchTest {
 
     @Test
     fun `Should return query data with biometrics and normal attributes if it's biometrics search and exist previous attributes search`() {
-        val biometricsSearch =givenABiometricsSearch( givenAnAttributeSearch(null))
+        val biometricsSearch = givenABiometricsSearch(givenAnAttributeSearch(null))
 
         val queryData = biometricsSearch.finalQueryData
 
@@ -86,7 +85,7 @@ class SequentialSearchTest {
 
     @Test
     fun `Should return query data with normal attributes if it's failed biometrics search and exist previous attributes search`() {
-        val biometricsSearch =givenAFailedBiometricsSearch( givenAnAttributeSearch(null))
+        val biometricsSearch = givenAFailedBiometricsSearch(givenAnAttributeSearch(null))
 
         val queryData = biometricsSearch.finalQueryData
 
@@ -97,37 +96,40 @@ class SequentialSearchTest {
     }
 
     private fun givenABiometricsSearch(previousSearch: SequentialSearch.AttributeSearch?): SequentialSearch.BiometricsSearch {
-        val biometricsSearch = SequentialSearch.BiometricsSearch(
-            previousSearch = previousSearch,
-            nextActions = emptyList(),
-            sessionId = sessionId,
-            biometricUids = listOf(biometricUid),
-            isAgeNotSupported = false,
-            simprintsItems = listOf(SimprintsIdentifiedItem(biometricUid, 99.0F, false, false, true)),
-            scannedCredential = null
-        )
+        val biometricsSearch =
+            SequentialSearch.BiometricsSearch(
+                previousSearch = previousSearch,
+                nextActions = emptyList(),
+                sessionId = sessionId,
+                biometricUids = listOf(biometricUid),
+                isAgeNotSupported = false,
+                simprintsItems = listOf(SimprintsIdentifiedItem(biometricUid, 99.0F, false, false, true)),
+                scannedCredential = null,
+            )
         return biometricsSearch
     }
 
     private fun givenAFailedBiometricsSearch(previousSearch: SequentialSearch.AttributeSearch?): SequentialSearch.BiometricsSearch {
-        val biometricsSearch = SequentialSearch.BiometricsSearch(
-            previousSearch = previousSearch,
-            nextActions = emptyList(),
-            sessionId = null,
-            biometricUids = listOf(biometricUid),
-            isAgeNotSupported = false,
-            simprintsItems = listOf(SimprintsIdentifiedItem(biometricUid, 99.0F, false, false, true)),
-            scannedCredential = null
-        )
+        val biometricsSearch =
+            SequentialSearch.BiometricsSearch(
+                previousSearch = previousSearch,
+                nextActions = emptyList(),
+                sessionId = null,
+                biometricUids = listOf(biometricUid),
+                isAgeNotSupported = false,
+                simprintsItems = listOf(SimprintsIdentifiedItem(biometricUid, 99.0F, false, false, true)),
+                scannedCredential = null,
+            )
         return biometricsSearch
     }
 
     private fun givenAnAttributeSearch(previousSearch: SequentialSearch.BiometricsSearch?): SequentialSearch.AttributeSearch {
-        val biometricsSearch = SequentialSearch.AttributeSearch(
-            previousSearch = previousSearch,
-            nextActions = emptyList(),
-            queryData = mutableMapOf(firstNameAttrUid to firstName, lastNameAttrUid to lastName)
-        )
+        val biometricsSearch =
+            SequentialSearch.AttributeSearch(
+                previousSearch = previousSearch,
+                nextActions = emptyList(),
+                queryData = mutableMapOf(firstNameAttrUid to firstName, lastNameAttrUid to lastName),
+            )
         return biometricsSearch
     }
 
@@ -136,7 +138,7 @@ class SequentialSearchTest {
 
         Assert.assertEquals(
             BIOMETRICS_SEARCH_PATTERN + sessionId + "_" + biometricUid,
-            biometricValue
+            biometricValue,
         )
     }
 

@@ -9,7 +9,6 @@ import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults.colors
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -23,7 +22,7 @@ import org.dhis2.form.R
 internal fun LinkLastBiometricsCheckBox(
     value: Boolean,
     enabled: Boolean,
-    onCheckedChange: ((Boolean) -> Unit)?
+    onCheckedChange: ((Boolean) -> Unit)?,
 ) {
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -39,10 +38,11 @@ internal fun LinkLastBiometricsCheckBox(
             enabled = enabled,
             checked = value,
             onCheckedChange = onCheckedChange,
-            colors = colors(
-                checkedColor = Color(parseColor(defaultButtonColor)),
-                uncheckedColor = Color(parseColor(defaultButtonColor)),
-            ),
+            colors =
+                colors(
+                    checkedColor = Color(parseColor(defaultButtonColor)),
+                    uncheckedColor = Color(parseColor(defaultButtonColor)),
+                ),
         )
     }
 }

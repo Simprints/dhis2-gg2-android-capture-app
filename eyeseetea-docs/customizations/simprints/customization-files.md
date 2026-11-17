@@ -49,6 +49,13 @@ Commit note:
 - `app/src/simprintsDebug/`
 - launcher icons, round icons, foreground/background resources, and localized `strings.xml` files under both flavor source sets
 
+### 1.3 Build wiring and other fork changes without a spec
+
+- `app/build.gradle.kts` - `simprints` flavor definition and `BIOMETRICS_ENABLED` flavor wiring.
+- `settings.gradle.kts` - `// EyeSeeTea customization - Include SDK's modules` (EyeSeeTea local-SDK / composite-build wiring, comes from the baseline) and the `// EyeSeeTea fix` that asks the Sonatype snapshots repository only for SNAPSHOT versions (B12; in `develop-eyeseetea` too).
+- `gradle/libs.versions.toml` - release identity (`vName`, `vCode`) and the EyeSeeTea SDK fork version.
+- `app/src/main/java/org/dhis2/usescases/teiDashboard/DashboardViewModel.kt` (`_teiCanBeTransferred`/`checkIfTeiCanBeTransferred()`) - real, active Simprints customization (commit `7fe7f0f0d2`, not related to biometrics): caches `repository.teiCanBeTransferred()` in a `StateFlow`, populated once per `fetchDashboardModel()` call, so `checkIfTeiCanBeTransferred()` (called from `TeiDashboardMenu.kt`, inside composition) reads the cached value instead of hitting the database on every recomposition. Merged into this branch 2026-09-03 from `develop-simprints`, resolved as a merge conflict against baseline's `fetchDashboardModel()` rewrite (`CoroutineTracker.unconditionalIncrement/Decrement`, no `async`/`withContext(ui())`). Kept here because it does not fit any of the existing customization categories (not biometrics-specific); it has no OpenSpec spec.
+
 ## 2. Shared-code customization implementation points
 
 ### 2.1 Biometric Search Integration
@@ -69,6 +76,10 @@ Supporting files in the same workflow:
 - `app/src/main/res/layout/item_biometrics_duplicate.xml`
 - `app/src/main/res/drawable/ic_bio_available_yes.xml`
 - `app/src/main/res/drawable/ic_bio_available_no.xml`
+
+Additional files carrying the customization marker (inventory addition 2026-11-13, upgrade 3.5.0):
+- `app/src/main/java/org/dhis2/usescases/searchTrackEntity/SearchTeiModel.java` (Oslo file; biometrics fields and accessors)
+- `app/src/main/java/org/dhis2/usescases/searchTrackEntity/di/SearchTEKoinModule.kt` (Oslo file; `SearchTeiViewModelFactory` / `SearchTEIViewModel` wiring)
 
 Technical note:
 - Large Simprints-specific biometrics surface including client, config API, SID models, TEI attribute helpers, duplicates dialog, sequential search helpers, and dashboard mappers. This is the clearest active customization area in the fork.
@@ -91,7 +102,12 @@ Supporting files in the same workflow:
 - `app/src/simprints/java/org/dhis2/di/PostMetadataSyncModule.kt` — registers the post-metadata-sync refresh (since 3.4.1)
 - `app/src/main/java/org/dhis2/di/KoinInitialization.kt` — single line registering `postMetadataSyncModule` (Oslo file, flavor-agnostic)
 
-Depends on the baseline `PostMetadataSyncAction` extension point — **not a Simprints customization**. Documented in `customizations/eyeseetea/customizations-eyeseetea.md` §6; see also technique T2 in `customization-techniques.md`.
+Depends on the baseline `PostMetadataSyncAction` extension point — **not a Simprints customization**. Documented in `eyeseetea-docs/customizations/eyeseetea/customizations-eyeseetea.md` §6; see also technique T2 in `customization-techniques.md`.
+
+Additional files carrying the customization marker (inventory addition 2026-11-13, upgrade 3.5.0):
+- `app/src/main/java/org/dhis2/AppComponent.java` (Oslo file; keeps the Dagger login subcomponent that the login still uses to sync the biometrics configuration)
+- `commons/src/main/java/org/dhis2/commons/prefs/PreferenceModule.kt` (Oslo file; keeps `BasicPreferenceProvider`, which the baseline removed)
+- `commonskmm/src/commonMain/kotlin/org/dhis2/mobile/commons/providers/PreferenceConstants.kt` (Oslo file; keeps the preferences file name of the flattened configuration)
 
 Technical note:
 - The fork downloads a list of biometrics configurations, stores them locally, and chooses one active configuration when the user enters a program. Selection precedence is `program` first, then matching `orgUnitGroup`, then `default`. A `default` config is required and absence is treated as an error. The chosen configuration is flattened into preferences and drives `projectId`, `biometricsMode`, thresholds, module-id logic, verification duration, and TE type identification behavior.
@@ -131,6 +147,9 @@ Main implementation points:
 Supporting files in the same workflow:
 - `app/src/main/java/org/dhis2/usescases/teiDashboard/ui/TeiDetailDashboard.kt`
 - `app/src/main/java/org/dhis2/usescases/teiDashboard/dashboardfragments/teidata/TEIDataFragment.kt`
+
+Additional files carrying the customization marker (inventory addition 2026-11-13, upgrade 3.5.0):
+- `app/src/test/java/org/dhis2/usescases/searchTrackEntity/SearchTEIViewModelTest.kt` (also carries the Biometric Duplicate Review And Confirm Identity tests, see §2.9)
 
 Technical note:
 - The fork computes age in months from the configured date-of-birth attribute and compares it to `ageThresholdMonths`. Below the threshold, search skips the biometric next-action path, dashboard biometrics actions are suppressed, enrollment biometric UI is flagged as under-threshold, and card rendering shows `Not Applicable` for missing biometrics instead of a negative marker.
@@ -189,6 +208,9 @@ Supporting files in the same workflow:
 - `app/src/main/java/org/dhis2/usescases/teiDashboard/dashboardfragments/teidata/TEIDataPresenter.kt`
 - `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/BiometricsClient.kt`
 
+Additional files carrying the customization marker (inventory addition 2026-11-13, upgrade 3.5.0):
+- `app/src/main/java/org/dhis2/usescases/searchTrackEntity/SearchRepository.java` (Oslo file; `getUserOrgUnits(programUid)` declaration)
+
 Technical note:
 - `orgUnitLevelAsModuleId` is stored in the selected config and used to transform organisation unit context into the `moduleId` sent to Simprints. For single-org-unit flows it walks the org unit path with a relative offset and clamps to level 4; for multi-org-unit search identify it tries to compute a unique shared level-4 parent and falls back to `BiometricsClient.DefaultModuleId` if no single parent exists.
 
@@ -233,6 +255,16 @@ Supporting files in the same workflow:
 - `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/BiometricsClient.kt`
 - `commonskmm/src/commonMain/kotlin/org/dhis2/mobile/commons/biometrics/attributes.kt` (`biometricAttributeId`, `nhisNumberAttributeId` — moved here from `:app` 2026-09-03 so KMP modules like `:tracker` can read them without an Android-only dependency; see technical note)
 
+Additional files carrying the customization marker (inventory addition 2026-11-13, upgrade 3.5.0):
+- `app/src/main/java/org/dhis2/usescases/biometrics/duplicates/BiometricsDuplicatesDialogAdapter.kt`
+- `app/src/main/java/org/dhis2/usescases/biometrics/duplicates/BiometricsDuplicatesDialogModule.kt` (Dagger wiring; reapplied on the 3.5.0 `customLabelProvider` / `domainErrorMapper` / paging changes)
+- `app/src/main/java/org/dhis2/usescases/biometrics/duplicates/BiometricsDuplicatesDialogView.kt`
+- `app/src/main/java/org/dhis2/usescases/biometrics/ui/confirmationDialog/BiometricsSearchConfirmationDialog.kt`
+- `app/src/main/java/org/dhis2/usescases/searchTrackEntity/SearchRepository.java` (Oslo file; method that writes the Simprints GUID into the biometrics attribute)
+- `app/src/main/java/org/dhis2/utils/LastSelection.kt` (nullable `enrollmentUid`)
+- `app/src/test/java/org/dhis2/usescases/searchTrackEntity/SearchTEIViewModelTest.kt` (6 tests)
+- `app/src/test/java/org/dhis2/data/biometrics/biometricsClient/BiometricsClientTest.kt` (`selectedGuidOrNone` tests (confirm identity sends `none_selected`, 2026-11-13))
+
 Technical note:
 - Search behavior is tightly coupled to the Simprints biometric app and duplicate handling. `BiometricsClient.handleIdentifyResponse()` keeps credential-linked matches even when below the confidence threshold, and the duplicate flow can branch into confirm identity, open existing TEI dashboard, or `registerLast` for new enrollment completion. `BiometricsDuplicatesDialogPresenter` resolves duplicate candidates by issuing a normal DHIS2 search on the biometrics attribute UID with the Simprints GUID list. Several files already carry `EyeSeeTea customization` comments that point to active fork behavior.
 - **Manual confirm identity only skips verification for credential-only matches (fixed 2026-09-23):** on the manual path (`SearchTEActivity` confirm dialog → `SearchTEPresenter.sendBiometricsConfirmIdentity()`), the biometrics GUID is rewritten via `searchRepository.updateAttributeValue()` — which also stores the per-TEI verification (see 2.11) — unless the selected candidate is a credential-only match. PR #279 (`[Simprints] Fix match by credential`) originally skipped it whenever `isLinkedToCredential=true`, but Simprints also sets that flag when the face matches above the threshold, so a face match on a patient with a linked NHIS card never renewed the verification. The flag is now `isCredentialOnlyMatch` (credential linked **and** confidence below `confidenceScoreFilter`), computed in `BiometricsClient.handleIdentifyResponse()` and carried through `SimprintsItemParcelable` in `BiometricsDuplicatesDialog.kt`. The bug only surfaces when SID does not return `isVerified=true` (e.g. SID `2026.2.1+167.1`); with auto-navigation (`isVerified=true`, e.g. SID `2025.4.1+147.1`) `sendAutomaticBiometricsConfirmIdentity()` always stores the verification.
@@ -266,6 +298,18 @@ Supporting files in the same workflow:
 - `app/src/main/java/org/dhis2/usescases/searchTrackEntity/ui/mapper/TEICardMapper.kt`
 - `form/src/main/java/org/dhis2/form/ui/FormView.kt` (Oslo file; single added method `submitIntent(intent: FormIntent)`, see technical note)
 
+Additional files carrying the customization marker (inventory addition 2026-11-13, upgrade 3.5.0):
+- `app/src/main/java/org/dhis2/usescases/searchTrackEntity/SearchRepositoryImplKt.kt` (Oslo file; `searchTeiModel.addToAllAttributes(...)` keeps every attribute for search cards)
+- `app/src/main/java/org/dhis2/usescases/searchTrackEntity/SearchTeiModel.java` (Oslo file; biometrics fields and accessors)
+- `app/src/test/java/org/dhis2/usescases/searchTrackEntity/ui/mapper/TEICardMapperTest.kt` (3 confirmation-dialog-title tests)
+- `app/src/main/java/org/dhis2/usescases/teiDashboard/dashboardfragments/teidata/TEIDataModule.kt` (Oslo file; Dagger wiring (`BasicPreferenceProvider`, `ResourceManager`, org unit repository, last biometrics session id))
+- `form/src/main/java/org/dhis2/form/ui/FormViewModel.kt` (Oslo file; `onFieldsLoadingListener` / `onFieldsLoadedListener` hooks)
+- `form/src/main/java/org/dhis2/form/data/FormRepositoryImpl.kt` (Oslo file; biometrics defined as a tracker-associated field)
+- `form/src/main/java/org/dhis2/form/ui/mapper/FormSectionMapper.kt` (Oslo file)
+- `form/src/main/java/org/dhis2/form/ui/provider/inputfield/DateProvider.kt` (Oslo file; forced save method to change the date)
+- `form/src/main/java/org/dhis2/form/ui/provider/inputfield/InputsForTextValueTypeProvider.kt` (Oslo file; forced save method to change the text, with debounce)
+- `commons/src/main/java/org/dhis2/commons/ui/model/ListCardUiModel.kt` (Oslo file; `subTitle`)
+
 Technical note:
 - Simprints extends enrollment, TEI form, dashboard, and search-card workflows with biometric status, actions, attribute handling, and registration/verification mapping. In enrollment/TEI form the active behavior is registration, duplicate handling, and `registerLast`; verification is not driven from the form flow. In TEI dashboard there are both registration and verification flows. `TEICardMapper` preserves biometrics and NHIS rows even when other empty attributes are hidden, decorates those rows with custom markers, and derives avatar initials from first-name/last-name attributes. This looks like core product behavior, not upgrade drift.
 - **Inventory correction (2026-09-10, upgrade 3.4.2):** `ValueStoreImpl.kt` was removed from this list — its only customization (`// EyeSeeetea customization no resize`, forcing `saveFileResource(value, false)` to skip image resizing) was already dead/commented-out code, removed on 2026-03-09 (`b354b59e8`, "Remove dead custom code"), restoring the standard `saveFileResource(value, valueType == ValueType.IMAGE)` call. Confirmed via full file history — not a casualty of the 3.4.2 merge.
@@ -298,6 +342,9 @@ Supporting files in the same workflow:
 - `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/models/ConfirmIdentityResult.kt`
 - `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/models/SimprintsConfirmIdentityItem.kt`
 - `app/src/main/java/org/dhis2/data/biometrics/biometricsClient/BiometricsClient.kt`
+
+Additional files carrying the customization marker (inventory addition 2026-11-13, upgrade 3.5.0):
+- `app/src/main/java/org/dhis2/usescases/teiDashboard/dashboardfragments/teidata/TeiDataRepository.kt` (Oslo file; `updateBiometricsAttributeValueInTei`)
 
 Technical note:
 - This area covers the fork-specific path that sends data to Simprints, receives verification/identification results, and maps those results back into DHIS2 attributes and TEI state.
@@ -393,7 +440,7 @@ Main implementation points:
 - `app/src/main/java/org/dhis2/data/server/OpenIdSession.kt`
 - `app/src/main/java/org/dhis2/data/notifications/`
 - `app/src/main/java/org/dhis2/usescases/notifications/`
-- `app/src/main/java/org/dhis2/data/service/SyncPresenterImpl.kt`
+- ~~`app/src/main/java/org/dhis2/data/service/SyncPresenterImpl.kt`~~ (deleted by Oslo in 3.5.0; no Simprints match left)
 
 Technical note:
 - These differences are explicitly not part of the Simprints customization scope to preserve. During the merge with `develop-eyeseetea`, login/OpenID/2FA (except the biometrics-config-sync piece above) and notifications should be removed rather than ported.
@@ -413,10 +460,7 @@ Rules:
 - absorbed or obsolete differences should be removed instead of living here forever
 
 Current candidates:
-- `app/build.gradle.kts` - includes Simprints flavor definition; likely valid flavor surface, but should be reconciled with the new baseline flavor blocks during merge
-- `settings.gradle.kts` - differs heavily in this fork and will need classification against the EyeSeeTea local-SDK/composite-build baseline
-- `gradle/libs.versions.toml` - likely mixes flavor release identity with technical dependency drift
-- `app/src/main/java/org/dhis2/usescases/teiDashboard/DashboardViewModel.kt` (`_teiCanBeTransferred`/`checkIfTeiCanBeTransferred()`) - real, active Simprints customization (commit `7fe7f0f0d2`, not related to biometrics): caches `repository.teiCanBeTransferred()` in a `StateFlow`, populated once per `fetchDashboardModel()` call, so `checkIfTeiCanBeTransferred()` (called from `TeiDashboardMenu.kt`, inside composition) reads the cached value instead of hitting the database on every recomposition. Merged into this branch 2026-09-03 from `develop-simprints`, resolved as a merge conflict against baseline's `fetchDashboardModel()` rewrite (`CoroutineTracker.unconditionalIncrement/Decrement`, no `async`/`withContext(ui())`). Listed here rather than in section 2 because it doesn't fit any of the 13 existing customization categories (not biometrics-specific); worth deciding whether it deserves its own category or is minor enough to leave as a documented file-level note.
+- None. Classified in the 3.5.0 close-out (2026-11-13): see §1.3.
 
 ## 5. Notes
 

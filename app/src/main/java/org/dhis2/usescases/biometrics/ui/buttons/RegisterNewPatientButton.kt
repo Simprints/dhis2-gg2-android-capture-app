@@ -11,19 +11,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 
 @Composable
-fun RegisterNewPatientButton(
-    onClick: () -> Unit = { },
-) {
+fun RegisterNewPatientButton(onClick: () -> Unit = { }) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text("New patient?")
-        TextButton(onClick =onClick) {
+        TextButton(onClick = onClick) {
             Text(
                 "Register",
                 color = Color(0xFF0281cb),
-                style = TextStyle(
-                    textDecoration = TextDecoration.Underline,
-                    fontWeight = FontWeight.Bold
-                )
+                style =
+                    TextStyle(
+                        textDecoration = TextDecoration.Underline,
+                        fontWeight = FontWeight.Bold,
+                    ),
             )
         }
     }

@@ -3,10 +3,11 @@ package org.dhis2.data.biometrics
 import kotlinx.serialization.Serializable
 
 @Serializable
+@Suppress("ktlint:standard:enum-entry-name-case")
 enum class BiometricsModeDTO {
     full,
     limited,
-    zero
+    zero,
 }
 
 @Serializable
@@ -22,5 +23,5 @@ data class BiometricsConfigDTO(
     val ageThresholdMonths: Int,
     val dateOfBirthAttribute: String,
     val biometricsMode: BiometricsModeDTO,
-    val enableIdentificationForTET: String?
+    val enableIdentificationForTET: String?,
 )

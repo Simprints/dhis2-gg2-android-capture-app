@@ -8,9 +8,6 @@ import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.processors.PublishProcessor
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import org.dhis2.commons.featureconfig.data.FeatureConfigRepository
-import org.dhis2.commons.featureconfig.model.Feature
-import org.dhis2.commons.featureconfig.model.FeatureOptions
 import org.dhis2.commons.filters.FilterManager
 import org.dhis2.commons.matomo.Actions.Companion.SYNC_BTN
 import org.dhis2.commons.matomo.Categories.Companion.HOME
@@ -18,10 +15,13 @@ import org.dhis2.commons.matomo.Labels.Companion.CLICK_ON
 import org.dhis2.commons.matomo.MatomoAnalyticsController
 import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.viewmodel.DispatcherProvider
+import org.dhis2.mobile.commons.featureconfig.data.FeatureConfigRepository
+import org.dhis2.mobile.commons.featureconfig.model.Feature
+import org.dhis2.mobile.commons.featureconfig.model.FeatureOptions
 import org.dhis2.mobile.sync.domain.SyncStatusController
-import org.koin.core.component.KoinComponent
 import org.dhis2.usescases.biometrics.BIOMETRICS_ENABLED
 import org.dhis2.usescases.biometrics.usecases.SelectBiometricsConfig
+import org.koin.core.component.KoinComponent
 import timber.log.Timber
 import java.util.concurrent.TimeUnit
 
@@ -34,10 +34,9 @@ class ProgramViewModel internal constructor(
     private val filterManager: FilterManager,
     private val syncStatusController: SyncStatusController,
     private val schedulerProvider: SchedulerProvider,
-    private val selectBiometricsConfig: SelectBiometricsConfig
+    private val selectBiometricsConfig: SelectBiometricsConfig,
 ) : ViewModel(),
     KoinComponent {
-
     private val _programs = MutableLiveData<List<ProgramUiModel>>()
     val programs: LiveData<List<ProgramUiModel>> = _programs
     private val refreshData = PublishProcessor.create<Unit>()
@@ -134,7 +133,7 @@ class ProgramViewModel internal constructor(
 
     fun onItemClick(programModel: ProgramUiModel) {
         if (BIOMETRICS_ENABLED) {
-            viewModelScope.launch (dispatchers.io()) {
+            viewModelScope.launch(dispatchers.io()) {
                 selectBiometricsConfig(programModel.uid).collect {
                     // Handle the completion of the flow if needed
                 }

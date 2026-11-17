@@ -44,7 +44,6 @@ import org.dhis2.commons.biometrics.BIOMETRICS_CONFIRM_IDENTITY_REQUEST
 import org.dhis2.commons.biometrics.BIOMETRICS_IDENTIFY_REQUEST
 import org.dhis2.commons.biometrics.BIOMETRICS_USER_NOT_FOUND
 import org.dhis2.commons.extensions.closeKeyboard
-import org.dhis2.commons.featureconfig.data.FeatureConfigRepository
 import org.dhis2.commons.filters.FilterItem
 import org.dhis2.commons.filters.FilterManager
 import org.dhis2.commons.filters.FilterManager.PeriodRequest
@@ -63,9 +62,9 @@ import org.dhis2.data.biometrics.biometricsClient.models.ConfirmIdentityResult
 import org.dhis2.data.biometrics.biometricsClient.models.IdentifyResult
 import org.dhis2.data.biometrics.biometricsClient.models.ScannedCredential
 import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
-
 import org.dhis2.data.forms.dataentry.ProgramAdapter
 import org.dhis2.databinding.ActivitySearchBinding
+import org.dhis2.mobile.commons.featureconfig.data.FeatureConfigRepository
 import org.dhis2.mobile.commons.orgunit.OrgUnitSelectorScope
 import org.dhis2.tracker.NavigationBarUIState
 import org.dhis2.ui.ThemeManager
@@ -239,7 +238,7 @@ class SearchTEActivity :
                 } else {
                     presenter.onEnrollClick(
                         java.util.HashMap(viewModel.queryDataAsMap()),
-                        viewModel.sequentialSearch.value
+                        viewModel.sequentialSearch.value,
                     )
 
                     viewModel.resetSequentialSearch()
@@ -273,7 +272,7 @@ class SearchTEActivity :
                     initialQuery,
                     syncStatusController,
                     // EyeSeeTea customization - Relationship Search Identification Toggle By TE Type
-                    fromRelationship
+                    fromRelationship,
                 ),
             )
         searchComponent?.inject(this)
@@ -569,7 +568,7 @@ class SearchTEActivity :
                         teiUid,
                         programUid,
                         enrollmentUid,
-                        presenter.getLastBiometricsSessionId()
+                        presenter.getLastBiometricsSessionId(),
                     )
                 },
                 { teiUid: String, enrollmentUid: String? ->
@@ -593,7 +592,7 @@ class SearchTEActivity :
                         val interaction = legacyInteraction as OnEnrollClick
                         presenter.onEnrollClick(
                             HashMap(interaction.queryData),
-                            viewModel.sequentialSearch.value
+                            viewModel.sequentialSearch.value,
                         )
                     }
 
@@ -622,6 +621,7 @@ class SearchTEActivity :
 
                     LegacyInteractionID.ON_TEI_CLICK -> {
                         // Eyeseetea customization, we use ON_SEARCH_TEI_MODEL_CLICK
+
                         /*val interaction = legacyInteraction as OnTeiClick
                         presenter.onTEIClick(
                             interaction.teiUid,
@@ -634,7 +634,7 @@ class SearchTEActivity :
                         val interaction = legacyInteraction as OnSearchTeiModelClick
                         presenter.onSearchTEIModelClick(
                             interaction.item,
-                            viewModel.sequentialSearch.value
+                            viewModel.sequentialSearch.value,
                         )
                     }
                 }
@@ -680,7 +680,7 @@ class SearchTEActivity :
                 R.layout.spinner_program_layout,
                 R.id.spinner_text,
                 programs,
-                presenter.trackedEntityName.displayName(),
+                viewModel.teTypePluralLabel.value,
             )
         if (initialProgram != null && initialProgram!!.isNotEmpty()) {
             setInitialProgram(programs)
@@ -772,10 +772,12 @@ class SearchTEActivity :
 
     override fun showPeriodRequest(periodRequest: Pair<PeriodRequest, Filters>) {
         if (periodRequest.first == PeriodRequest.FROM_TO) {
-            FilterPeriodsDialog.newPeriodsFilter(periodRequest.second, isFromToFilter = true)
+            FilterPeriodsDialog
+                .newPeriodsFilter(periodRequest.second, isFromToFilter = true)
                 .show(supportFragmentManager, FILTER_DIALOG)
         } else {
-            FilterPeriodsDialog.newPeriodsFilter(periodRequest.second)
+            FilterPeriodsDialog
+                .newPeriodsFilter(periodRequest.second)
                 .show(supportFragmentManager, FILTER_DIALOG)
         }
     }
@@ -827,7 +829,10 @@ class SearchTEActivity :
                 ).show()
         }
 
-    override fun launchBiometricsIdentify(moduleId: String?, userOrgUnits: List<String>) {
+    override fun launchBiometricsIdentify(
+        moduleId: String?,
+        userOrgUnits: List<String>,
+    ) {
         // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
         // Simprints behavior: hide RecyclerView before launching biometric app
         viewModel.notifyBiometricAppLaunching()
@@ -838,46 +843,51 @@ class SearchTEActivity :
     override fun showBiometricsSearchConfirmation(item: SearchTeiModel) {
         lastSelection = item
 
-        val dialog = BiometricsSearchConfirmationDialog(
-            item,
-            teiCardMapper,
-            {
-                lastSelection = null
-                Unit
-            },
-            {
-                val isCredentialOnlyMatch =
-                    if (viewModel.sequentialSearch.value is SequentialSearch.BiometricsSearch) {
-                        val simprintsItems =
-                            (viewModel.sequentialSearch.value as SequentialSearch.BiometricsSearch).simprintsItems
+        val dialog =
+            BiometricsSearchConfirmationDialog(
+                item,
+                teiCardMapper,
+                {
+                    lastSelection = null
+                    Unit
+                },
+                {
+                    val isCredentialOnlyMatch =
+                        if (viewModel.sequentialSearch.value is SequentialSearch.BiometricsSearch) {
+                            val simprintsItems =
+                                (viewModel.sequentialSearch.value as SequentialSearch.BiometricsSearch).simprintsItems
 
-                        simprintsItems.find { it.guid == item.biometricsGuid() }?.isCredentialOnlyMatch
-                            ?: false
-                    } else {
-                        false
-                    }
+                            simprintsItems.find { it.guid == item.biometricsGuid() }?.isCredentialOnlyMatch
+                                ?: false
+                        } else {
+                            false
+                        }
 
-                presenter.sendBiometricsConfirmIdentity(
-                    lastSelection!!.tei.uid,
-                    lastSelection!!.selectedEnrollment?.uid,
-                    lastSelection!!.tei.isOnline,
-                    isCredentialOnlyMatch
-                )
-                viewModel.resetSequentialSearch()
+                    presenter.sendBiometricsConfirmIdentity(
+                        lastSelection!!.tei.uid,
+                        lastSelection!!.selectedEnrollment?.uid,
+                        lastSelection!!.tei.isOnline,
+                        isCredentialOnlyMatch,
+                    )
+                    viewModel.resetSequentialSearch()
 
-                Unit
-            }
-        )
+                    Unit
+                },
+            )
 
         dialog.show(supportFragmentManager, BIOMETRICS_SEARCH_CONFIRMATION_DIALOG_TAG)
     }
 
     override fun sendBiometricsConfirmIdentity(
-        sessionId: String, guid: String, teiUid: String
+        sessionId: String,
+        guid: String,
+        teiUid: String,
     ) {
         BiometricsClientFactory.get(this).confirmIdentify(
             this,
-            sessionId, guid, teiUid
+            sessionId,
+            guid,
+            teiUid,
         )
         viewModel.clearQueryData()
     }
@@ -885,63 +895,80 @@ class SearchTEActivity :
     override fun sendAutomaticBiometricsConfirmIdentity(
         sessionId: String,
         guid: String,
-        item: SearchTeiModel
+        item: SearchTeiModel,
     ) {
         viewModel.resetSequentialSearch()
         lastSelection = item
 
         BiometricsClientFactory.get(this).confirmIdentify(
             this,
-            sessionId, guid, item.tei.uid
+            sessionId,
+            guid,
+            item.tei.uid,
         )
         viewModel.clearQueryData()
     }
 
-
-    public override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    public override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?,
+    ) {
         when (requestCode) {
             BIOMETRICS_IDENTIFY_REQUEST -> {
-                val result = BiometricsClientFactory.get(
-                    this
-                ).handleIdentifyResponse(resultCode, data)
+                val result =
+                    BiometricsClientFactory
+                        .get(
+                            this,
+                        ).handleIdentifyResponse(resultCode, data)
 
                 if (result is IdentifyResult.Completed) {
                     val completedResult = result
 
                     presenter.searchOnBiometrics(
                         completedResult.items,
-                        completedResult.sessionId, false, completedResult.scannedCredential
+                        completedResult.sessionId,
+                        false,
+                        completedResult.scannedCredential,
                     )
                 } else if (result is IdentifyResult.BiometricsDeclined) {
-                    Toast.makeText(
-                        context, R.string.biometrics_declined,
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast
+                        .makeText(
+                            context,
+                            R.string.biometrics_declined,
+                            Toast.LENGTH_SHORT,
+                        ).show()
 
                     simulateNotFoundBiometricsSearch(null, null)
 
                     launchSearchFormIfRequired()
                 } else if (result is IdentifyResult.UserNotFound) {
-                    Toast.makeText(
-                        context, R.string.biometrics_user_not_found,
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast
+                        .makeText(
+                            context,
+                            R.string.biometrics_user_not_found,
+                            Toast.LENGTH_SHORT,
+                        ).show()
 
                     simulateNotFoundBiometricsSearch(result.sessionId, result.scannedCredential)
                 } else if (result is IdentifyResult.Failure) {
-                    Toast.makeText(
-                        context, R.string.biometrics_failed,
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast
+                        .makeText(
+                            context,
+                            R.string.biometrics_failed,
+                            Toast.LENGTH_SHORT,
+                        ).show()
 
                     simulateNotFoundBiometricsSearch(null, null)
 
                     launchSearchFormIfRequired()
                 } else if (result is IdentifyResult.AgeGroupNotSupported) {
-                    Toast.makeText(
-                        context, R.string.age_group_not_supported,
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast
+                        .makeText(
+                            context,
+                            R.string.age_group_not_supported,
+                            Toast.LENGTH_SHORT,
+                        ).show()
 
                     simulateNotFoundBiometricsSearch(null, null)
                 }
@@ -952,9 +979,11 @@ class SearchTEActivity :
             }
 
             BIOMETRICS_CONFIRM_IDENTITY_REQUEST -> {
-                val result = BiometricsClientFactory.get(
-                    this
-                ).handleConfirmIdentityResponse(resultCode, data)
+                val result =
+                    BiometricsClientFactory
+                        .get(
+                            this,
+                        ).handleConfirmIdentityResponse(resultCode, data)
 
                 if (lastSelection != null) {
                     when (result) {
@@ -968,7 +997,6 @@ class SearchTEActivity :
                         is ConfirmIdentityResult.Completed -> {}
                     }
 
-
                     presenter.onSearchTEIModelClick(lastSelection, viewModel.sequentialSearch.value)
                     lastSelection = null
                 }
@@ -977,16 +1005,23 @@ class SearchTEActivity :
         super.onActivityResult(requestCode, resultCode, data)
     }
 
-    private fun simulateNotFoundBiometricsSearch(sessionId: String?, scannedCredential: ScannedCredential?) {
+    private fun simulateNotFoundBiometricsSearch(
+        sessionId: String?,
+        scannedCredential: ScannedCredential?,
+    ) {
         presenter.searchOnBiometrics(
             listOf(SimprintsIdentifiedItem(BIOMETRICS_USER_NOT_FOUND, 0f, false, false, false)),
-            sessionId, false, scannedCredential
+            sessionId,
+            false,
+            scannedCredential,
         )
     }
 
     private fun launchSearchFormIfRequired() {
         if (viewModel.sequentialSearch.value == null ||
-            viewModel.sequentialSearch.value!!.nextActions.isEmpty()
+            viewModel.sequentialSearch.value!!
+                .nextActions
+                .isEmpty()
         ) {
             Handler(Looper.getMainLooper()).postDelayed({ viewModel.setSearchScreen() }, 100)
         }

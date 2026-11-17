@@ -35,6 +35,7 @@ interface EnrollmentView : AbstractActivityContracts.View {
     fun displayTeiPicture(picturePath: String)
 
     fun showDateEditionWarning(message: String?)
+
     fun registerBiometrics(
         moduleId: String,
         ageInMonths: Long,
@@ -70,6 +71,8 @@ interface EnrollmentView : AbstractActivityContracts.View {
     )
 
     fun markAsPendingSave()
+
     fun showUnableSaveBiometricsMessage()
+
     fun showBiometricsAgeGroupNotSupported()
 }
