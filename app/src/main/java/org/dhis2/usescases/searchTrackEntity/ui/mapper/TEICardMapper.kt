@@ -24,13 +24,14 @@ import org.dhis2.commons.date.toUi
 import org.dhis2.commons.prefs.BasicPreferenceProviderImpl
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.ui.model.ListCardUiModel
+import org.dhis2.form.extensions.isNotBiometricText
+import org.dhis2.form.extensions.isNotNhisNumberText
 import org.dhis2.mobile.commons.extensions.toJavaDate
+import org.dhis2.mobile.commons.providers.CustomLabelProvider
 import org.dhis2.tracker.search.model.DomainEnrollment
 import org.dhis2.tracker.search.model.DomainProgram
 import org.dhis2.tracker.search.model.EnrollmentStatus
 import org.dhis2.tracker.search.model.SyncState
-import org.dhis2.form.extensions.isNotBiometricText
-import org.dhis2.form.extensions.isNotNhisNumberText
 import org.dhis2.usescases.biometrics.addAttrBiometricsEmojiIfRequired
 import org.dhis2.usescases.biometrics.addAttrNHISNumberEmojiIfRequired
 import org.dhis2.usescases.biometrics.isUnderAgeThreshold
@@ -51,6 +52,7 @@ import java.util.Date
 class TEICardMapper(
     val context: Context,
     val resourceManager: ResourceManager,
+    val customLabelProvider: CustomLabelProvider,
 ) {
     fun map(
         searchTEIModel: SearchTeiModel,
@@ -61,13 +63,15 @@ class TEICardMapper(
         ListCardUiModel(
             avatar = { ProvideAvatar(searchTEIModel, onImageClick) },
             title = getTitle(searchTEIModel),
-            lastUpdated = searchTEIModel.tei.lastUpdated?.toJavaDate().toDateSpan(context),
+            lastUpdated =
+                searchTEIModel.tei.lastUpdated
+                    ?.toJavaDate()
+                    .toDateSpan(context),
             additionalInfo = getAdditionalInfoList(searchTEIModel),
             actionButton = {
                 if (onSyncIconClick != null) {
                     ProvideSyncButton(searchTEIModel, onSyncIconClick)
                 }
-
             },
             expandLabelText = resourceManager.getString(R.string.show_more),
             shrinkLabelText = resourceManager.getString(R.string.show_less),
@@ -114,6 +118,7 @@ class TEICardMapper(
     private fun getTitleFirstLetter(item: SearchTeiModel): String {
         // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
         // Simprints behavior: show first letter of first name and last name
+
         /*val firstLetter =
             item.header?.firstOrNull()
                 ?: item.attributeValues.values
@@ -127,14 +132,15 @@ class TEICardMapper(
                  else -> firstLetter.uppercaseChar().toString()
              }*/
         val firsNameValue =
-            item.attributeValues.values.firstOrNull { it.attribute == firstNameAttrUid }
+            item.attributeValues.values
+                .firstOrNull { it.attribute == firstNameAttrUid }
                 ?.value ?: "?"
         val lastNameValue =
-            item.attributeValues.values.firstOrNull { it.attribute == lastNameAttrUid }
+            item.attributeValues.values
+                .firstOrNull { it.attribute == lastNameAttrUid }
                 ?.value ?: "?"
 
         return "${firsNameValue.first().uppercaseChar()}${lastNameValue.first().uppercaseChar()}"
-
     }
 
     private fun getTitle(item: SearchTeiModel): String =
@@ -163,13 +169,16 @@ class TEICardMapper(
 
         // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
         // Simprints behavior: only remove non biometric empty attributes
-        //attributeList.removeIf { it.value.isEmpty() || it.value == "-" }
-        attributeList.removeIf { it.key!!.isNotBiometricText() && it.key!!.isNotNhisNumberText() && (it.value.isEmpty() || it.value == "-") }
+        // attributeList.removeIf { it.value.isEmpty() || it.value == "-" }
+        attributeList.removeIf {
+            it.key!!.isNotBiometricText() && it.key!!.isNotNhisNumberText() && (it.value.isEmpty() || it.value == "-")
+        }
 
-        val isUnderAgeThreshold = isUnderAgeThreshold(
-            BasicPreferenceProviderImpl(context),
-            searchTEIModel.allAttributeValues.values.toList()
-        )
+        val isUnderAgeThreshold =
+            isUnderAgeThreshold(
+                BasicPreferenceProviderImpl(context),
+                searchTEIModel.allAttributeValues.values.toList(),
+            )
 
         // EyeSeeTea customization - Biometrics In TEI Cards, TEI Dashboard, Enrollment, And TEI Form
         val listWithBiometricsIcons =
@@ -206,7 +215,7 @@ class TEICardMapper(
             checkEnrollmentStatus(
                 programUid = programUid,
                 list = list,
-                status = searchTEIModel.selectedEnrollment?.status?: EnrollmentStatus.ACTIVE,
+                status = searchTEIModel.selectedEnrollment?.status ?: EnrollmentStatus.ACTIVE,
             )
 
             checkOverdue(
@@ -233,23 +242,26 @@ class TEICardMapper(
     ) {
         enrollments?.let {
             if (enrollments.hasFollowUp()) {
+                val followUpLabel =
+                    customLabelProvider.blockingCustomMarkedForFollowUpLabel(
+                        enrollments.first { it.followUp }.program!!,
+                    )
                 list.add(
                     AdditionalInfoItem(
                         icon = {
                             Icon(
                                 imageVector = Icons.Outlined.Flag,
-                                contentDescription = resourceManager.getString(R.string.marked_follow_up),
+                                contentDescription = followUpLabel,
                                 tint = AdditionalInfoItemColor.WARNING.color,
                             )
                         },
-                        value = resourceManager.getString(R.string.marked_follow_up),
+                        value = followUpLabel,
                         isConstantItem = true,
                         color = AdditionalInfoItemColor.WARNING.color,
                     ),
                 )
             }
         }
-
     }
 
     private fun checkEnrollmentStatus(
@@ -337,7 +349,6 @@ class TEICardMapper(
                 ),
             )
         }
-
     }
 
     private fun addOwnedBy(
@@ -362,13 +373,13 @@ class TEICardMapper(
             when (searchTEIModel.tei.aggregatedSyncState) {
                 SyncState.TO_POST,
                 SyncState.TO_UPDATE,
-                    -> {
+                -> {
                     resourceManager.getString(R.string.sync)
                 }
 
                 SyncState.ERROR,
                 SyncState.WARNING,
-                    -> {
+                -> {
                     resourceManager.getString(R.string.sync_retry)
                 }
 
@@ -423,7 +434,7 @@ class TEICardMapper(
             when (state) {
                 SyncState.TO_POST,
                 SyncState.TO_UPDATE,
-                    -> {
+                -> {
                     AdditionalInfoItem(
                         icon = {
                             Icon(
@@ -514,7 +525,6 @@ class TEICardMapper(
     val middleNameAttrUid = "Rslz2y06aBf"
     val lastNameAttrUid = "eo3A0YXVBqr"
 
-
     private val dateOfBirthUid = "S4eTdBrXPpj"
     private val phoneNumberUid = "GsFJ8bXHH8B"
     private val biometricsAttrUid = "KdZcTAZfIk4"
@@ -523,42 +533,46 @@ class TEICardMapper(
     private val traceableAddressAttrUid = "fj7Vthq2xGU"
     private val nhisNumberAttributeUId = "irp5o9EQS4d"
 
-    private val attributeUIdsToShow = listOf(
-        dateOfBirthUid,
-        phoneNumberUid,
-        biometricsAttrUid,
-        nhisNumberAttributeUId,
-        registrationNumberAttrUid,
-        sexAttrUid,
-        traceableAddressAttrUid,
-    )
+    private val attributeUIdsToShow =
+        listOf(
+            dateOfBirthUid,
+            phoneNumberUid,
+            biometricsAttrUid,
+            nhisNumberAttributeUId,
+            registrationNumberAttrUid,
+            sexAttrUid,
+            traceableAddressAttrUid,
+        )
 
-    fun mapForConfirmationDialog(
-        searchTEIModel: SearchTeiModel
-    ): ListCardUiModel {
-        return ListCardUiModel(
+    fun mapForConfirmationDialog(searchTEIModel: SearchTeiModel): ListCardUiModel =
+        ListCardUiModel(
             title = getConfirmationDialogTitle(searchTEIModel),
             subTitle = getConfirmationDialogSubtitle(searchTEIModel),
-            lastUpdated = searchTEIModel.tei.lastUpdated?.toJavaDate()?.toDateSpan(context) ?: "",
+            lastUpdated =
+                searchTEIModel.tei.lastUpdated
+                    ?.toJavaDate()
+                    ?.toDateSpan(context) ?: "",
             additionalInfo = getAdditionalInfoListForConfirmationDialog(searchTEIModel),
             actionButton = { },
             expandLabelText = "",
             shrinkLabelText = "",
             onCardCLick = { },
         )
-    }
 
     private fun getConfirmationDialogTitle(item: SearchTeiModel): String {
         val firsNameValue =
-            item.allAttributeValues.values.firstOrNull { it.attribute == firstNameAttrUid }
+            item.allAttributeValues.values
+                .firstOrNull { it.attribute == firstNameAttrUid }
                 ?.value
 
         val middleNameValue =
-            item.allAttributeValues.values.firstOrNull { it.attribute == middleNameAttrUid }
+            item.allAttributeValues.values
+                .firstOrNull { it.attribute == middleNameAttrUid }
                 ?.value
 
         val lastNameValue =
-            item.allAttributeValues.values.firstOrNull { it.attribute == lastNameAttrUid }
+            item.allAttributeValues.values
+                .firstOrNull { it.attribute == lastNameAttrUid }
                 ?.value
 
         return listOfNotNull(firsNameValue, middleNameValue, lastNameValue)
@@ -569,7 +583,9 @@ class TEICardMapper(
     }
 
     private fun getConfirmationDialogSubtitle(item: SearchTeiModel): String {
-        return ""; /*if (item.attributeValues.isEmpty()) {
+        return ""
+
+        /*if (item.attributeValues.isEmpty()) {
             "-"
         } else {
             val sexValue =
@@ -582,29 +598,35 @@ class TEICardMapper(
     }
 
     private fun getAdditionalInfoListForConfirmationDialog(searchTEIModel: SearchTeiModel): List<AdditionalInfoItem> {
-        val attributeList = attributeUIdsToShow.mapNotNull { attributeUIdToShow ->
-            searchTEIModel.allAttributeValues.entries.find { it.value.attribute == attributeUIdToShow }
-        }.map {
+        val attributeList =
+            attributeUIdsToShow
+                .mapNotNull { attributeUIdToShow ->
+                    searchTEIModel.allAttributeValues.entries.find { it.value.attribute == attributeUIdToShow }
+                }.map {
+                    val key =
+                        if (it.key.startsWith("Traceable address")) {
+                            it.key.replace(
+                                "(where family Lives)",
+                                "",
+                            )
+                        } else {
+                            it.key
+                        }
 
-            val key = if (it.key.startsWith("Traceable address")) it.key.replace(
-                "(where family Lives)",
-                ""
-            ) else it.key
+                    AdditionalInfoItem(
+                        key = "$key:",
+                        value = it.value.value ?: "",
+                    )
+                }.toMutableList()
 
-            AdditionalInfoItem(
-                key = "$key:",
-                value = it.value.value ?: "",
+        val isUnderAgeThreshold =
+            isUnderAgeThreshold(
+                BasicPreferenceProviderImpl(context),
+                searchTEIModel.allAttributeValues.values.toList(),
             )
-        }.toMutableList()
-
-        val isUnderAgeThreshold = isUnderAgeThreshold(
-            BasicPreferenceProviderImpl(context),
-            searchTEIModel.allAttributeValues.values.toList(),
-        )
 
         val listWithBiometricsIcons = addAttrBiometricsEmojiIfRequired(attributeList, isUnderAgeThreshold).toMutableList()
 
         return addAttrNHISNumberEmojiIfRequired(listWithBiometricsIcons).toMutableList()
     }
-
 }

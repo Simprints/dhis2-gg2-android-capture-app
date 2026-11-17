@@ -5,12 +5,18 @@ import org.hisp.dhis.android.core.D2
 
 fun getOrgUnitAsModuleIdByList(
     selectedOrgUnitUIds: List<String>,
-    d2: D2
+    d2: D2,
 ): String {
-    val basicInfoOrgUnits: List<BasicInfoOrgUnit> = selectedOrgUnitUIds.map {
-        val orgUnit = d2.organisationUnitModule().organisationUnits().uid(it).blockingGet()
-        BasicInfoOrgUnit(orgUnit?.uid() ?: "", orgUnit?.level() ?: 0, orgUnit?.path() ?: it)
-    }
+    val basicInfoOrgUnits: List<BasicInfoOrgUnit> =
+        selectedOrgUnitUIds.map {
+            val orgUnit =
+                d2
+                    .organisationUnitModule()
+                    .organisationUnits()
+                    .uid(it)
+                    .blockingGet()
+            BasicInfoOrgUnit(orgUnit?.uid() ?: "", orgUnit?.level() ?: 0, orgUnit?.path() ?: it)
+        }
 
     return getOrgUnitAsModuleIdByBasicInfo(basicInfoOrgUnits)
 }
@@ -18,14 +24,15 @@ fun getOrgUnitAsModuleIdByList(
 data class BasicInfoOrgUnit(
     val uid: String,
     val level: Int,
-    val path: String
+    val path: String,
 )
 
 fun getOrgUnitAsModuleIdByBasicInfo(orgUnits: List<BasicInfoOrgUnit>): String {
-    val level4Parents = orgUnits.map {
+    val level4Parents =
+        orgUnits
+            .map {
                 getLevel4DistrictParent(it.level, it.path)
-            }
-            .filter { it.isNotBlank() }
+            }.filter { it.isNotBlank() }
             .distinct()
 
     return if (level4Parents.size == 1) {

@@ -20,13 +20,12 @@ class BiometricsDuplicatesDialogHolder(
     private val binding: ItemSearchTrackedEntityBinding,
     val colorUtils: ColorUtils,
 ) : RecyclerView.ViewHolder(binding.root) {
-
     private lateinit var teiModel: SearchTeiModel
 
     fun bind(
         teiModel: SearchTeiModel,
         attributeVisibilityCallback: () -> Unit,
-        profileImagePreviewCallback: (String) -> Unit
+        profileImagePreviewCallback: (String) -> Unit,
     ) {
         this.teiModel = teiModel
         if (teiModel.isAttributeListOpen) {
@@ -43,7 +42,10 @@ class BiometricsDuplicatesDialogHolder(
             attribute = teiModel.attributeValues.values.toList()
             attributeNames = teiModel.attributeValues.keys
             attributeListOpened = teiModel.isAttributeListOpen
-            lastUpdated.text = teiModel.tei.lastUpdated?.toJavaDate()?.toDateSpan(itemView.context)
+            lastUpdated.text =
+                teiModel.tei.lastUpdated
+                    ?.toJavaDate()
+                    ?.toDateSpan(itemView.context)
             sortingValue = teiModel.sortingValue
         }
 
@@ -70,7 +72,7 @@ class BiometricsDuplicatesDialogHolder(
                 binding.trackedEntityImage,
                 binding.imageText,
                 colorUtils,
-                profileImagePreviewCallback
+                profileImagePreviewCallback,
             )
 
             attributeValues.setAttributeList(

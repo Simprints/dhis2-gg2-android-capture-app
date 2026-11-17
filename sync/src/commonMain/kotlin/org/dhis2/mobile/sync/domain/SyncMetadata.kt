@@ -4,6 +4,7 @@ import org.dhis2.mobile.commons.domain.PostMetadataSyncAction
 import org.dhis2.mobile.commons.domain.UseCase
 import org.dhis2.mobile.commons.error.DomainError
 import org.dhis2.mobile.commons.logging.logDebug
+import org.dhis2.mobile.commons.session.SessionRenewalNotifier
 import org.dhis2.mobile.sync.data.SyncBackgroundJobAction
 import org.dhis2.mobile.sync.data.SyncRepository
 import org.dhis2.mobile.sync.model.SMSConfigResult
@@ -15,6 +16,7 @@ private const val POST_METADATA_SYNC_ACTIONS_TAG = "POST_METADATA_SYNC_ACTIONS"
 class SyncMetadata(
     private val repository: SyncRepository,
     private val syncBackgroundJobAction: SyncBackgroundJobAction,
+    private val sessionRenewalNotifier: SessionRenewalNotifier,
     private val postMetadataSyncActions: List<PostMetadataSyncAction> = emptyList(),
 ) : UseCase<(progress: Int) -> Unit, Unit> {
     override suspend fun invoke(input: (progress: Int) -> Unit): Result<Unit> =
@@ -65,8 +67,12 @@ class SyncMetadata(
                 Result.success(Unit)
             } else {
                 repository.saveMetadataSyncState(false)
+                sessionRenewalNotifier.notifyIfRequired(syncMetadataResult.exceptionOrNull())
                 Result.failure(syncMetadataResult.exceptionOrNull()!!)
             }
+        } catch (domainError: DomainError) {
+            sessionRenewalNotifier.notifyIfRequired(domainError)
+            Result.failure(domainError)
         } catch (e: Exception) {
             Result.failure(e)
         }

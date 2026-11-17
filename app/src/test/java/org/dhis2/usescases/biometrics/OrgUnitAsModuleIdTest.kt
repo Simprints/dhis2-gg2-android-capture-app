@@ -4,7 +4,6 @@ import org.junit.Assert
 import org.junit.Test
 
 class OrgUnitAsModuleIdTest {
-
     private val orgUnit1 = "orgUnit1"
     private val orgUnit2 = "orgUnit2"
     private val orgUnit3 = "orgUnit3"
@@ -60,7 +59,6 @@ class OrgUnitAsModuleIdTest {
 
         Assert.assertEquals(orgUnit4, orgUnit)
     }
-
 
     @Test
     fun `Should return parent org unit if orgUnitLevelAsModuleId is -1 and org unit is of level 2`() {

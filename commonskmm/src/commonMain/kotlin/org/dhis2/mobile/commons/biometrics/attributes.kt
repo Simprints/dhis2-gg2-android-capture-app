@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename", "ktlint:standard:property-naming")
+
 package org.dhis2.mobile.commons.biometrics
 
 // EyeSeeTea customization - Biometric Search Integration

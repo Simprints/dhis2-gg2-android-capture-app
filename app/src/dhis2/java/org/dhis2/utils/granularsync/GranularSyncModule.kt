@@ -12,7 +12,6 @@ import org.dhis2.commons.schedulers.SchedulerProvider
 import org.dhis2.commons.sync.SyncContext
 import org.dhis2.commons.viewmodel.DispatcherProvider
 import org.dhis2.data.dhislogic.DhisProgramUtils
-import org.dhis2.data.service.workManager.WorkManagerController
 import org.dhis2.utils.granularsync.data.GranularSyncRepository
 import org.dhis2.utils.granularsync.ui.SyncUiStateMapper
 import org.hisp.dhis.android.core.D2
@@ -23,16 +22,13 @@ class GranularSyncModule(
     private val view: GranularSyncContracts.View,
     private val syncContext: SyncContext,
 ) {
-
     @Provides
-    fun provideSyncUiStateMapper(resourceManager: ResourceManager): SyncUiStateMapper =
-        SyncUiStateMapper(syncContext, resourceManager)
+    fun provideSyncUiStateMapper(resourceManager: ResourceManager): SyncUiStateMapper = SyncUiStateMapper(syncContext, resourceManager)
 
     @Provides
     fun providesViewModelFactory(
         d2: D2,
         schedulerProvider: SchedulerProvider,
-        workManagerController: WorkManagerController,
         smsSyncProvider: SMSSyncProvider,
         repository: GranularSyncRepository,
         mapper: SyncUiStateMapper,
@@ -44,14 +40,14 @@ class GranularSyncModule(
             schedulerProvider,
             provideDispatchers(),
             syncContext,
-            workManagerController,
             smsSyncProvider,
             mapper,
         )
 
     @Provides
-    fun provideDispatchers() = object : DispatcherProvider {
-        override fun io() = Dispatchers.IO
+    fun provideDispatchers() =
+        object : DispatcherProvider {
+            override fun io() = Dispatchers.IO
 
             override fun computation() = Dispatchers.Default
 
@@ -65,15 +61,16 @@ class GranularSyncModule(
         periodUtils: DhisPeriodUtils,
         preferenceProvider: PreferenceProvider,
         resourceManager: ResourceManager,
-    ): GranularSyncRepository = GranularSyncRepository(
-        d2,
-        syncContext,
-        preferenceProvider,
-        dhisProgramUtils,
-        periodUtils,
-        resourceManager,
-        provideDispatchers(),
-    )
+    ): GranularSyncRepository =
+        GranularSyncRepository(
+            d2,
+            syncContext,
+            preferenceProvider,
+            dhisProgramUtils,
+            periodUtils,
+            resourceManager,
+            provideDispatchers(),
+        )
 
     @Provides
     fun smsSyncProvider(

@@ -36,7 +36,7 @@ fun TeiDetailDashboard(
     modifier: Modifier = Modifier,
     isGrouped: Boolean = true,
     teiDashboardBioModel: TeiDashboardBioModel?,
-    isUnderAgeThreshold: Boolean
+    isUnderAgeThreshold: Boolean,
 ) {
     Column(
         modifier =
@@ -65,7 +65,7 @@ fun TeiDetailDashboard(
 
         card?.let {
             // Eyeseetea customization
-            if (teiDashboardBioModel?.statusModel != null){
+            if (teiDashboardBioModel?.statusModel != null) {
                 TeiDashboardBioStatus(teiDashboardBioModel.statusModel)
             }
 
@@ -93,7 +93,7 @@ fun TeiDetailDashboard(
             )
         }
 
-        if (teiDashboardBioModel?.buttonModel != null){
+        if (teiDashboardBioModel?.buttonModel != null) {
             TeiDashboardBioButton(teiDashboardBioModel.buttonModel)
         }
     }
@@ -119,7 +119,3 @@ private fun QuickActionsRow(quickActions: List<QuickActionUiModel>) {
 }
 
 const val INFO_BAR_TEST_TAG = "INFO_BAR_TEST_TAG"
-
-
-
-

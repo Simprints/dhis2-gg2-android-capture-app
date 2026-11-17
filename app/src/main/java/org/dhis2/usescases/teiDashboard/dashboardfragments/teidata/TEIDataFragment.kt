@@ -58,6 +58,7 @@ import org.dhis2.data.biometrics.biometricsClient.models.SimprintsIdentifiedItem
 import org.dhis2.databinding.FragmentTeiDataBinding
 import org.dhis2.form.model.EventMode
 import org.dhis2.mobile.commons.orgunit.OrgUnitSelectorScope
+import org.dhis2.mobile.commons.providers.CustomLabelContext
 import org.dhis2.usescases.biometrics.duplicates.BiometricsDuplicatesDialog
 import org.dhis2.usescases.biometrics.isUnderAgeThreshold
 import org.dhis2.usescases.eventsWithoutRegistration.eventCapture.EventCaptureActivity
@@ -143,7 +144,8 @@ class TEIDataFragment :
                 getString("TEI_UID")
                     ?: throw NullPointerException("A TEI uid is required to launch fragment")
             val enrollmentUid = getString("ENROLLMENT_UID") ?: ""
-            val fragmentFromEventCaptureActivity = getBoolean("FRAGMENT_FROM_EVENT_CAPTURE_ACTIVITY", false)
+            val fragmentFromEventCaptureActivity =
+                getBoolean("FRAGMENT_FROM_EVENT_CAPTURE_ACTIVITY", false)
             val lastBiometricsSessionID = getString(Constants.LAST_BIOMETRICS_SESSION_ID)
             app()
                 .dashboardComponent()
@@ -185,7 +187,6 @@ class TEIDataFragment :
                             dashboardModel.collect {
                                 presenter.checkIfHasToDisplayGenerateEvent()
                             }
-
                         }
                     }
                     lifecycleScope.launch {
@@ -229,7 +230,11 @@ class TEIDataFragment :
                         )
 
                     snackbar.setIcon(
-                        drawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_close)!!,
+                        drawable =
+                            ContextCompat.getDrawable(
+                                requireContext(),
+                                R.drawable.ic_close,
+                            )!!,
                     ) {
                         snackbar.dismiss()
                     }
@@ -246,7 +251,11 @@ class TEIDataFragment :
                         )
 
                     snackbar.setIcon(
-                        drawable = ContextCompat.getDrawable(requireContext(), R.drawable.ic_close)!!,
+                        drawable =
+                            ContextCompat.getDrawable(
+                                requireContext(),
+                                R.drawable.ic_close,
+                            )!!,
                     ) {
                         snackbar.dismiss()
                     }
@@ -273,17 +282,19 @@ class TEIDataFragment :
                 val eventCount by presenter.events.map { it.count() }.observeAsState(0)
 
                 // EyeSeeTea customization - avoid calls to database in recompositions
-                val teiCanBeTransferred by dashboardViewModel.teiCanBeTransferredState.collectAsState(initial = false)
+                val teiCanBeTransferred by dashboardViewModel.teiCanBeTransferred.collectAsState(initial = false)
 
                 val syncInfoBar =
-                    dashboardModel.takeIf { it is DashboardEnrollmentModel && !presenter.fragmentIsFromEventCaptureActivity() }?.let {
-                        infoBarMapper.map(
-                            infoBarType = InfoBarType.SYNC,
-                            item = dashboardModel as DashboardEnrollmentModel,
-                            actionCallback = { dashboardActivity.openSyncDialog() },
-                            showInfoBar = syncNeeded,
-                        )
-                    }
+                    dashboardModel
+                        .takeIf { it is DashboardEnrollmentModel && !presenter.fragmentIsFromEventCaptureActivity() }
+                        ?.let {
+                            infoBarMapper.map(
+                                infoBarType = InfoBarType.SYNC,
+                                item = dashboardModel as DashboardEnrollmentModel,
+                                actionCallback = { dashboardActivity.openSyncDialog() },
+                                showInfoBar = syncNeeded,
+                            )
+                        }
 
                 val followUpInfoBar =
                     dashboardModel.takeIf { it is DashboardEnrollmentModel }?.let {
@@ -329,7 +340,7 @@ class TEIDataFragment :
                                         dashboardActivity.activityTeiUid(),
                                         null,
                                         null,
-                                        null
+                                        null,
                                     ),
                                 )
                             },
@@ -340,17 +351,17 @@ class TEIDataFragment :
                     presenter.fetchEvents()
                 }
 
-
-                val isUnderAgeThreshold = dashboardModel?.let {
-                    if (it is DashboardEnrollmentModel) {
-                        isUnderAgeThreshold(
-                            BasicPreferenceProviderImpl(requireContext()),
-                            it.trackedEntityAttributeValues
-                        )
-                    } else {
-                        false
-                    }
-                } ?: false
+                val isUnderAgeThreshold =
+                    dashboardModel?.let {
+                        if (it is DashboardEnrollmentModel) {
+                            isUnderAgeThreshold(
+                                BasicPreferenceProviderImpl(requireContext()),
+                                it.trackedEntityAttributeValues,
+                            )
+                        } else {
+                            false
+                        }
+                    } ?: false
 
                 TeiDetailDashboard(
                     infoBarModels = listOfNotNull(syncInfoBar, followUpInfoBar, enrollmentInfoBar),
@@ -360,7 +371,14 @@ class TEIDataFragment :
                         TimelineEventsHeaderModel(
                             displayEventCreationButton,
                             eventCount,
-                            eventResourcesProvider.programEventLabel(programUid, eventCount),
+                            eventResourcesProvider.programEventLabel(
+                                programUid?.let {
+                                    CustomLabelContext.Program(
+                                        it,
+                                    )
+                                },
+                                eventCount,
+                            ),
                             presenter.getNewEventOptionsByStages(null),
                         ),
                     timelineOnEventCreationOptionSelected = {
@@ -376,7 +394,7 @@ class TEIDataFragment :
                             }
                         } ?: emptyList(),
                     teiDashboardBioModel = presenter.getBiometricsModel(),
-                    isUnderAgeThreshold = isUnderAgeThreshold
+                    isUnderAgeThreshold = isUnderAgeThreshold,
                 )
             }
         }
@@ -465,7 +483,11 @@ class TEIDataFragment :
     }
 
     @SuppressLint("CheckResult")
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+    override fun onActivityResult(
+        requestCode: Int,
+        resultCode: Int,
+        data: Intent?,
+    ) {
         super.onActivityResult(requestCode, resultCode, data)
 
         when (requestCode) {
@@ -491,12 +513,17 @@ class TEIDataFragment :
         }
     }
 
-    private fun onBiometricsAppResponse(resultCode: Int, data: Intent?) {
+    private fun onBiometricsAppResponse(
+        resultCode: Int,
+        data: Intent?,
+    ) {
         if (data == null) return
 
-        val result = get(requireContext()).handleVerifyResponse(
-            resultCode, data
-        )
+        val result =
+            get(requireContext()).handleVerifyResponse(
+                resultCode,
+                data,
+            )
         presenter.handleVerifyResponse(result)
     }
 
@@ -622,15 +649,6 @@ class TEIDataFragment :
             ).show(parentFragmentManager, SCHEDULING_DIALOG)
     }
 
-    override fun displayNoAccessToEventSnackbar(enrollmentOrgUnit: String) {
-        Snackbar
-            .make(
-                binding.root,
-                getString(R.string.at_enroll_org_unit).format(enrollmentOrgUnit) + "\n" + getString(R.string.no_access_to_it),
-                Snackbar.LENGTH_SHORT,
-            ).show()
-    }
-
     override fun showDialogCloseProgram() {
         dialog =
             CustomDialog(
@@ -743,7 +761,7 @@ class TEIDataFragment :
             model
                 .getCurrentOrgUnit()
                 .uid()
-                ?.takeIf(presenter::enrollmentOrgUnitInCaptureScope)
+                .takeIf(presenter::enrollmentOrgUnitInCaptureScope)
                 ?.let {
                     bundle.putString(Constants.ORG_UNIT, it)
                 }
@@ -754,12 +772,13 @@ class TEIDataFragment :
             bundle.putString(Constants.PROGRAM_STAGE_UID, programStage.uid())
             bundle.putInt(Constants.EVENT_SCHEDULE_INTERVAL, programStage.standardInterval() ?: 0)
 
-            //EyeSeeTea Necessary?
+            // EyeSeeTea Necessary?
+
             /*
             bundle.putString(BIOMETRICS_GUID, dashboardModel.biometricValue)
             bundle.putInt(BIOMETRICS_VERIFICATION_STATUS, -1)
             bundle.putString(BIOMETRICS_TEI_ORGANISATION_UNIT, dashboardModel.currentOrgUnit.uid())
-            */
+             */
 
             intent.putExtras(bundle)
             contractHandler.createEvent(intent)
@@ -845,7 +864,7 @@ class TEIDataFragment :
         ageInMonths: Long,
         enrollingOrgUnitId: String,
         enrollingOrgUnitName: String,
-        userOrgUnits: List<String>
+        userOrgUnits: List<String>,
     ) {
         val biometricsClient = get(requireContext())
 
@@ -857,7 +876,7 @@ class TEIDataFragment :
             ageInMonths,
             enrollingOrgUnitId,
             enrollingOrgUnitName,
-            userOrgUnits
+            userOrgUnits,
         )
     }
 
@@ -867,7 +886,7 @@ class TEIDataFragment :
         ageInMonths: Long,
         enrollingOrgUnitId: String,
         enrollingOrgUnitName: String,
-        userOrgUnits: List<String>
+        userOrgUnits: List<String>,
     ) {
         val biometricsClient = get(requireContext())
 
@@ -878,15 +897,17 @@ class TEIDataFragment :
             ageInMonths,
             enrollingOrgUnitId,
             enrollingOrgUnitName,
-            userOrgUnits
+            userOrgUnits,
         )
     }
 
     override fun showBiometricsAgeGroupNotSupported() {
-        Toast.makeText(
-            context, getString(R.string.age_group_not_supported),
-            Toast.LENGTH_SHORT
-        ).show()
+        Toast
+            .makeText(
+                context,
+                getString(R.string.age_group_not_supported),
+                Toast.LENGTH_SHORT,
+            ).show()
     }
 
     override fun registerLast(
@@ -896,7 +917,7 @@ class TEIDataFragment :
         trackedEntityInstanceUId: String,
         enrollingOrgUnitId: String,
         enrollingOrgUnitName: String,
-        userOrgUnits: List<String>
+        userOrgUnits: List<String>,
     ) {
         get(requireContext()).registerLastFromFragment(
             this,
@@ -906,26 +927,33 @@ class TEIDataFragment :
             trackedEntityInstanceUId,
             enrollingOrgUnitId,
             enrollingOrgUnitName,
-            userOrgUnits
+            userOrgUnits,
         )
     }
 
     override fun showPossibleDuplicatesDialog(
-        possibleDuplicates: List<SimprintsIdentifiedItem>, sessionId: String, programUid: String,
-        trackedEntityTypeUid: String, biometricsAttributeUid: String,
-        enrollNewVisible: Boolean, moduleId: String,
+        possibleDuplicates: List<SimprintsIdentifiedItem>,
+        sessionId: String,
+        programUid: String,
+        trackedEntityTypeUid: String,
+        biometricsAttributeUid: String,
+        enrollNewVisible: Boolean,
+        moduleId: String,
         ageInMonths: Long?,
         trackedEntityInstanceUId: String,
         enrollingOrgUnitId: String,
         enrollingOrgUnitName: String,
-        userOrgUnits: List<String>
+        userOrgUnits: List<String>,
     ) {
-        val dialog = BiometricsDuplicatesDialog.newInstance(
-            possibleDuplicates, sessionId, programUid,
-            trackedEntityTypeUid,
-            biometricsAttributeUid,
-            enrollNewVisible
-        )
+        val dialog =
+            BiometricsDuplicatesDialog.newInstance(
+                possibleDuplicates,
+                sessionId,
+                programUid,
+                trackedEntityTypeUid,
+                biometricsAttributeUid,
+                enrollNewVisible,
+            )
 
         dialog.setOnOpenTeiDashboardListener { teiUid: String, program: String, enrollmentUid: String? ->
             startActivity(
@@ -934,8 +962,8 @@ class TEIDataFragment :
                     teiUid,
                     program,
                     enrollmentUid,
-                    sessionId
-                )
+                    sessionId,
+                ),
             )
         }
 
@@ -948,31 +976,31 @@ class TEIDataFragment :
                 trackedEntityInstanceUId,
                 enrollingOrgUnitId,
                 enrollingOrgUnitName,
-                userOrgUnits
+                userOrgUnits,
             )
         }
 
         dialog.setOnEnrollWithoutBiometricsListener {
-
         }
 
         dialog.show(
             parentFragmentManager,
-            BiometricsDuplicatesDialog.TAG
+            BiometricsDuplicatesDialog.TAG,
         )
     }
 
     override fun showUnableSaveBiometricsMessage() {
-        Toast.makeText(
-            context, getString(R.string.unable_save_biometrics),
-            Toast.LENGTH_SHORT
-        ).show()
+        Toast
+            .makeText(
+                context,
+                getString(R.string.unable_save_biometrics),
+                Toast.LENGTH_SHORT,
+            ).show()
     }
 
     override fun refreshCard() {
         showDetailCard()
     }
-
 
     companion object {
         const val RC_EVENTS_COMPLETED = 1601
@@ -984,7 +1012,7 @@ class TEIDataFragment :
             teiUid: String?,
             enrollmentUid: String?,
             fragmentFromEventCaptureActivity: Boolean? = null,
-            sessionId: String?
+            sessionId: String?,
         ): TEIDataFragment {
             val fragment = TEIDataFragment()
             val args = Bundle()
@@ -992,7 +1020,10 @@ class TEIDataFragment :
             args.putString("TEI_UID", teiUid)
             args.putString("ENROLLMENT_UID", enrollmentUid)
             fragmentFromEventCaptureActivity?.let {
-                args.putBoolean("FRAGMENT_FROM_EVENT_CAPTURE_ACTIVITY", fragmentFromEventCaptureActivity)
+                args.putBoolean(
+                    "FRAGMENT_FROM_EVENT_CAPTURE_ACTIVITY",
+                    fragmentFromEventCaptureActivity,
+                )
             }
             args.putString(Constants.LAST_BIOMETRICS_SESSION_ID, sessionId)
             fragment.arguments = args

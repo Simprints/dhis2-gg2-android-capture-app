@@ -634,11 +634,14 @@ private fun DataSetSinglePane(
             DataSetTable(
                 dataSetSectionTable = dataSetSectionTable,
                 onCellClick = onCellClick,
-                inputDialogSize = inputDialogSize,fabSize = fabSize,
+                inputDialogSize = inputDialogSize,
+                fabSize = fabSize,
                 topContent = {
                     Column(
-                        modifier = modifier.fillMaxWidth()
-                            .padding(bottom = Spacing.Spacing24),
+                        modifier =
+                            modifier
+                                .fillMaxWidth()
+                                .padding(bottom = Spacing.Spacing24),
                     ) {
                         SectionTabs(
                             modifier = Modifier,
@@ -647,8 +650,9 @@ private fun DataSetSinglePane(
                             selectedTab = initialTab,
                         )
                         DataSetDetails(
-                            modifier = Modifier
-                                .fillMaxWidth(),
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth(),
                             dataSetDetails = dataSetDetails,
                         )
 
@@ -726,10 +730,11 @@ private fun SectionTabs(
             dataSetSections.map { it.title }
         }
     AdaptiveTabRow(
-        modifier = modifier
-            .height(Spacing.Spacing48)
-            .fillMaxWidth()
-            .background(Color.Transparent),
+        modifier =
+            modifier
+                .height(Spacing.Spacing48)
+                .fillMaxWidth()
+                .background(Color.Transparent),
         tabLabels = tabLabels,
         selectedTab = selectedTab,
         onTabClicked = { selectedTabIndex ->
@@ -765,7 +770,8 @@ private fun DataSetTableContent(
         DataSetTable(
             dataSetSectionTable = dataSetSectionTable,
             inputDialogSize = inputDialogSize,
-            fabSize = fabSize,onCellClick = onCellClick,
+            fabSize = fabSize,
+            onCellClick = onCellClick,
             topContent = {
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -777,16 +783,17 @@ private fun DataSetTableContent(
                             Spacing.Spacing8
                         }
                     DataSetDetails(
-                        modifier.clip(
-                            RoundedCornerShape(
-                                topStart = Radius.L,
-                                topEnd = Radius.L,
-                            ),
-                        ).padding(
-                            start = Spacing.Spacing16,
-                            end = Spacing.Spacing16,
-                            bottom = dataSetDetailsBottomPadding,
-                        ).animateContentSize(),
+                        modifier
+                            .clip(
+                                RoundedCornerShape(
+                                    topStart = Radius.L,
+                                    topEnd = Radius.L,
+                                ),
+                            ).padding(
+                                start = Spacing.Spacing16,
+                                end = Spacing.Spacing16,
+                                bottom = dataSetDetailsBottomPadding,
+                            ).animateContentSize(),
                         dataSetDetails = dataSetDetails,
                     )
 
@@ -963,27 +970,30 @@ private fun DataSetTable(
     TableTheme(
         tableDimensions =
             dataSetSectionTable.overridingDimensions.let { overwrittenDimension ->
-            TableDimensions(
-                extraWidths = with(density) {
-                    overwrittenDimension.overwrittenTableWidth.mapValues { (_, width) ->
-                        width.dp.roundToPx()
-                    }
-                },
-                rowHeaderWidths = with(density) {
-                    overwrittenDimension.overwrittenRowHeaderWidth.mapValues { (_, width) ->
-                        width.dp.roundToPx()
-                    }
-                },
-                columnWidth = with(density) {
-                    overwrittenDimension.overwrittenColumnWidth.mapValues { (_, value) ->
-                        value.mapValues { (_, width) ->
-                            width.dp.roundToPx()
-                        }
-                    }
-                },
-                totalWidth = screenWidth,
-            )
-        },
+                TableDimensions(
+                    extraWidths =
+                        with(density) {
+                            overwrittenDimension.overwrittenTableWidth.mapValues { (_, width) ->
+                                width.dp.roundToPx()
+                            }
+                        },
+                    rowHeaderWidths =
+                        with(density) {
+                            overwrittenDimension.overwrittenRowHeaderWidth.mapValues { (_, width) ->
+                                width.dp.roundToPx()
+                            }
+                        },
+                    columnWidth =
+                        with(density) {
+                            overwrittenDimension.overwrittenColumnWidth.mapValues { (_, value) ->
+                                value.mapValues { (_, width) ->
+                                    width.dp.roundToPx()
+                                }
+                            }
+                        },
+                    totalWidth = screenWidth,
+                )
+            },
     ) {
         DataTable(
             tableList = dataSetSectionTable.tableModels,

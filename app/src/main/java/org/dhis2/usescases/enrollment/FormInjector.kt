@@ -49,8 +49,7 @@ fun AppCompatActivity.buildEnrollmentForm(
                     saveButton = config.saveButton,
                 )
             }
-        }
-        .onFieldItemsRendered(onFieldItemsRendered)
+        }.onFieldItemsRendered(onFieldItemsRendered)
         .onFinishDataEntry(onFinish)
         .factory(supportFragmentManager)
         .setRecords(
@@ -60,7 +59,7 @@ fun AppCompatActivity.buildEnrollmentForm(
             ),
         ).openErrorLocation(config.openErrorLocation)
         .setProgramUid(config.programUid)
-        .onFieldsLoadingListener (onFieldsLoading)
+        .onFieldsLoadingListener(onFieldsLoading)
         .onFieldsLoadedListener(onFieldsLoaded)
         .build()
         .also { formView ->

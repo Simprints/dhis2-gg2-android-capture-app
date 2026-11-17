@@ -13,28 +13,32 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 
 class UpdateBiometricTemplateAttributeValueTest {
-
     private val d2: D2 = Mockito.mock(D2::class.java, Mockito.RETURNS_DEEP_STUBS)
 
     @Test
     fun `Should persist biometric references as json under the template attribute`() {
         givenTemplateAttributeValueType(d2)
 
-        val biometricReferences = listOf(
-            BiometricReference(
-                type = "FACE_REFERENCE",
-                format = "RANK_ONE_3_1",
-                templates = listOf(
-                    BiometricTemplate("template1"),
-                    BiometricTemplate("template2"),
+        val biometricReferences =
+            listOf(
+                BiometricReference(
+                    type = "FACE_REFERENCE",
+                    format = "RANK_ONE_3_1",
+                    templates =
+                        listOf(
+                            BiometricTemplate("template1"),
+                            BiometricTemplate("template2"),
+                        ),
                 ),
-            ),
-        )
+            )
 
         updateBiometricTemplateAttributeValue(d2, "teiUid", biometricReferences)
 
-        val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
-            .value(biometricTemplateAttributeId, "teiUid")
+        val valueRepository =
+            d2
+                .trackedEntityModule()
+                .trackedEntityAttributeValues()
+                .value(biometricTemplateAttributeId, "teiUid")
 
         val expectedJson = Gson().toJson(BiometricReferencesValue(biometricReferences))
         verify(valueRepository).blockingSet(expectedJson)
@@ -46,8 +50,11 @@ class UpdateBiometricTemplateAttributeValueTest {
 
         updateBiometricTemplateAttributeValue(d2, "teiUid", emptyList())
 
-        val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
-            .value(biometricTemplateAttributeId, "teiUid")
+        val valueRepository =
+            d2
+                .trackedEntityModule()
+                .trackedEntityAttributeValues()
+                .value(biometricTemplateAttributeId, "teiUid")
 
         verify(valueRepository, never()).blockingSet(any())
     }

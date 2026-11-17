@@ -15,35 +15,35 @@ class TeiDashboardBioRegistrationMapper(
         registerResult: RegisterResult?,
         actionCallback: () -> Unit,
     ): TeiDashboardBioModel {
-        val statusModel = if (registerResult == RegisterResult.Failure) {
-            BioStatus(
-                text = getText(registerResult),
-                backgroundColor = getBackgroundColor(registerResult) ?: defaultButtonColor,
-            )
-        } else {
-            null
-        }
+        val statusModel =
+            if (registerResult == RegisterResult.Failure) {
+                BioStatus(
+                    text = getText(registerResult),
+                    backgroundColor = getBackgroundColor(registerResult) ?: defaultButtonColor,
+                )
+            } else {
+                null
+            }
 
-        val buttonModel = if (registerResult != RegisterResult.Failure) {
-            BioButtonModel(
-                text = getText(registerResult),
-                backgroundColor = getBackgroundColor(registerResult),
-                onActionClick = actionCallback
-            )
-        } else {
-            null
-        }
+        val buttonModel =
+            if (registerResult != RegisterResult.Failure) {
+                BioButtonModel(
+                    text = getText(registerResult),
+                    backgroundColor = getBackgroundColor(registerResult),
+                    onActionClick = actionCallback,
+                )
+            } else {
+                null
+            }
 
         return TeiDashboardBioModel(
             statusModel = statusModel,
-            buttonModel = buttonModel
+            buttonModel = buttonModel,
         )
     }
 
-    private fun getText(
-        registerResult: RegisterResult?,
-    ): String {
-        return if (registerResult == null) {
+    private fun getText(registerResult: RegisterResult?): String =
+        if (registerResult == null) {
             resourceManager.getString(R.string.enroll_biometrics)
         } else {
             when (registerResult) {
@@ -60,12 +60,9 @@ class TeiDashboardBioRegistrationMapper(
                 is RegisterResult.RegisterLastFailure -> resourceManager.getString(R.string.enroll_biometrics)
             }
         }
-    }
 
-    private fun getBackgroundColor(
-        registerResult: RegisterResult?,
-    ): String? {
-        return if (registerResult == null) {
+    private fun getBackgroundColor(registerResult: RegisterResult?): String? =
+        if (registerResult == null) {
             null
         } else {
             when (registerResult) {
@@ -76,5 +73,4 @@ class TeiDashboardBioRegistrationMapper(
                 is RegisterResult.RegisterLastFailure -> null
             }
         }
-    }
 }

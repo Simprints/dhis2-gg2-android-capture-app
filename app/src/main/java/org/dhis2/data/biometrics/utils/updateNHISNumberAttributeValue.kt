@@ -1,3 +1,5 @@
+@file:Suppress("ktlint:standard:filename")
+
 package org.dhis2.data.biometrics.utils
 
 import org.dhis2.bindings.blockingSetCheck
@@ -7,10 +9,13 @@ import org.hisp.dhis.android.core.D2
 fun updateNHISNumberAttributeValue(
     d2: D2,
     teiUid: String,
-    value: String
+    value: String,
 ) {
-    val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
-        .value(nhisNumberAttributeId, teiUid)
+    val valueRepository =
+        d2
+            .trackedEntityModule()
+            .trackedEntityAttributeValues()
+            .value(nhisNumberAttributeId, teiUid)
 
     valueRepository.blockingSetCheck(d2, nhisNumberAttributeId, value)
 }

@@ -8,8 +8,8 @@ import org.dhis2.commons.data.ProgramConfigurationRepository
 import org.dhis2.commons.date.DateUtils
 import org.dhis2.commons.di.dagger.PerFragment
 import org.dhis2.commons.network.NetworkUtils
-import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.prefs.BasicPreferenceProvider
+import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.resources.D2ErrorUtils
 import org.dhis2.commons.resources.DhisPeriodUtils
 import org.dhis2.commons.resources.MetadataIconProvider
@@ -22,13 +22,12 @@ import org.dhis2.data.forms.dataentry.SearchTEIRepository
 import org.dhis2.data.forms.dataentry.SearchTEIRepositoryImpl
 import org.dhis2.form.data.FormValueStore
 import org.dhis2.form.data.OptionsRepository
+import org.dhis2.mobile.commons.providers.CustomLabelProvider
 import org.dhis2.mobile.commons.reporting.CrashReportController
 import org.dhis2.mobileProgramRules.RuleEngineHelper
 import org.dhis2.tracker.events.CreateEventUseCase
-import org.dhis2.tracker.events.CreateEventUseCaseRepository
-import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.tracker.events.CreateEventUseCaseRepositoryImpl
-import org.dhis2.mobile.commons.biometrics.biometricAttributeId
+import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
 import org.dhis2.usescases.teiDashboard.DashboardRepository
 import org.dhis2.usescases.teiDashboard.dashboardfragments.teidata.teievents.ui.mapper.TEIEventCardMapper
 import org.dhis2.usescases.teiDashboard.domain.GetNewEventCreationTypeOptions
@@ -46,7 +45,7 @@ class TEIDataModule(
     private val enrollmentUid: String,
     private val fragmentIsFromEventCaptureActivity: Boolean,
     private val registry: ActivityResultRegistry,
-    private val lastBiometricsSessionId: String?
+    private val lastBiometricsSessionId: String?,
 ) {
     @Provides
     @PerFragment
@@ -74,42 +73,39 @@ class TEIDataModule(
             view = view,
             d2 = d2,
             dashboardRepository = dashboardRepository,
-            teiDataRepository =  teiDataRepository,
-            ruleEngineHelper =  ruleEngineHelper,
+            teiDataRepository = teiDataRepository,
+            ruleEngineHelper = ruleEngineHelper,
             programUid = programUid,
             teiUid = teiUid,
             enrollmentUid = enrollmentUid,
             fragmentIsFromEventCaptureActivity = fragmentIsFromEventCaptureActivity,
             schedulerProvider = schedulerProvider,
-            analyticsHelper =  analyticsHelper,
-            valueStore =  valueStore,
-            optionsRepository =  optionsRepository,
-            getNewEventCreationTypeOptions =  getNewEventCreationTypeOptions,
-            eventCreationOptionsMapper =  eventCreationOptionsMapper,
-            contractHandler =  contractHandler,
-            dispatcher =  dispatcherProvider,
-            createEventUseCase =  createEventUseCase,
-            d2ErrorUtils =  d2ErrorUtils,
-            preferences =  preferences,
+            analyticsHelper = analyticsHelper,
+            valueStore = valueStore,
+            optionsRepository = optionsRepository,
+            getNewEventCreationTypeOptions = getNewEventCreationTypeOptions,
+            eventCreationOptionsMapper = eventCreationOptionsMapper,
+            contractHandler = contractHandler,
+            dispatcher = dispatcherProvider,
+            createEventUseCase = createEventUseCase,
+            d2ErrorUtils = d2ErrorUtils,
+            preferences = preferences,
             basicPreferenceProvider = basicPreferenceProvider,
             resourceManager = resourceManager,
             lastBiometricsSearchSessionId = lastBiometricsSessionId,
-            orgUnitRepository = orgUnitRepository
+            orgUnitRepository = orgUnitRepository,
         )
 
     @Provides
     @PerFragment
-    fun provideOrgUnitRepository(d2: D2): OrgUnitRepository {
-        return OrgUnitD2Repository(d2)
-    }
+    fun provideOrgUnitRepository(d2: D2): OrgUnitRepository = OrgUnitD2Repository(d2)
 
     @Provides
     @PerFragment
     fun searchTEIRepository(
         d2: D2,
         crashReportController: CrashReportController,
-    ): SearchTEIRepository =
-        SearchTEIRepositoryImpl(d2, DhisEnrollmentUtils(d2), crashReportController)
+    ): SearchTEIRepository = SearchTEIRepositoryImpl(d2, DhisEnrollmentUtils(d2), crashReportController)
 
     @Provides
     @PerFragment
@@ -128,7 +124,7 @@ class TEIDataModule(
             periodUtils,
             metadataIconProvider,
             dateUtils,
-            basicPreferenceProvider
+            basicPreferenceProvider,
         )
 
     @Provides
@@ -153,24 +149,28 @@ class TEIDataModule(
     @Provides
     fun provideGetNewEventCreationTypeOptions(
         programConfigurationRepository: ProgramConfigurationRepository,
-    ): GetNewEventCreationTypeOptions =
-        GetNewEventCreationTypeOptions(programConfigurationRepository)
+    ): GetNewEventCreationTypeOptions = GetNewEventCreationTypeOptions(programConfigurationRepository)
 
     @Provides
     fun provideEventCreationsOptionsMapper(resourceManager: ResourceManager): EventCreationOptionsMapper =
         EventCreationOptionsMapper(resourceManager)
 
     @Provides
-    fun provideTeiCardMapper(resourceManager: ResourceManager): TeiDashboardCardMapper =
-        TeiDashboardCardMapper(resourceManager)
+    fun provideTeiCardMapper(resourceManager: ResourceManager): TeiDashboardCardMapper = TeiDashboardCardMapper(resourceManager)
 
     @Provides
-    fun provideInfoBarMapper(resourceManager: ResourceManager): InfoBarMapper =
-        InfoBarMapper(resourceManager)
+    fun provideInfoBarMapper(resourceManager: ResourceManager): InfoBarMapper = InfoBarMapper(resourceManager)
 
     @Provides
-    fun provideQuickActionMapper(resourceManager: ResourceManager): QuickActionsMapper =
-        QuickActionsMapper(programUid, resourceManager)
+    fun provideQuickActionMapper(
+        resourceManager: ResourceManager,
+        customLabelProvider: CustomLabelProvider,
+    ): QuickActionsMapper =
+        QuickActionsMapper(
+            programUid,
+            resourceManager,
+            customLabelProvider,
+        )
 
     @Provides
     fun provideContractHandler() = TeiDataContractHandler(registry)

@@ -20,6 +20,7 @@ import org.dhis2.form.model.FieldUiModel
 import org.dhis2.form.model.FieldUiModelImpl
 import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
 import org.dhis2.mobile.commons.biometrics.biometricTemplateAttributeId
+import org.dhis2.usescases.biometrics.BIOMETRICS_ENABLED
 import org.dhis2.usescases.biometrics.entities.BiometricsConfig
 import org.dhis2.usescases.biometrics.entities.BiometricsMode
 import org.dhis2.usescases.biometrics.repositories.OrgUnitRepository
@@ -48,6 +49,7 @@ import org.hisp.dhis.android.core.organisationunit.OrganisationUnitCollectionRep
 import org.hisp.dhis.android.core.program.Program
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstance
 import org.hisp.dhis.android.core.trackedentity.TrackedEntityInstanceObjectRepository
+import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito
@@ -108,9 +110,12 @@ class EnrollmentPresenterImplTest {
                 .access(
                     Access
                         .builder()
+                        .read(true)
+                        .write(true)
                         .data(
                             DataAccess
                                 .builder()
+                                .read(true)
                                 .write(true)
                                 .build(),
                         ).build(),
@@ -131,9 +136,12 @@ class EnrollmentPresenterImplTest {
                 .access(
                     Access
                         .builder()
+                        .read(true)
+                        .write(false)
                         .data(
                             DataAccess
                                 .builder()
+                                .read(true)
                                 .write(false)
                                 .build(),
                         ).build(),
@@ -206,6 +214,8 @@ class EnrollmentPresenterImplTest {
 
     @Test
     fun `Should hide save button when biometrics is available`() {
+        assumeBiometricsEnabled()
+
         givenAData()
 
         setupEnrollmentAccess(EnrollmentAccess.WRITE_ACCESS)
@@ -220,19 +230,23 @@ class EnrollmentPresenterImplTest {
     }
 
     private fun givenAData() {
-        val orgUnit =  OrganisationUnit.builder()
-            .uid("orgUnit4")
-            .name("org unit 4")
-            .path("/orgUnit1/orgUnit2/orgUnit3/orgUnit4")
-            .level(4)
-            .build()
+        val orgUnit =
+            OrganisationUnit
+                .builder()
+                .uid("orgUnit4")
+                .name("org unit 4")
+                .path("/orgUnit1/orgUnit2/orgUnit3/orgUnit4")
+                .level(4)
+                .build()
 
         whenever(enrollmentRepository.blockingGet()).thenReturn(
-            Enrollment.builder()
+            Enrollment
+                .builder()
                 .uid("uid")
                 .organisationUnit(orgUnit.uid())
                 .attributeOptionCombo("attributeOptionComboUid")
-                .build())
+                .build(),
+        )
 
         whenever(orgUnitRepository.getByUid(orgUnit.uid())).thenReturn(orgUnit)
         whenever(orgUnitRepository.getUserOrgUnits(any())).thenReturn(listOf(orgUnit))
@@ -240,7 +254,7 @@ class EnrollmentPresenterImplTest {
         val organisationUnitCollectionRepository = mock<OrganisationUnitCollectionRepository>()
         whenever(d2.organisationUnitModule().organisationUnits()).thenReturn(organisationUnitCollectionRepository)
 
-        val readOnlyRepository  = mock<ReadOnlyOneObjectRepositoryFinalImpl<OrganisationUnit>>()
+        val readOnlyRepository = mock<ReadOnlyOneObjectRepositoryFinalImpl<OrganisationUnit>>()
         whenever(readOnlyRepository.blockingGet()).thenReturn(orgUnit)
 
         whenever(organisationUnitCollectionRepository.uid(orgUnit.uid())).thenReturn(readOnlyRepository)
@@ -377,11 +391,13 @@ class EnrollmentPresenterImplTest {
                 .geometry(geometry)
                 .uid("random")
                 .build()
-        val program = Program.builder()
-            .uid("tUID")
-            .categoryCombo(ObjectWithUid.create("categoryComboUid"))
-            .enrollmentCategoryCombo(ObjectWithUid.create("categoryComboUid"))
-            .build()
+        val program =
+            Program
+                .builder()
+                .uid("tUID")
+                .categoryCombo(ObjectWithUid.create("categoryComboUid"))
+                .enrollmentCategoryCombo(ObjectWithUid.create("categoryComboUid"))
+                .build()
 
         whenever(teiRepository.blockingGet()) doReturn tei
         whenever(programRepository.blockingGet()) doReturn program
@@ -395,30 +411,47 @@ class EnrollmentPresenterImplTest {
         ) doReturn access
     }
 
-    private fun givenATei(uid: String, syncState: State) {
-        val tei = TrackedEntityInstance.builder()
-            .uid(uid)
-            .syncState(syncState)
-            .build()
+    private fun givenATei(
+        uid: String,
+        syncState: State,
+    ) {
+        val tei =
+            TrackedEntityInstance
+                .builder()
+                .uid(uid)
+                .syncState(syncState)
+                .build()
         whenever(teiRepository.blockingGet()) doReturn tei
     }
 
     private fun givenAProgram(uid: String) {
-        val program = Program.builder()
-            .uid(uid)
-            .categoryCombo(ObjectWithUid.create("categoryComboUid"))
-            .enrollmentCategoryCombo(ObjectWithUid.create("categoryComboUid"))
-            .build()
+        val program =
+            Program
+                .builder()
+                .uid(uid)
+                .categoryCombo(ObjectWithUid.create("categoryComboUid"))
+                .enrollmentCategoryCombo(ObjectWithUid.create("categoryComboUid"))
+                .build()
         whenever(programRepository.blockingGet()) doReturn program
     }
 
-    private fun givenTeiInNoOtherProgram(teiUid: String, programUid: String, value: Boolean) {
+    private fun givenTeiInNoOtherProgram(
+        teiUid: String,
+        programUid: String,
+        value: Boolean,
+    ) {
         whenever(enrollmentFormRepository.isTeiInNoOtherProgram(teiUid, programUid)) doReturn value
     }
 
-    //EyeSeeTea Customizations
+    // EyeSeeTea Customizations
+    // Biometrics is only enabled in the simprints flavor (BIOMETRICS_ENABLED), while the CI also
+    // runs this class against the dhis2 flavor.
+    private fun assumeBiometricsEnabled() = assumeTrue("Biometrics is only enabled in the simprints flavor", BIOMETRICS_ENABLED)
+
     @Test
     fun `Should write the biometric template attribute when register completes with credential and templates`() {
+        assumeBiometricsEnabled()
+
         val teiUid = "teiUid"
         givenAData()
         givenATei(teiUid, State.TO_POST)
@@ -426,13 +459,14 @@ class EnrollmentPresenterImplTest {
         givenNoStoredBiometricsVerifications()
         presenter.onFieldsLoaded(givenAFieldsWithBiometrics())
 
-        val biometricReferences = listOf(
-            BiometricReference(
-                type = "FACE_REFERENCE",
-                format = "RANK_ONE_3_1",
-                templates = listOf(BiometricTemplate("template1")),
-            ),
-        )
+        val biometricReferences =
+            listOf(
+                BiometricReference(
+                    type = "FACE_REFERENCE",
+                    format = "RANK_ONE_3_1",
+                    templates = listOf(BiometricTemplate("template1")),
+                ),
+            )
 
         presenter.handleRegisterResponse(
             RegisterResult.Completed(
@@ -445,13 +479,18 @@ class EnrollmentPresenterImplTest {
             ),
         )
 
-        val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
-            .value(biometricTemplateAttributeId, teiUid)
+        val valueRepository =
+            d2
+                .trackedEntityModule()
+                .trackedEntityAttributeValues()
+                .value(biometricTemplateAttributeId, teiUid)
         verify(valueRepository).blockingSet(any())
     }
 
     @Test
     fun `Should not write the biometric template attribute when register completes without a credential`() {
+        assumeBiometricsEnabled()
+
         val teiUid = "teiUid"
         givenAData()
         givenATei(teiUid, State.TO_POST)
@@ -459,13 +498,14 @@ class EnrollmentPresenterImplTest {
         givenNoStoredBiometricsVerifications()
         presenter.onFieldsLoaded(givenAFieldsWithBiometrics())
 
-        val biometricReferences = listOf(
-            BiometricReference(
-                type = "FACE_REFERENCE",
-                format = "RANK_ONE_3_1",
-                templates = listOf(BiometricTemplate("template1")),
-            ),
-        )
+        val biometricReferences =
+            listOf(
+                BiometricReference(
+                    type = "FACE_REFERENCE",
+                    format = "RANK_ONE_3_1",
+                    templates = listOf(BiometricTemplate("template1")),
+                ),
+            )
 
         presenter.handleRegisterResponse(
             RegisterResult.Completed(
@@ -478,13 +518,18 @@ class EnrollmentPresenterImplTest {
             ),
         )
 
-        val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
-            .value(biometricTemplateAttributeId, teiUid)
+        val valueRepository =
+            d2
+                .trackedEntityModule()
+                .trackedEntityAttributeValues()
+                .value(biometricTemplateAttributeId, teiUid)
         verify(valueRepository, never()).blockingSet(any())
     }
 
     @Test
     fun `Should not write the biometric template attribute when there are no biometric references`() {
+        assumeBiometricsEnabled()
+
         val teiUid = "teiUid"
         givenAData()
         givenATei(teiUid, State.TO_POST)
@@ -503,8 +548,11 @@ class EnrollmentPresenterImplTest {
             ),
         )
 
-        val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
-            .value(biometricTemplateAttributeId, teiUid)
+        val valueRepository =
+            d2
+                .trackedEntityModule()
+                .trackedEntityAttributeValues()
+                .value(biometricTemplateAttributeId, teiUid)
         verify(valueRepository, never()).blockingSet(any())
     }
 
@@ -559,26 +607,30 @@ class EnrollmentPresenterImplTest {
             basicPreferenceProvider.getObjectFromJson(
                 BiometricsPreference.CONFIGURATIONS,
                 biometricsConfigType,
-                listOf()
-            )
-        ).thenReturn(listOf(
-            BiometricsConfig(
-                biometricsMode = biometricsMode,
-                program = program,
-                icon = "fingerprint",
-                orgUnitGroup = "default",
-                projectId = "jVIWpXqmw6i0QqcY1lPJ",
-                confidenceScoreFilter = 55,
-                lastVerificationDuration = 5,
-                lastDeclinedEnrolDuration = 0,
-                orgUnitLevelAsModuleId = 0,
-                dateOfBirthAttribute = "S4eTdBrXPpj",
-                ageThresholdMonths = 6,
-                enableIdentificationForTET = null
-                )))
+                listOf(),
+            ),
+        ).thenReturn(
+            listOf(
+                BiometricsConfig(
+                    biometricsMode = biometricsMode,
+                    program = program,
+                    icon = "fingerprint",
+                    orgUnitGroup = "default",
+                    projectId = "jVIWpXqmw6i0QqcY1lPJ",
+                    confidenceScoreFilter = 55,
+                    lastVerificationDuration = 5,
+                    lastDeclinedEnrolDuration = 0,
+                    orgUnitLevelAsModuleId = 0,
+                    dateOfBirthAttribute = "S4eTdBrXPpj",
+                    ageThresholdMonths = 6,
+                    enableIdentificationForTET = null,
+                ),
+            ),
+        )
 
         whenever(programRepository.blockingGet()).thenReturn(
-            Program.builder()
+            Program
+                .builder()
                 .uid(program)
                 .categoryCombo(ObjectWithUid.create("categoryComboUid"))
                 .enrollmentCategoryCombo(ObjectWithUid.create("categoryComboUid"))
@@ -599,12 +651,12 @@ class EnrollmentPresenterImplTest {
             eventCollectionRepository,
             teiAttributesProvider,
             dateEntryWarningHelper,
-            basicPreferenceProvider
+            basicPreferenceProvider,
         )
     }
 
-    private fun givenAFieldsWithBiometrics(): List<FieldUiModel> {
-        return listOf(
+    private fun givenAFieldsWithBiometrics(): List<FieldUiModel> =
+        listOf(
             FieldUiModelImpl(
                 uid = "uid",
                 value = null,
@@ -616,7 +668,7 @@ class EnrollmentPresenterImplTest {
                 periodSelector = null,
                 label = "",
                 optionSetConfiguration = null,
-                valueType = ValueType.TEXT
+                valueType = ValueType.TEXT,
             ),
             BiometricsAttributeUiModelImpl(
                 uid = "uid",
@@ -629,10 +681,9 @@ class EnrollmentPresenterImplTest {
                 periodSelector = null,
                 editable = true,
                 ageUnderThreshold = false,
-                customIntent = null
-            )
+                customIntent = null,
+            ),
         )
-    }
 
     companion object {
         const val OWNER_ORG_UNIT_UID = "ownerOrgUnitUid"

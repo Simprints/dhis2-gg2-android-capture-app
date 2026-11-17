@@ -20,12 +20,17 @@ object BiometricsClientFactory {
             projectId,
             username,
             confidenceScoreFilter,
-            BuildConfig.VERSION_NAME
+            BuildConfig.VERSION_NAME,
         )
     }
 
     private fun getUsername(): String {
-        val user = D2Manager.getD2().userModule().user().blockingGet()
+        val user =
+            D2Manager
+                .getD2()
+                .userModule()
+                .user()
+                .blockingGet()
 
         val userId = user?.username() ?: "admin"
         return userId

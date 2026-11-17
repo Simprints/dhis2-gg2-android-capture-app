@@ -13,7 +13,7 @@ class VerificationTest {
             calculateNewVerifications(
                 "uid1",
                 oldVerifications,
-                lastVerificationDuration = 2
+                lastVerificationDuration = 2,
             )
 
         assertTrue(newVerifications.size == 1)
@@ -23,14 +23,16 @@ class VerificationTest {
     @Test
     fun `Should return verifications only with new one if old verifications are inactive`() {
         val oldVerifications =
-            listOf(BiometricsVerification("uid1", givenADatePreviousFromNow(5).time),
-                BiometricsVerification("uid2", givenADatePreviousFromNow(3).time))
+            listOf(
+                BiometricsVerification("uid1", givenADatePreviousFromNow(5).time),
+                BiometricsVerification("uid2", givenADatePreviousFromNow(3).time),
+            )
 
         val newVerifications =
             calculateNewVerifications(
                 "uid1",
                 oldVerifications,
-                lastVerificationDuration = 2
+                lastVerificationDuration = 2,
             )
 
         assertTrue(newVerifications.size == 1)
@@ -40,14 +42,16 @@ class VerificationTest {
     @Test
     fun `Should return verifications with old and new one if old verifications are active`() {
         val oldVerifications =
-            listOf(BiometricsVerification("uid1", givenADatePreviousFromNow(1).time),
-                BiometricsVerification("uid2", givenADatePreviousFromNow(0).time))
+            listOf(
+                BiometricsVerification("uid1", givenADatePreviousFromNow(1).time),
+                BiometricsVerification("uid2", givenADatePreviousFromNow(0).time),
+            )
 
         val newVerifications =
             calculateNewVerifications(
                 "uid3",
                 oldVerifications,
-                lastVerificationDuration = 2
+                lastVerificationDuration = 2,
             )
 
         assertTrue(newVerifications.size == 3)
@@ -57,14 +61,16 @@ class VerificationTest {
     @Test
     fun `Should return verifications with old different of new and new one if old verifications are active`() {
         val oldVerifications =
-            listOf(BiometricsVerification("uid1", givenADatePreviousFromNow(1).time),
-                BiometricsVerification("uid2", givenADatePreviousFromNow(0).time))
+            listOf(
+                BiometricsVerification("uid1", givenADatePreviousFromNow(1).time),
+                BiometricsVerification("uid2", givenADatePreviousFromNow(0).time),
+            )
 
         val newVerifications =
             calculateNewVerifications(
                 "uid2",
                 oldVerifications,
-                lastVerificationDuration = 2
+                lastVerificationDuration = 2,
             )
 
         assertTrue(newVerifications.size == 2)

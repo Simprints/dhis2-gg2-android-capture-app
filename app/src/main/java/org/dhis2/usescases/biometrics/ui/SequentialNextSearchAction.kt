@@ -17,9 +17,9 @@ import org.dhis2.usescases.biometrics.ui.buttons.TealGradientButton
 @Composable
 internal fun SequentialNextSearchActions(
     sequentialSearchActions: List<SequentialSearchAction>,
-    onClick: ((action:SequentialSearchAction) -> Unit),
+    onClick: ((action: SequentialSearchAction) -> Unit),
 ) {
-   Column (horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         sequentialSearchActions.forEach { action ->
             SequentialNextSearchAction(
                 sequentialSearchAction = action,
@@ -33,7 +33,7 @@ internal fun SequentialNextSearchActions(
 @Composable
 internal fun SequentialNextSearchAction(
     sequentialSearchAction: SequentialSearchAction,
-    onClick: ((action:SequentialSearchAction) -> Unit),
+    onClick: ((action: SequentialSearchAction) -> Unit),
 ) {
     when (sequentialSearchAction) {
         is SequentialSearchAction.SearchWithBiometrics -> {

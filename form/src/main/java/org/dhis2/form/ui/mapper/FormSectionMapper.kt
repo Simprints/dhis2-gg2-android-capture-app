@@ -13,12 +13,16 @@ class FormSectionMapper {
         if (hasSections(items)) {
             items.forEach { item ->
                 if (item is SectionUiModelImpl) {
-                    //EyeSeeTea customization
+                    // EyeSeeTea customization
+
                     /*    val fields = items.filterIsInstance<FieldUiModelImpl>()
                         .filter { it.programStageSection == item.uid }*/
 
-                    val fields =items.filter { it !is SectionUiModelImpl &&
-                            it.programStageSection == item.uid }
+                    val fields =
+                        items.filter {
+                            it !is SectionUiModelImpl &&
+                                it.programStageSection == item.uid
+                        }
 
                     sections.add(
                         FormSection(

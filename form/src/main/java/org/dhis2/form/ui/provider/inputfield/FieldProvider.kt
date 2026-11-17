@@ -108,7 +108,7 @@ fun FieldProvider(
 
     if (fieldUiModel is BiometricsAttributeUiModelImpl) {
         ProvideBiometricsAttribute(
-            fieldUiModel = fieldUiModel
+            fieldUiModel = fieldUiModel,
         )
     } else {
         when {
@@ -129,16 +129,16 @@ fun FieldProvider(
                     },
                 )
 
-        fieldUiModel.customIntent != null -> {
-            ProvideCustomIntentInput(
-                fieldUiModel = fieldUiModel,
-                intentHandler = intentHandler,
-                uiEventHandler = uiEventHandler,
-                inputStyle = inputStyle,
-                reEvaluateRequestParams = reEvaluateCustomIntentRequestParameters,
-                modifier = modifierWithFocus,
-            )
-        }
+            fieldUiModel.customIntent != null -> {
+                ProvideCustomIntentInput(
+                    fieldUiModel = fieldUiModel,
+                    intentHandler = intentHandler,
+                    uiEventHandler = uiEventHandler,
+                    inputStyle = inputStyle,
+                    reEvaluateRequestParams = reEvaluateCustomIntentRequestParameters,
+                    modifier = modifierWithFocus,
+                )
+            }
 
             fieldUiModel.eventCategories != null ->
                 ProvideCategorySelectorInput(
@@ -147,18 +147,18 @@ fun FieldProvider(
                     fieldUiModel = fieldUiModel,
                 )
 
-        else ->
-            ProvideByValueType(
-                modifier = modifierWithFocus,
-                inputStyle = inputStyle,
-                fieldUiModel = fieldUiModel,
-                intentHandler = intentHandler,
-                uiEventHandler = uiEventHandler,
-                focusRequester = focusRequester,
-                onNextClicked = onNextClicked,
-                focusManager = focusManager,
-                onFileSelected = onFileSelected,
-            )
+            else ->
+                ProvideByValueType(
+                    modifier = modifierWithFocus,
+                    inputStyle = inputStyle,
+                    fieldUiModel = fieldUiModel,
+                    intentHandler = intentHandler,
+                    uiEventHandler = uiEventHandler,
+                    focusRequester = focusRequester,
+                    onNextClicked = onNextClicked,
+                    focusManager = focusManager,
+                    onFileSelected = onFileSelected,
+                )
         }
     }
 }
@@ -333,7 +333,7 @@ fun ProvideByValueType(
             when (fieldUiModel.renderingType) {
                 UiRenderType.HORIZONTAL_CHECKBOXES,
                 UiRenderType.VERTICAL_CHECKBOXES,
-                    -> {
+                -> {
                     ProvideYesNoCheckBoxInput(
                         modifier = modifier,
                         inputStyle = inputStyle,
@@ -390,7 +390,7 @@ fun ProvideByValueType(
         ValueType.DATE,
         ValueType.DATETIME,
         ValueType.TIME,
-            -> {
+        -> {
             when (fieldUiModel.periodSelector) {
                 null -> {
                     ProvideInputDate(
@@ -478,7 +478,7 @@ fun ProvideByValueType(
         ValueType.USERNAME,
         ValueType.TRACKER_ASSOCIATE,
         null,
-            -> {
+        -> {
             InputNotSupported(title = fieldUiModel.label)
         }
     }
@@ -495,7 +495,7 @@ fun ProvideByOptionSet(
     when (fieldUiModel.renderingType) {
         UiRenderType.HORIZONTAL_RADIOBUTTONS,
         UiRenderType.VERTICAL_RADIOBUTTONS,
-            -> {
+        -> {
             ProvideRadioButtonInput(
                 modifier = modifier,
                 inputStyle = inputStyle,
@@ -506,7 +506,7 @@ fun ProvideByOptionSet(
 
         UiRenderType.HORIZONTAL_CHECKBOXES,
         UiRenderType.VERTICAL_CHECKBOXES,
-            -> {
+        -> {
             ProvideCheckBoxInput(
                 modifier = modifier,
                 inputStyle = inputStyle,

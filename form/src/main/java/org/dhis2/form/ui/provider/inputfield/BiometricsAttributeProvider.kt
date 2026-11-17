@@ -5,15 +5,13 @@ import org.dhis2.form.model.biometrics.BiometricsAttributeUiModelImpl
 import org.dhis2.form.ui.biometrics.components.biometricsTEIRegistration.BiometricsTEIRegistration
 
 @Composable
-internal fun ProvideBiometricsAttribute(
-    fieldUiModel: BiometricsAttributeUiModelImpl
-) {
+internal fun ProvideBiometricsAttribute(fieldUiModel: BiometricsAttributeUiModelImpl) {
     BiometricsTEIRegistration(
         value = fieldUiModel.value,
         ageUnderThreshold = fieldUiModel.ageUnderThreshold,
         enabled = fieldUiModel.editable,
         onBiometricsClick = fieldUiModel::onBiometricsClick,
         onSave = fieldUiModel::onSaveTEI,
-        registerLastAndSave = fieldUiModel::registerLastAndSave
+        registerLastAndSave = fieldUiModel::registerLastAndSave,
     )
 }

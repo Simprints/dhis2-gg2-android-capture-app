@@ -7,10 +7,7 @@ import dhis2.org.analytics.charts.Charts
 import org.dhis2.R
 import org.dhis2.commons.date.DateLabelProvider
 import org.dhis2.commons.date.DateUtils
-import org.dhis2.commons.di.dagger.PerActivity
 import org.dhis2.commons.filters.data.FilterPresenter
-import org.dhis2.mobile.commons.network.NetworkStatusProvider
-import org.dhis2.mobile.commons.network.NetworkStatusProviderImpl
 import org.dhis2.commons.prefs.BasicPreferenceProvider
 import org.dhis2.commons.prefs.PreferenceProviderImpl
 import org.dhis2.commons.resources.ColorUtils
@@ -37,7 +34,13 @@ import org.dhis2.form.ui.provider.LegendValueProviderImpl
 import org.dhis2.form.ui.provider.UiEventTypesProviderImpl
 import org.dhis2.mobile.commons.customintents.CustomIntentRepository
 import org.dhis2.mobile.commons.customintents.CustomIntentRepositoryImpl
+import org.dhis2.mobile.commons.error.DomainErrorMapper
+import org.dhis2.mobile.commons.network.NetworkStatusProvider
+import org.dhis2.mobile.commons.network.NetworkStatusProviderImpl
+import org.dhis2.mobile.commons.providers.CustomLabelProvider
 import org.dhis2.mobile.commons.reporting.CrashReportController
+import org.dhis2.mobile.commons.resources.D2ErrorMessageProvider
+import org.dhis2.mobile.commons.resources.D2ErrorMessageProviderImpl
 import org.dhis2.tracker.data.ProfilePictureProvider
 import org.dhis2.tracker.search.data.SearchTrackedEntityRepository
 import org.dhis2.tracker.search.data.SearchTrackedEntityRepositoryImpl
@@ -54,14 +57,12 @@ import org.hisp.dhis.android.core.D2
 
 @Module
 class BiometricsDuplicatesDialogModule(
-    private val context: Context, private val teiType: String,
-    private val initialProgram: String
+    private val context: Context,
+    private val teiType: String,
+    private val initialProgram: String,
 ) {
-
     @Provides
-    fun enrollmentUiDataHelper(context: Context): EnrollmentUiDataHelper {
-        return EnrollmentUiDataHelper(context)
-    }
+    fun enrollmentUiDataHelper(context: Context): EnrollmentUiDataHelper = EnrollmentUiDataHelper(context)
 
     @Provides
     fun searchSortingValueSetter(
@@ -72,18 +73,20 @@ class BiometricsDuplicatesDialogModule(
     ): SearchSortingValueSetter {
         val unknownLabel = context.getString(R.string.unknownValue)
         val eventDateLabel = context.getString(R.string.most_recent_event_date)
-        val enrollmentStatusLabel = resourceManager.formatWithEnrollmentLabel(
-            initialProgram,
-            R.string.filters_title_enrollment_status,
-            1,
-            false,
-        )
-        val enrollmentDateDefaultLabel = resourceManager.formatWithEnrollmentLabel(
-            initialProgram,
-            R.string.enrollment_date_V2,
-            1,
-            false,
-        )
+        val enrollmentStatusLabel =
+            resourceManager.formatWithEnrollmentLabel(
+                initialProgram,
+                R.string.filters_title_enrollment_status,
+                1,
+                false,
+            )
+        val enrollmentDateDefaultLabel =
+            resourceManager.formatWithEnrollmentLabel(
+                initialProgram,
+                R.string.enrollment_date_V2,
+                1,
+                false,
+            )
         val uiDateFormat = DateUtils.SIMPLE_DATE_FORMAT
         return SearchSortingValueSetter(
             d2,
@@ -92,17 +95,15 @@ class BiometricsDuplicatesDialogModule(
             enrollmentStatusLabel,
             enrollmentDateDefaultLabel,
             uiDateFormat,
-            enrollmentUiDataHelper
+            enrollmentUiDataHelper,
         )
     }
 
     @Provides
     internal fun searchRepository(
         d2: D2,
-        crashReportController: CrashReportController
-    ): SearchTEIRepository {
-        return SearchTEIRepositoryImpl(d2, DhisEnrollmentUtils(d2), crashReportController)
-    }
+        crashReportController: CrashReportController,
+    ): SearchTEIRepository = SearchTEIRepositoryImpl(d2, DhisEnrollmentUtils(d2), crashReportController)
 
     @Provides
     fun searchRepository(
@@ -142,22 +143,21 @@ class BiometricsDuplicatesDialogModule(
         d2: D2,
         resourceManager: ResourceManager,
         colorUtils: ColorUtils,
-        periodUtils: DhisPeriodUtils
-    ): FieldViewModelFactory {
-        return FieldViewModelFactoryImpl(
+        periodUtils: DhisPeriodUtils,
+    ): FieldViewModelFactory =
+        FieldViewModelFactoryImpl(
             HintProviderImpl(context),
             DisplayNameProviderImpl(
                 OptionSetConfiguration(d2),
                 OrgUnitConfiguration(d2),
                 FileResourceConfiguration(d2),
-                periodUtils
+                periodUtils,
             ),
             UiEventTypesProviderImpl(),
             KeyboardActionProviderImpl(),
             LegendValueProviderImpl(d2, resourceManager),
-            AutoCompleteProviderImpl(PreferenceProviderImpl(context))
+            AutoCompleteProviderImpl(PreferenceProviderImpl(context)),
         )
-    }
 
     @Provides
     fun searchRepositoryKt(
@@ -169,6 +169,7 @@ class BiometricsDuplicatesDialogModule(
         dateUtils: DateUtils,
         customIntentRepository: CustomIntentRepository,
         sortingValueSetter: SearchSortingValueSetter,
+        customLabelProvider: CustomLabelProvider,
     ): SearchRepositoryKt {
         val resourceManager = ResourceManager(context, colorUtils)
         val dateLabelProvider =
@@ -192,9 +193,10 @@ class BiometricsDuplicatesDialogModule(
                 dateLabelProvider,
                 metadataIconProvider,
                 profilePictureProvider,
-                dateUtils
+                dateUtils,
             ),
-            customIntentRepository
+            customIntentRepository,
+            customLabelProvider,
         )
     }
 
@@ -207,8 +209,8 @@ class BiometricsDuplicatesDialogModule(
         basicPreferenceProvider: BasicPreferenceProvider,
         searchTrackedEntities: SearchTrackedEntities,
         dispatcherProvider: DispatcherProvider,
-    ): BiometricsDuplicatesDialogPresenter {
-        return BiometricsDuplicatesDialogPresenter(
+    ): BiometricsDuplicatesDialogPresenter =
+        BiometricsDuplicatesDialogPresenter(
             d2,
             searchRepository,
             searchRepositoryKt,
@@ -217,7 +219,6 @@ class BiometricsDuplicatesDialogModule(
             searchTrackedEntities,
             dispatcherProvider,
         )
-    }
 
     // EyeSeeTea customization - Biometric Duplicate Review And Confirm Identity
     // Mirrors SearchTEModule: the duplicates dialog runs the same search, so it needs the same
@@ -226,40 +227,47 @@ class BiometricsDuplicatesDialogModule(
     fun provideLoadSearchResultsUseCase(
         searchTrackedEntityRepository: SearchTrackedEntityRepository,
         customIntentRepository: CustomIntentRepository,
-    ): SearchTrackedEntities = SearchTrackedEntities(
-        searchTrackedEntityRepository,
-        customIntentRepository,
-        teiType,
-    )
+    ): SearchTrackedEntities =
+        SearchTrackedEntities(
+            searchTrackedEntityRepository,
+            customIntentRepository,
+            teiType,
+        )
 
     @Provides
     fun provideLoadSearchResultsRepository(
         d2: D2,
         filterPresenter: FilterPresenter,
-    ): SearchTrackedEntityRepository = SearchTrackedEntityRepositoryImpl(
-        d2,
-        filterPresenter,
-        ProfilePictureProvider(d2),
-    )
+        domainErrorMapper: DomainErrorMapper,
+    ): SearchTrackedEntityRepository =
+        SearchTrackedEntityRepositoryImpl(
+            d2,
+            filterPresenter,
+            ProfilePictureProvider(d2),
+            domainErrorMapper,
+        )
+
+    @Provides
+    fun provideDomainErrorMapper(
+        d2ErrorMessageProvider: D2ErrorMessageProvider,
+        networkStatusProvider: NetworkStatusProvider,
+    ): DomainErrorMapper = DomainErrorMapper(d2ErrorMessageProvider, networkStatusProvider)
+
+    @Provides
+    fun provideD2ErrorMessageProvider(): D2ErrorMessageProvider = D2ErrorMessageProviderImpl()
 
     @Provides
     fun provideListCardMapper(
         context: Context,
-        resourceManager: ResourceManager
-    ): TEICardMapper {
-        return TEICardMapper(context, resourceManager)
-    }
+        resourceManager: ResourceManager,
+        customLabelProvider: CustomLabelProvider,
+    ): TEICardMapper = TEICardMapper(context, resourceManager, customLabelProvider)
 
     @Provides
-    fun provideDateUtils(
-    ): DateUtils {
-        return DateUtils.getInstance()
-    }
+    fun provideDateUtils(): DateUtils = DateUtils.getInstance()
 
     @Provides
-    fun provideCustomIntentRepository(d2: D2): CustomIntentRepository {
-        return CustomIntentRepositoryImpl(d2)
-    }
+    fun provideCustomIntentRepository(d2: D2): CustomIntentRepository = CustomIntentRepositoryImpl(d2)
 
     @Provides
     fun provideNetworkStatusProvider(): NetworkStatusProvider = NetworkStatusProviderImpl(context)

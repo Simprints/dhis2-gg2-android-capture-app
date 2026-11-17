@@ -10,5 +10,9 @@ interface EnrollmentFormRepository {
     fun getProgramStageUidFromEvent(eventUi: String): String?
 
     fun hasWriteAccess(): Boolean
-    fun isTeiInNoOtherProgram(teiUid: String, programUid: String): Boolean
+
+    fun isTeiInNoOtherProgram(
+        teiUid: String,
+        programUid: String,
+    ): Boolean
 }

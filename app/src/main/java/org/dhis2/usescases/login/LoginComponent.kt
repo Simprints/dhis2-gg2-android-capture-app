@@ -8,4 +8,3 @@ import org.dhis2.commons.di.dagger.PerActivity
 interface LoginComponent {
     fun inject(loginActivity: LoginActivity)
 }
-

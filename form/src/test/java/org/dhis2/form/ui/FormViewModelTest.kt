@@ -36,6 +36,7 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.time.LocalDate
@@ -46,10 +47,11 @@ class FormViewModelTest {
     @get:Rule
     val instantExecutorRule = InstantTaskExecutorRule()
 
-    private val repository: FormRepository = mock {
-        on { runBlocking { fetchFormItems(any()) } } doReturn emptyList()
-        on { runBlocking { composeList(any()) } } doReturn emptyList()
-    }
+    private val repository: FormRepository =
+        mock {
+            on { runBlocking { fetchFormItems(any()) } } doReturn emptyList()
+            on { runBlocking { composeList(any()) } } doReturn emptyList()
+        }
     private val testingDispatcher = StandardTestDispatcher()
     private val dispatcher: DispatcherProvider =
         mock {
@@ -208,9 +210,6 @@ class FormViewModelTest {
             verify(repository).save(fieldUid, null, null)
         }
 
-    // EyeSeeTea fix - "mark as complete?" dialog always shown for completed events
-    // (Oslo ANDROAPP-7666, introduced 3.3.1)
-    // Remove this test when Oslo ships the upstream fix.
     @Test
     fun `Should not show result dialog for an already completed event with no issues`() =
         runTest {
@@ -221,6 +220,36 @@ class FormViewModelTest {
 
             val action = viewModel.actionsChannel.first()
             assertEquals(FormViewModel.FormActions.OnFinish, action)
+        }
+
+    @Test
+    fun `Should reopen the same section again after a form reload collapsed it`() =
+        runTest {
+            viewModel.submitIntent(FormIntent.OnSection("sectionX"))
+            advanceUntilIdle()
+
+            viewModel.loadData()
+            advanceUntilIdle()
+
+            viewModel.submitIntent(FormIntent.OnSection("sectionX"))
+            advanceUntilIdle()
+
+            verify(repository, times(2)).updateSectionOpened(
+                RowAction(id = "sectionX", type = ActionType.ON_SECTION_CHANGE),
+            )
+        }
+
+    @Test
+    fun `Should process two consecutive identical OnFinish intents`() =
+        runTest {
+            givenACompletedEventWithNoIssues()
+
+            viewModel.submitIntent(FormIntent.OnFinish())
+            advanceUntilIdle()
+            viewModel.submitIntent(FormIntent.OnFinish())
+            advanceUntilIdle()
+
+            verify(repository, times(2)).runDataIntegrityCheck(backPressed = false)
         }
 
     private suspend fun givenACompletedEventWithNoIssues() {

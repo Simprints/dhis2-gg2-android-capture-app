@@ -14,11 +14,11 @@ interface TeiDataRepository {
         groupedByStage: Boolean,
     ): Single<List<EventModel>>
 
-    fun getEnrollment(): Single<Enrollment?>
+    fun getEnrollment(): Single<Enrollment>
 
-    fun getEnrollmentProgram(): Single<Program?>
+    fun getEnrollmentProgram(): Single<Program>
 
-    fun getTrackedEntityInstance(): Single<TrackedEntityInstance?>
+    fun getTrackedEntityInstance(): Single<TrackedEntityInstance>
 
     fun eventsWithoutCatCombo(): Single<List<EventModel>>
 
@@ -39,5 +39,8 @@ interface TeiDataRepository {
     fun programOrgListInCaptureScope(programUid: String): List<OrganisationUnit>
 
     // EyeSeeTea customization - Biometric Verification Persistence
-    fun updateBiometricsAttributeValueInTei(value: String, parentTeiUid:String? = null)
+    fun updateBiometricsAttributeValueInTei(
+        value: String,
+        parentTeiUid: String? = null,
+    )
 }

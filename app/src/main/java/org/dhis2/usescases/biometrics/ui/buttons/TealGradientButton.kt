@@ -25,11 +25,12 @@ import org.dhis2.commons.biometrics.gradientButtonColor
 fun TealGradientButton(
     @StringRes textId: Int,
     modifier: Modifier = Modifier,
-    onClick: () -> Unit = { }
+    onClick: () -> Unit = { },
 ) {
-    val modifier = modifier
-        .wrapContentWidth()
-        .defaultMinSize(minHeight = 50.dp)
+    val modifier =
+        modifier
+            .wrapContentWidth()
+            .defaultMinSize(minHeight = 50.dp)
 
     Button(
         modifier = modifier,
@@ -39,18 +40,18 @@ fun TealGradientButton(
         shape = RoundedCornerShape(4.dp),
     ) {
         Box(
-            modifier = Modifier
-                .background(gradientButtonColor)
-                .then(modifier),
+            modifier =
+                Modifier
+                    .background(gradientButtonColor)
+                    .then(modifier),
             contentAlignment = Alignment.Center,
-
-            ) {
-            Row() {
+        ) {
+            Row {
                 Text(
                     modifier = Modifier.padding(8.dp),
                     text = stringResource(textId),
                     color = Color.White,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
                 )
             }
         }

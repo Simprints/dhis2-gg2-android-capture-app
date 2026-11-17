@@ -21,17 +21,18 @@ fun TealBorderButton(
 ) {
     OutlinedButton(
         modifier = modifier.defaultMinSize(minHeight = 50.dp),
-        border = BorderStroke(
-            width = 1.dp,
-            color = Color(0xFF0281cb)
-        ),
+        border =
+            BorderStroke(
+                width = 1.dp,
+                color = Color(0xFF0281cb),
+            ),
         onClick = onClick,
         shape = RoundedCornerShape(4.dp),
     ) {
         Text(
             text = stringResource(textId),
             color = Color(0xFF0281cb),
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
     }
 }

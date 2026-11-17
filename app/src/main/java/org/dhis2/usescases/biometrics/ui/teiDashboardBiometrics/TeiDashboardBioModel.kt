@@ -13,8 +13,5 @@ data class BioButtonModel(
 
 data class BioStatus(
     val text: String,
-    val backgroundColor: String
+    val backgroundColor: String,
 )
-
-
-

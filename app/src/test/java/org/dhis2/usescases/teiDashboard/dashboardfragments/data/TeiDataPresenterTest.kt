@@ -17,8 +17,8 @@ import org.dhis2.commons.biometrics.BiometricsPreference
 import org.dhis2.commons.data.EventCreationType
 import org.dhis2.commons.data.EventModel
 import org.dhis2.commons.data.EventViewModelType
-import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.prefs.BasicPreferenceProvider
+import org.dhis2.commons.prefs.PreferenceProvider
 import org.dhis2.commons.resources.D2ErrorUtils
 import org.dhis2.commons.resources.ResourceManager
 import org.dhis2.commons.viewmodel.DispatcherProvider
@@ -241,7 +241,7 @@ class TeiDataPresenterTest {
         verify(view).displayScheduleEvent(
             programStage = null,
             showYesNoOptions = true,
-            eventCreationType = EventCreationType.SCHEDULE
+            eventCreationType = EventCreationType.SCHEDULE,
         )
     }
 
@@ -398,7 +398,7 @@ class TeiDataPresenterTest {
         ).displayScheduleEvent(
             programStage = programStage,
             showYesNoOptions = false,
-            eventCreationType = EventCreationType.SCHEDULE
+            eventCreationType = EventCreationType.SCHEDULE,
         )
         verifyNoMoreInteractions(view)
     }
@@ -530,20 +530,21 @@ class TeiDataPresenterTest {
             verify(view).goToEventDetails(eventUid, EventMode.NEW, programUid)
         }
 
-    //EyeSeeTea Customizations
-    //TODO - add success tests
+    // EyeSeeTea Customizations
+    // TODO - add success tests
 
     @Test
     fun `Should write the biometric template attribute when register completes with credential and templates`() {
         givenTemplateAttributeValueType(d2)
 
-        val biometricReferences = listOf(
-            BiometricReference(
-                type = "FACE_REFERENCE",
-                format = "RANK_ONE_3_1",
-                templates = listOf(BiometricTemplate("template1")),
-            ),
-        )
+        val biometricReferences =
+            listOf(
+                BiometricReference(
+                    type = "FACE_REFERENCE",
+                    format = "RANK_ONE_3_1",
+                    templates = listOf(BiometricTemplate("template1")),
+                ),
+            )
 
         teiDataPresenter.handleRegisterResponse(
             RegisterResult.Completed(
@@ -556,8 +557,11 @@ class TeiDataPresenterTest {
             ),
         )
 
-        val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
-            .value(biometricTemplateAttributeId, teiUid)
+        val valueRepository =
+            d2
+                .trackedEntityModule()
+                .trackedEntityAttributeValues()
+                .value(biometricTemplateAttributeId, teiUid)
         verify(valueRepository).blockingSet(any())
     }
 
@@ -565,13 +569,14 @@ class TeiDataPresenterTest {
     fun `Should not write the biometric template attribute when register completes without a credential`() {
         givenTemplateAttributeValueType(d2)
 
-        val biometricReferences = listOf(
-            BiometricReference(
-                type = "FACE_REFERENCE",
-                format = "RANK_ONE_3_1",
-                templates = listOf(BiometricTemplate("template1")),
-            ),
-        )
+        val biometricReferences =
+            listOf(
+                BiometricReference(
+                    type = "FACE_REFERENCE",
+                    format = "RANK_ONE_3_1",
+                    templates = listOf(BiometricTemplate("template1")),
+                ),
+            )
 
         teiDataPresenter.handleRegisterResponse(
             RegisterResult.Completed(
@@ -584,8 +589,11 @@ class TeiDataPresenterTest {
             ),
         )
 
-        val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
-            .value(biometricTemplateAttributeId, teiUid)
+        val valueRepository =
+            d2
+                .trackedEntityModule()
+                .trackedEntityAttributeValues()
+                .value(biometricTemplateAttributeId, teiUid)
         verify(valueRepository, never()).blockingSet(any())
     }
 
@@ -604,8 +612,11 @@ class TeiDataPresenterTest {
             ),
         )
 
-        val valueRepository = d2.trackedEntityModule().trackedEntityAttributeValues()
-            .value(biometricTemplateAttributeId, teiUid)
+        val valueRepository =
+            d2
+                .trackedEntityModule()
+                .trackedEntityAttributeValues()
+                .value(biometricTemplateAttributeId, teiUid)
         verify(valueRepository, never()).blockingSet(any())
     }
 
@@ -632,44 +643,43 @@ class TeiDataPresenterTest {
         assertNull(model)
     }
 
-    private fun givenABiometricsMode(
-        biometricsMode: BiometricsMode,
-    ): TEIDataPresenter {
+    private fun givenABiometricsMode(biometricsMode: BiometricsMode): TEIDataPresenter {
         whenever(
             basicPreferenceProvider.getString(
                 BiometricsPreference.BIOMETRICS_MODE,
-                BiometricsMode.full.name
-            )
+                BiometricsMode.full.name,
+            ),
         ).thenReturn(biometricsMode.name)
 
-        val teiDataPresenter = TEIDataPresenter(
-            view,
-            d2,
-            dashboardRepository,
-            teiDataRepository,
-            ruleEngineHelper,
-            programUid,
-            teiUid,
-            enrollmentUid,
-            false,
-            schedulers,
-            analytics,
-            valueStore,
-            optionsRepository,
-            getNewEventCreationTypeOptions,
-            eventCreationOptionsMapper,
-            teiDataContractHandler,
-            dispatcherProvider,
-            createEventUseCase,
-            d2ErrorUtils,
-            preferences,
-            basicPreferenceProvider,
-            resourceManager,
-            null,
-            orgUnitRepository
-        )
+        val teiDataPresenter =
+            TEIDataPresenter(
+                view,
+                d2,
+                dashboardRepository,
+                teiDataRepository,
+                ruleEngineHelper,
+                programUid,
+                teiUid,
+                enrollmentUid,
+                false,
+                schedulers,
+                analytics,
+                valueStore,
+                optionsRepository,
+                getNewEventCreationTypeOptions,
+                eventCreationOptionsMapper,
+                teiDataContractHandler,
+                dispatcherProvider,
+                createEventUseCase,
+                d2ErrorUtils,
+                preferences,
+                basicPreferenceProvider,
+                resourceManager,
+                null,
+                orgUnitRepository,
+            )
 
-        return teiDataPresenter;
+        return teiDataPresenter
     }
 
     private fun givenADashboardModel(biometricsValue: String?): DashboardEnrollmentModel {
@@ -678,20 +688,25 @@ class TeiDataPresenterTest {
         whenever(d2.program(programUid)).thenReturn(mock())
 
         whenever(
-            dashboardModel.isBiometricsEnabled()
+            dashboardModel.isBiometricsEnabled(),
         ).thenReturn(true)
 
         whenever(
-            dashboardModel.trackedEntityAttributeValues
+            dashboardModel.trackedEntityAttributeValues,
         ).thenReturn(
             listOf(
-                TrackedEntityAttributeValue.builder().trackedEntityAttribute("S4eTdBrXPpj")
-                    .value("2023-01-01").build()
-            )
+                // SDK 1.15.0 requires trackedEntityInstance to build a value
+                TrackedEntityAttributeValue
+                    .builder()
+                    .trackedEntityInstance(teiUid)
+                    .trackedEntityAttribute("S4eTdBrXPpj")
+                    .value("2023-01-01")
+                    .build(),
+            ),
         )
 
         whenever(
-            dashboardModel.getBiometricValue()
+            dashboardModel.getBiometricValue(),
         ).thenReturn(biometricsValue)
         return dashboardModel
     }
